@@ -18,8 +18,11 @@ and the relevant file in docs/specs/.
    package built by src/revint/ai/evidence.py.
 6. Business decisions (net sales field, thresholds, peer groups,
    as-of date) live in config/settings.yaml. Never hard-code them.
-7. Do not delete or edit anything under data/raw. Flag bad rows,
-   never drop them (except the documented stray row).
+7. Do not delete or edit anything under data/raw, and never modify
+   bronze. Flag bad rows, never drop them. The only deletions
+   allowed are the documented stray row and exact duplicates, done
+   in silver/gold (recorded in silver.excluded_rows), never in
+   bronze or data/raw.
 
 ## GitHub environment
 - Company GitHub Enterprise: set `$env:GH_HOST =

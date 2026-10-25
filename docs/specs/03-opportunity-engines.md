@@ -116,8 +116,10 @@ All numeric defaults are proposals for review, not facts about the data.
   branch shown as latest.
 - Customers with `f_multi_identity`: opportunity allowed, confidence
   capped at Medium.
-- Flagged lines (duplicates, blank Void): included per spec 02 config;
-  data-quality component reduces score.
+- Exact-duplicate copies and the stray row are already absent from the
+  fact (spec 01 D4). Other flagged lines (blank Void with
+  `void_flag = 0`, free goods) are included; the data-quality
+  component reduces score.
 - Re-run with same as-of and config gives identical `opp_id`s and ranks.
 
 ## 8. Acceptance-level checks

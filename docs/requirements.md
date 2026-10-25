@@ -42,7 +42,7 @@ It is not another sales reporting dashboard.
     value kept, flagged (D3, provisional).
   - 556 exact duplicates (all source columns identical except
     _source_row): kept and flagged in silver, excluded from gold,
-    first occurrence kept, each recorded in silver.excluded_rows
+    first occurrence kept, each recorded in silver_excluded_rows
     (D4, provisional).
   - One stray row (only "Change to Ctn" = 1): excluded from gold,
     kept in silver (D1).

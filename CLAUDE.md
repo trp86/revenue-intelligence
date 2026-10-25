@@ -19,10 +19,11 @@ and the relevant file in docs/specs/.
 6. Business decisions (net sales field, thresholds, peer groups,
    as-of date) live in config/settings.yaml. Never hard-code them.
 7. Do not delete or edit anything under data/raw, and never modify
-   bronze. Flag bad rows, never drop them. The only deletions
-   allowed are the documented stray row and exact duplicates, done
-   in silver/gold (recorded in silver.excluded_rows), never in
-   bronze or data/raw.
+   bronze. Flag bad rows, never drop them. The only exclusions
+   allowed are the documented stray row and exact duplicates. They
+   are marked in silver (is_excluded, never deleted: silver keeps
+   every bronze row), recorded in silver_excluded_rows, and omitted
+   from gold. Never in bronze or data/raw.
 
 ## GitHub environment
 - Company GitHub Enterprise: set `$env:GH_HOST =

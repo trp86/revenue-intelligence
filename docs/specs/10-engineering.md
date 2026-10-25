@@ -1,0 +1,102 @@
+# 10 Engineering (Epic E0)
+
+Status: DRAFT. Repo, tooling, config, CLI, testing, CI, secrets.
+
+## 1. Purpose and scope
+| In | Out |
+|---|---|
+| Repo layout, uv project, config, CLI, test/lint/CI, secrets | Deployment, hosting, containers (POC runs locally) |
+| Pipeline runner for numbered SQL | Any business logic |
+
+## 2. Repo layout
+```
+config/settings.yaml      business decisions and thresholds
+config/definitions.yaml   metric definitions shown in UI
+config/explore.yaml       allow-list for the query layer
+data/                     git-ignored (raw, bronze, warehouse, app.duckdb)
+docs/                     decisions, process, requirements, specs
+sql/10_silver/ 20_gold/ 30_opportunities/ checks/   numbered, run in order
+src/revint/ingest|pipeline|query|ai|api|backtest|cli
+tests/                    pytest (unit, sql, api)
+frontend/                 React app
+.github/                  workflows, issue templates
+.env.example              names only, no values
+```
+
+## 3. Tooling
+| Area | Choice |
+|---|---|
+| Python | 3.12+, managed by uv (`uv sync`) |
+| Libraries | polars, duckdb, fastapi, pydantic, typer, google-genai, pytest, ruff, sqlfluff |
+| Commands | `uv run pytest`, `uv run ruff check .`, `uv run sqlfluff lint sql`, `uv run revint build all` |
+| Frontend | `cd frontend; npm install; npm run dev` (Windows PowerShell) |
+
+## 4. Configuration (config/settings.yaml)
+- Loaded into a pydantic `Settings` model; unknown keys fail; every key has a documented default.
+- Sections: `paths`, `ingest`, `labels`, `net_sales`, `void`, `duplicates`, `peer_groups`, `recovery`, `dormancy`, `whitespace`, `crosssell`, `scoring`, `value`, `backtest`, `ai`, `assistant`, `explore`, `api`, `actions`, `recon`, `asof`.
+- `asof.date` default `2020-02-29`.
+- Business-decision changes happen through PR (process.md rule 7).
+- Env overrides only for paths and secrets, never thresholds.
+- Config hash computed and stored with each build and each backtest run.
+
+## 5. CLI (typer, `revint`)
+| Command | Does |
+|---|---|
+| `revint build bronze|silver|gold|all` | Run stages; `all` builds raw to gold |
+| `revint check` | SQL checks and reconciliation |
+| `revint report dq` | Write the data quality report |
+| `revint opportunities build [--as-of]` | Engines (spec 03) |
+| `revint backtest run|report` | Spec 04 |
+| `revint ai generate` | Spec 05 |
+| `revint app init` | Create app.duckdb |
+| `revint serve` | Start API |
+Rules: SQL files run in filename order inside one DuckDB transaction per
+stage; failure stops the stage and prints the failing file; stage run
+records written to `build_log` (counts, durations, config hash).
+
+## 6. Testing
+| Layer | How |
+|---|---|
+| Unit | pytest, small synthetic fixtures committed under tests/fixtures (no client data) |
+| SQL checks | files in sql/checks, each returns zero rows when OK; run via pytest |
+| Real-data checks | marked `@pytest.mark.realdata`, skipped if data/ absent, never in CI |
+| API | FastAPI TestClient; AI uses a fake client |
+| Frontend | Vitest + Testing Library, Playwright walkthrough, axe |
+Every acceptance criterion maps to at least one named test.
+
+## 7. CI (GitHub Actions on company GitHub)
+- On PR: `uv sync`, ruff, sqlfluff, pytest (without realdata), frontend lint/type-check/test/build, OpenAPI drift.
+- No network calls to Gemini; no secrets needed.
+- Required to pass before a human merges. [x] runner availability on the enterprise host.
+- A secret-scan step (e.g. gitleaks) [x] if available.
+
+## 8. Secrets and safety
+- `.env` git-ignored; `.env.example` lists names (`GEMINI_API_KEY`).
+- Pre-commit/CI check fails on files under data/ or on `.env`.
+- Logs: counts and aggregates only; never customer-level values; test with a log-capture check.
+- Never write under data/raw (guard in code: raw opened read-only; test).
+- Dependencies pinned by `uv.lock`.
+
+## 9. Edge cases
+- Windows paths and PowerShell quoting; use `pathlib`, no shell-specific scripts in code.
+- Excel file locked/open: clear error.
+- DuckDB file locked by API while CLI builds: detect and tell the user.
+- Missing config key: fail with key name.
+
+## 10. Acceptance-level checks
+- [ ] Fresh clone: `uv sync` and `uv run pytest` pass without data/
+- [ ] Settings with an unknown key fails validation (test)
+- [ ] `revint build all` runs stages in order; stops on failing SQL (test with a bad file)
+- [ ] Config change of a threshold needs no code edit (cross-checked by spec 03)
+- [ ] CI workflow runs the commands above
+- [ ] Guard test: no write to data/raw; no tracked files under data/
+- [ ] `.env.example` has no real values
+
+## 11. Dependencies
+Spec 00. Everything depends on this; E0 stories come first.
+
+## 12. OPEN QUESTIONS
+- OPEN QUESTION: CI runner and gitleaks availability on git.t3.daimlertruck.com. Default: GitHub Actions workflow with standard runners; confirm. Why: enterprise hosts differ.
+- OPEN QUESTION: Package index access (uv/npm behind a corporate proxy)? Default: assume reachable. Why: unknown.
+- OPEN QUESTION: Warehouse file name/location. Default: `data/warehouse.duckdb`. Why: only app.duckdb is named in docs.
+- OPEN QUESTION: Source Excel on shared drive or local only? Default: local `data/raw`. Why: CLAUDE.md says data/raw.

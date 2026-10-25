@@ -25,7 +25,7 @@ Status: DRAFT. FR-D3, FR-D4.
 |---|---|
 | N1 | `v_net_sales` is the ONLY place net sales is defined. All marts and queries use it |
 | N2 | Net sales column = `config.net_sales.field` (default `Net AMOUNT`, provisional). Must be one of the six candidate columns, else the build fails |
-| N3 | Row inclusion driven by config: `net_sales.exclude_flags` (default empty list). Rows excluded in silver (`is_excluded`: the stray row, and exact-duplicate extra copies while `duplicates.exclude_from_net_sales` is true) never reach `fact_sales`, so the view needs no extra filter for them |
+| N3 | Row inclusion driven by config: `net_sales.exclude_flags` (default empty list). Gold never loads the stray row, and loads exact-duplicate extra copies only when `duplicates.exclude_from_net_sales` is false, so the view needs no extra filter for them |
 | N4 | View exposes `net_sales`, `net_sales_field_used`, `included` (bool) so the UI can label the definition |
 | N5 | Switching `net_sales.field` changes marts after rebuild without code edits; a test proves it |
 
@@ -45,8 +45,8 @@ customer codes remain separate rows.
 `fact_sales`: `sales_line_id` (from `_source_row`), `date_key`, `customer_key`,
 `product_key`, `branch_key`, quantity, all six amount columns,
 `net_sales` (from view), all silver flags.
-Silver rows with `is_excluded = true` are omitted: the stray row always, exact-duplicate extra copies when `duplicates.exclude_from_net_sales` is true. When it is false, copies stay in the fact with `is_duplicate = true`. The fact keeps `void_flag`, `is_duplicate` and the other flags.
-Check: fact row count = silver row count - `count(silver.excluded_rows)` (duplicates counted only when the config is true).
+Silver marks `is_excluded` the same way for both settings of the config (spec 01 S5). Gold omits the stray row always, and the exact-duplicate extra copies when `duplicates.exclude_from_net_sales` is true. When it is false, copies stay in the fact with `is_duplicate = true`. The fact keeps `void_flag`, `is_duplicate` and the other flags.
+Check: with the config true, fact row count = silver row count - `count(silver_excluded_rows)`; with false, fact row count = silver row count - stray rows.
 
 ## 6. Marts
 | Mart | Grain | Used by |
@@ -88,9 +88,10 @@ hand-written definitions in `config/definitions.yaml` shown in UI
 - Dates outside as-of range: kept, flagged `f_after_asof`.
 
 ## 10. Acceptance-level checks
-- [ ] Fact row count = silver row count - `count(silver.excluded_rows)`; no exact-duplicate extra copy and no stray row in `fact_sales`
-- [ ] Totals reconcile with and without exclusions: SUM over `fact_sales` + SUM over `silver.excluded_rows` = SUM over `silver_sales`
-- [ ] With `duplicates.exclude_from_net_sales = false`, the fact includes the copies and totals rise by exactly the excluded duplicate amount
+- [ ] Config true: fact row count = silver row count - `count(silver_excluded_rows)`; no exact-duplicate extra copy and no stray row in `fact_sales`
+- [ ] Config false: fact row count = silver row count - stray rows; no stray row in `fact_sales`
+- [ ] Totals reconcile with and without exclusions (spec 01 R7, both forms): config true: SUM over `fact_sales` + SUM over `silver_excluded_rows` = SUM over `silver_sales`; config false: the same with only stray rows added back
+- [ ] Switching the config from true to false raises fact totals by exactly the amount of the `exact_duplicate` rows in `silver_excluded_rows`
 - [ ] SUM(net_sales) over fact = SUM(chosen silver column) for non-excluded rows
 - [ ] Grep test: no SQL outside `v_net_sales` references an amount column
 - [ ] Changing config field changes totals as expected (test)

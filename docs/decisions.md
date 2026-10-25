@@ -26,7 +26,7 @@ where can we generate extra revenue, why, and what should we do?
   kept. See spec 01 D3.
 - Exact duplicates: DECIDED (provisional, client to confirm):
   excluded (all source columns identical except _source_row; first
-  occurrence kept) in silver/gold, recorded in silver.excluded_rows,
+  occurrence kept) in silver/gold, recorded in silver_excluded_rows,
   bronze untouched, effect stated in the quality report. See spec 01
   D4. Free goods (zero value with quantity) are flagged, not
   excluded. Provisional: assumed to be load duplicates. If the
@@ -52,7 +52,7 @@ Medallion on DuckDB, Polars at the edges, SQL in the middle.
 - Bronze: raw sheets as Parquet, all text, lineage columns. Polars.
 - Silver: typed, normalised, flagged. Keeps every bronze row; marks
   the stray row and exact duplicates as excluded and records them
-  in silver.excluded_rows. DuckDB SQL.
+  in silver_excluded_rows. DuckDB SQL.
 - Gold: star schema (dim_customer, dim_product, dim_branch,
   dim_date, fact_sales; excluded rows are not loaded), marts (mart_*), opportunities (opp_*).
 - App state (AI outputs, evidence snapshots, action status) lives in

@@ -21,10 +21,19 @@ where can we generate extra revenue, why, and what should we do?
 
 ## 3. Open business questions (use defaults in config until answered)
 - Net sales field (provisional: Net AMOUNT, labelled in the UI).
-- Meaning of blank Void; handling of 556 duplicates and free goods.
+- Meaning of blank Void: DECIDED (provisional, client to confirm):
+  blank means "not void", flagged. See spec 01 D3.
+- 556 exact duplicates: DECIDED (provisional, client to confirm):
+  kept and flagged, not excluded. See spec 01 D4. Free goods
+  (zero value with quantity) are flagged, not excluded.
 - Customer identity (multi-spelling and multi-branch codes). Do not
   merge near-duplicate codes.
 - Permission to send evidence to an external AI service.
+- Every other open question in docs/specs uses its proposed default
+  for now. The defaults are listed as OPEN QUESTION entries in each
+  spec. A default is changed only through a PR.
+- Recorded as decided (spec 01): the stray row, the source sheet
+  layout, and `_source_row` as the lineage key (D1, D2, D5).
 
 ## 4. Use cases in scope
 Revenue recovery, dormant customers, category whitespace,

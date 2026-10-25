@@ -45,7 +45,7 @@ should the team do next. Not a reporting dashboard.
 ## 5. Principles (binding on all specs)
 1. Python/SQL calculates; Gemini communicates.
 2. Flag, never delete (sole exception: the documented stray row,
-   spec 01).
+   spec 01 decision D1).
 3. Net sales is provisional and defined once, from config.
 4. Every number shows its definition; every recommendation links to
    evidence.

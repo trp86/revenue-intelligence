@@ -33,12 +33,22 @@ It is not another sales reporting dashboard.
 - Reference: July 2019 closing report (branch targets, reconciliation).
 - Out of Phase 1: DC, BBL, Beverage/YLT, Oct SCJ sheet (duplicate).
 - Known data issues (must be handled and reported, not hidden):
-  - Header on row 7; duplicate column names.
+  - 3 blank rows, header on row 7, data from row 8, 75 columns;
+    duplicate column names suffixed _1/_2 (decision D2).
   - Six candidate amount columns; net sales is PROVISIONAL.
   - Customer codes with multiple name spellings or branches; do not
     merge near-duplicate codes.
-  - Blank Void on some lines, 556 exact duplicates, zero-value lines
-    with quantity (possible free goods): flag, never delete.
+  - Blank Void on some lines: void_flag = 0 (not void), original
+    value kept, flagged (D3, provisional).
+  - 556 exact duplicates (all source columns identical except
+    _source_row): kept and flagged in silver, excluded from gold,
+    first occurrence kept, each recorded in silver.excluded_rows
+    (D4, provisional).
+  - One stray row (only "Change to Ctn" = 1): excluded from gold,
+    kept in silver (D1).
+  - Zero-value lines with quantity (possible free goods): flagged,
+    not excluded.
+  - Bronze and data/raw are never modified; no other row is excluded.
   - Inconsistent channel labels and branch names.
 - Raw data is confidential: never committed, never sent unmasked to
   external services.
@@ -48,12 +58,15 @@ It is not another sales reporting dashboard.
 ### 5.1 Data foundation (bronze, silver, gold)
 - FR-D1 Ingest sheets to bronze Parquet unchanged, with lineage.
 - FR-D2 Build silver with typed, normalised, flagged data; keep the
-  original value beside each cleaned one.
-- FR-D3 Build the gold star schema and marts.
+  original value beside each cleaned one. Silver keeps every bronze
+  row and marks exclusions (stray row, exact duplicates) with a
+  reason.
+- FR-D3 Build the gold star schema and marts. Gold excludes the
+  rows marked excluded in silver.
 - FR-D4 Net sales is defined once and driven by configuration.
 - FR-D5 Automated reconciliation checks against raw data and the
   July 2019 report; a data quality report lists every rule and its
-  impact.
+  impact, including the excluded row count and revenue effect.
 
 ### 5.2 Opportunity engines
 - FR-O1 Revenue recovery: material decline versus a comparable prior
@@ -141,6 +154,5 @@ execution of actions, multi-tenant admin, SSO.
    evidence.
 
 ## 9. Open questions (defaults used until answered)
-Net sales field; meaning of blank Void; handling of duplicates and
-free goods; customer identity; permission for external AI; peer
+Net sales field; customer identity; permission for external AI; peer
 group definition; value-estimation method; targets beyond July 2019.

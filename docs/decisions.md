@@ -29,7 +29,9 @@ where can we generate extra revenue, why, and what should we do?
   occurrence kept) in silver/gold, recorded in silver.excluded_rows,
   bronze untouched, effect stated in the quality report. See spec 01
   D4. Free goods (zero value with quantity) are flagged, not
-  excluded.
+  excluded. Provisional: assumed to be load duplicates. If the
+  client confirms they are genuine repeated lines, set
+  duplicates.exclude_from_net_sales to false.
 - Customer identity (multi-spelling and multi-branch codes). Do not
   merge near-duplicate codes.
 - Permission to send evidence to an external AI service.

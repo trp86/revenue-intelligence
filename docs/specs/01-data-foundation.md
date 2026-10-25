@@ -39,7 +39,7 @@ Status: DRAFT. FR-D1, FR-D2, FR-D5.
 | S3 | Channel and branch label normalisation via a config mapping table; unmapped labels kept as-is and flagged `f_unmapped_label` |
 | S4 | Customer identity: code is the key. Multiple name spellings / branches per code are recorded in `silver_customer_codes` with counts. Near-duplicate codes are NOT merged |
 | S5 | Exact duplicate (decision D4): all source columns identical except `_source_row` (lineage columns are ignored). Within each identical group the first occurrence (lowest `_source_row`) is kept and has `is_duplicate = false`; every extra copy has `is_duplicate = true`, `is_excluded = true`, `exclusion_reason = 'exact_duplicate'`. Known count in docs: 556; the report must show the actual value. Bronze is never modified; silver keeps every row |
-| S6 | `void_flag` (decision D3, provisional): when the source Void is blank/NULL, `void_flag = 0` (not void), per `void.blank_means`. The original value stays untouched in the original Void column. `f_blank_void` is also set so the assumption stays visible and counted. Mapping of non-blank Void values to `void_flag` comes from profiling and is kept in config [x]. `void_flag` alone does not exclude a row |
+| S6 | `void_flag` (decision D3, provisional): when the source Void is blank/NULL, `void_flag = 0` (not void), per `void.blank_means`. The original value stays untouched in the original Void column. `f_blank_void` is also set so the assumption stays visible and counted. Mapping of non-blank Void values to `void_flag` is set in config (`void.value_map`) from the distinct Void values listed by the first profiling story (section 10a) [x]. `void_flag` alone does not exclude a row |
 | S7 | `f_zero_value_with_qty`: net sales = 0 and quantity > 0 (possible free goods). Flagged only, never excluded |
 | S8 | `f_negative_qty` / `f_negative_value` for returns or credits (treated as data, not errors) |
 | S9 | Stray row (decision D1): the row where only "Change to Ctn" = 1 (all other columns blank), expected near `_source_row` 662,135. Silver keeps it with `is_excluded = true`, `exclusion_reason = 'stray_row'`, `f_stray_row = true`; gold excludes it. If more than one row matches, the build fails for review |
@@ -75,7 +75,8 @@ rows, and as % of the total for the configured net sales field).
 |---|---|
 | `ingest.sheets` | `RAW SCJ SALES` |
 | `ingest.expected_columns` | list of the 75 source column names after suffixing, filled from profiling (decision D2) |
-| `void.blank_means` | `not_void` (provisional; sets `void_flag = 0`) |
+| `void.blank_means` | `not_void` (provisional; sets `void_flag = 0`) |
+| `void.value_map` | empty until the first profiling story lists the distinct Void values (section 10a); unmapped non-blank values are reported |
 | `duplicates.exclude_from_net_sales` | `true` (provisional). Gold `fact_sales` omits the extra copies. If `false`, gold keeps them (still flagged) and the report shows both totals |
 | `duplicates.key_columns` | all source columns except `_source_row` (from `ingest.expected_columns`) |
 | `ingest.header_search_rows` | 30 |
@@ -113,6 +114,22 @@ rows, and as % of the total for the configured net sales field).
 
 ## 10. Dependencies
 Spec 10 (repo, CLI, config), spec 00 (terms). Feeds spec 02.
+
+## 10a. First profiling story theme (E1 plan)
+The first E1 story profiles RAW SCJ SALES and fills config. Outputs
+are counts and aggregates only, never customer-level values.
+
+- [ ] Confirm the stray row (D1): exact `_source_row`, and that no
+      other row has only "Change to Ctn" = 1
+- [ ] Confirm header row, data start row and the 75 column names
+      (D2) and write `ingest.expected_columns`
+- [ ] **List the distinct Void values with row counts (including
+      blank), so the `void_flag` mapping can be set in config**
+      (D3). Any non-blank value without a mapping is reported, not
+      guessed
+- [ ] Count exact duplicates (D4) and compare with the ~556 in the docs
+- [ ] Count zero-value lines with quantity (free goods)
+- [ ] Distinct channel and branch labels, for the label maps
 
 ## 11. Decisions
 Recorded from the spec review. Reasoning kept from the original
@@ -153,10 +170,9 @@ Every excluded row is recorded in `silver.excluded_rows` with the
 reason. Config: `duplicates.exclude_from_net_sales: true`. The data
 quality report states the excluded count and revenue effect. Free-goods
 lines (zero value with quantity) stay flagged, not excluded.
-Why: extra copies would double-count revenue if kept. Doing the
-exclusion in silver/gold with an audit table keeps bronze and
-data/raw intact and the choice reversible by config. Whether they are
-true duplicates or repeated orders is still for the client to confirm.
+Why: Provisional: assumed to be load duplicates. If the client
+confirms they are genuine repeated lines, set
+`duplicates.exclude_from_net_sales` to false.
 Supersedes: the earlier decision "kept and flagged, not excluded".
 
 **D5. Order-line key. DECIDED.**

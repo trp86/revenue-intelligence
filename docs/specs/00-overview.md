@@ -44,8 +44,9 @@ should the team do next. Not a reporting dashboard.
 
 ## 5. Principles (binding on all specs)
 1. Python/SQL calculates; Gemini communicates.
-2. Flag, never delete (sole exception: the documented stray row,
-   spec 01 decision D1).
+2. Flag, never delete from bronze or data/raw. The only exclusions
+   are the documented stray row (D1) and exact duplicates (D4),
+   done in silver/gold and recorded in `silver.excluded_rows`.
 3. Net sales is provisional and defined once, from config.
 4. Every number shows its definition; every recommendation links to
    evidence.

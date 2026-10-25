@@ -7,7 +7,7 @@ Status: DRAFT. FR-D1, FR-D2, FR-D5.
 |---|---|
 | Ingest RAW SCJ SALES and July 2019 closing report to bronze | Other workbooks (decisions.md section 2) |
 | Header detection, duplicate column handling | Gold modelling (spec 02) |
-| Silver typing, normalisation, flags | Merging near-duplicate customer codes |
+| Silver typing, normalisation, flags, exclusion marking | Merging near-duplicate customer codes |
 | Data quality report and reconciliation | Fixing the source data |
 
 ## 2. Inputs and outputs
@@ -38,37 +38,46 @@ Status: DRAFT. FR-D1, FR-D2, FR-D5.
 | S2 | Unparseable values become NULL and set flag `f_bad_<col>`; row kept |
 | S3 | Channel and branch label normalisation via a config mapping table; unmapped labels kept as-is and flagged `f_unmapped_label` |
 | S4 | Customer identity: code is the key. Multiple name spellings / branches per code are recorded in `silver_customer_codes` with counts. Near-duplicate codes are NOT merged |
-| S5 | `f_exact_duplicate`: row identical to another on all source columns. First occurrence by `_source_row` is `is_first = true`. Known count in docs: 556 exact duplicates; the report must show the actual value. Kept and flagged, not excluded (decision D4); `_source_row` is the tie-breaker (decision D5) |
-| S6 | `f_blank_void`: Void is blank/NULL. Treated as "not void" per `void.blank_means` (decision D3, provisional); the row is kept and flagged, so the choice stays visible |
-| S7 | `f_zero_value_with_qty`: net sales = 0 and quantity > 0 (possible free goods) |
+| S5 | Exact duplicate (decision D4): all source columns identical except `_source_row` (lineage columns are ignored). Within each identical group the first occurrence (lowest `_source_row`) is kept and has `is_duplicate = false`; every extra copy has `is_duplicate = true`, `is_excluded = true`, `exclusion_reason = 'exact_duplicate'`. Known count in docs: 556; the report must show the actual value. Bronze is never modified; silver keeps every row |
+| S6 | `void_flag` (decision D3, provisional): when the source Void is blank/NULL, `void_flag = 0` (not void), per `void.blank_means`. The original value stays untouched in the original Void column. `f_blank_void` is also set so the assumption stays visible and counted. Mapping of non-blank Void values to `void_flag` comes from profiling and is kept in config [x]. `void_flag` alone does not exclude a row |
+| S7 | `f_zero_value_with_qty`: net sales = 0 and quantity > 0 (possible free goods). Flagged only, never excluded |
 | S8 | `f_negative_qty` / `f_negative_value` for returns or credits (treated as data, not errors) |
-| S9 | The documented stray row (decision D1) is the only row that may be excluded. Definition: a row where "Change to Ctn" = 1 and every other source column is blank; expected near `_source_row` 662,135. Flagged `f_stray_row`, excluded from silver, listed by `_source_row` in the report. If more than one row matches, the build fails and asks for review rather than excluding them |
-| S10 | Silver row count equals bronze row count minus rows flagged `f_stray_row` |
+| S9 | Stray row (decision D1): the row where only "Change to Ctn" = 1 (all other columns blank), expected near `_source_row` 662,135. Silver keeps it with `is_excluded = true`, `exclusion_reason = 'stray_row'`, `f_stray_row = true`; gold excludes it. If more than one row matches, the build fails for review |
+| S10 | Silver keeps every bronze row: `count(silver_sales) = count(bronze)`. Excluded rows are exactly the rows with `is_excluded = true`; the only reasons allowed are `stray_row` and `exact_duplicate`. No other rule may set `is_excluded` |
+| S12 | `silver.excluded_rows` records every excluded row: `_source_row`, `exclusion_reason`, `duplicate_of_source_row` (nullable, the kept first occurrence), the six candidate amount columns, `excluded_at`. Written by the build, never edited by hand. Row-level detail stays in the warehouse file and is never printed to issues, PRs or logs |
 | S11 | Six candidate amount columns are all typed and kept; none is dropped (choice happens in spec 02) |
 
 ## 5. Quality report
 One row per rule: `rule_id`, description, `rows_affected`,
-`pct_rows` , `net_sales_impact`, `action_taken` (flagged / excluded),
+`pct_rows`, `net_sales_impact`, `action_taken` (flagged / excluded),
 severity. Output as table and markdown. Counts and aggregates only;
 no customer-level values.
+
+The report has an **Exclusions** block stating, per reason
+(`exact_duplicate`, `stray_row`): the excluded row count and the
+revenue effect (sum of each candidate amount column over the excluded
+rows, and as % of the total for the configured net sales field).
 
 ## 6. Reconciliation
 | ID | Check | Tolerance (config) |
 |---|---|---|
 | R1 | Bronze rows = Excel data rows | 0 |
-| R2 | Silver rows = bronze rows - stray rows | 0 |
+| R2 | `count(silver_sales)` = bronze rows; `count(silver.excluded_rows)` = rows with `is_excluded`; stray rows = 1 (or the number found by D1 profiling) | 0 |
 | R3 | Sum of each candidate amount column: bronze (cast) = silver | 0.01 |
 | R4 | Distinct customers, products, date min/max reported and compared with docs figures (about 12k, 181, 2017-07-02..2020-02-29) | informational, warn if outside +/- [x]% |
 | R5 | Net sales by branch/month versus July 2019 closing report, for months it covers | [x]% |
 | R6 | Pivots used as fixtures: pivot totals equal SQL totals | 0.01 |
+| R7 | Totals reconcile with and without exclusions, for every candidate amount column: `sum(silver_sales)` = `sum(fact_sales)` + `sum(silver.excluded_rows)` | 0.01 |
+| R8 | Every `exact_duplicate` row in `excluded_rows` has an identical twin (all source columns) at a lower `_source_row` that is not excluded | 0 |
 
 ## 7. Configurable parameters
 | Key | Default |
 |---|---|
 | `ingest.sheets` | `RAW SCJ SALES` |
 | `ingest.expected_columns` | list of the 75 source column names after suffixing, filled from profiling (decision D2) |
-| `void.blank_means` | `not_void` (provisional) |
-| `duplicates.exclude_from_net_sales` | `false` (provisional) |
+| `void.blank_means` | `not_void` (provisional; sets `void_flag = 0`) |
+| `duplicates.exclude_from_net_sales` | `true` (provisional). Gold `fact_sales` omits the extra copies. If `false`, gold keeps them (still flagged) and the report shows both totals |
+| `duplicates.key_columns` | all source columns except `_source_row` (from `ingest.expected_columns`) |
 | `ingest.header_search_rows` | 30 |
 | `ingest.header_min_match` | 0.8 of expected columns |
 | `labels.channel_map` / `labels.branch_map` | empty, filled from profiling |
@@ -90,9 +99,15 @@ no customer-level values.
 - [ ] Duplicate column fixture yields `name_1`, `name_2`
 - [ ] R1-R3 pass on the real file; R5 reported
 - [ ] Each flag has a test with a crafted row
-- [ ] No row deleted except `f_stray_row` (count test)
+- [ ] Bronze is unchanged by the build (file hash before and after)
+- [ ] `count(silver_sales)` = bronze rows; no silver row is dropped (count test)
+- [ ] Excluded rows counted: `count(silver.excluded_rows)` = stray rows + extra duplicate copies = rows with `is_excluded`; actual value reported against the ~556 in the docs
+- [ ] Duplicate fixture: 3 identical rows keep only the lowest `_source_row`; rows differing in one column are not duplicates; `is_duplicate` and `exclusion_reason` are set on the extra copies only
 - [ ] Stray-row fixture: only the row with "Change to Ctn" = 1 and all else blank is excluded; a second match fails the build
-- [ ] Blank-Void and duplicate rows are present in silver and flagged; net sales is unchanged by `f_exact_duplicate` while `duplicates.exclude_from_net_sales` is false
+- [ ] Blank-Void fixture: blank Void gives `void_flag = 0` and `f_blank_void = true`; the original Void column is unchanged
+- [ ] Totals reconcile with and without exclusions (R7) for all six amount columns; with `duplicates.exclude_from_net_sales = false` the gold total equals the silver total minus stray rows only
+- [ ] Free-goods fixture (zero value, quantity > 0) is flagged `f_zero_value_with_qty` and not excluded
+- [ ] Quality report states the excluded count and revenue effect per reason
 - [ ] Quality report lists every rule S1-S11 with counts
 - [ ] Re-run produces identical content hash (excluding timestamps)
 
@@ -109,7 +124,7 @@ columns blank), at about source row 662,135. The first profiling
 story confirms the exact row and lists it in the quality report.
 Why: the docs mention a stray row without a location; it is the
 only permitted exclusion, so it must be identified precisely and
-audited (see S9, S10).
+audited (see S9, S10, S12).
 
 **D2. Source sheet RAW SCJ SALES. DECIDED.**
 3 blank rows, header on row 7, data from row 8, 75 columns, duplicate
@@ -120,15 +135,29 @@ Why: header detection needs a reference list, and keeping it in
 config avoids hard-coding.
 
 **D3. Blank Void. DECIDED (provisional, client to confirm).**
-Blank Void is treated as "not void" (`void.blank_means: not_void`)
-and flagged `f_blank_void`.
+When the source Void is blank, `void_flag = 0` (not void). The
+original value stays in the original column
+(`void.blank_means: not_void`), and `f_blank_void` keeps the
+assumption visible.
 Why: unblocks net sales without hiding the issue. If the client says
 otherwise, change the config value through a PR.
+Supersedes: the earlier wording (same meaning, now with an explicit
+`void_flag` column).
 
-**D4. 556 exact duplicates. DECIDED (provisional, client to confirm).**
-Kept and flagged (`duplicates.exclude_from_net_sales: false`).
-Why: decisions say flag, never delete; whether they are true
-duplicates or repeated orders is a client call.
+**D4. Exact duplicates. DECIDED (provisional, client to confirm).**
+Excluded. Definition: all source columns identical except
+`_source_row`. The first occurrence (lowest `_source_row`) is kept.
+Bronze is never modified. Silver keeps every row with `is_duplicate`
+and an exclusion reason. Gold `fact_sales` excludes the extra copies.
+Every excluded row is recorded in `silver.excluded_rows` with the
+reason. Config: `duplicates.exclude_from_net_sales: true`. The data
+quality report states the excluded count and revenue effect. Free-goods
+lines (zero value with quantity) stay flagged, not excluded.
+Why: extra copies would double-count revenue if kept. Doing the
+exclusion in silver/gold with an audit table keeps bronze and
+data/raw intact and the choice reversible by config. Whether they are
+true duplicates or repeated orders is still for the client to confirm.
+Supersedes: the earlier decision "kept and flagged, not excluded".
 
 **D5. Order-line key. DECIDED.**
 There is no stable order-line key. `_source_row` is used for lineage
@@ -136,4 +165,6 @@ and duplicate logic.
 Why: needed for the duplicate rule (S5) and for audit.
 
 ## 12. OPEN QUESTIONS
-None open in this spec. D3 and D4 await client confirmation.
+None open in this spec. D3 and D4 await client confirmation. If D4
+is reversed, set `duplicates.exclude_from_net_sales: false` and
+rebuild silver and gold.

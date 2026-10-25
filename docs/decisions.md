@@ -22,10 +22,14 @@ where can we generate extra revenue, why, and what should we do?
 ## 3. Open business questions (use defaults in config until answered)
 - Net sales field (provisional: Net AMOUNT, labelled in the UI).
 - Meaning of blank Void: DECIDED (provisional, client to confirm):
-  blank means "not void", flagged. See spec 01 D3.
-- 556 exact duplicates: DECIDED (provisional, client to confirm):
-  kept and flagged, not excluded. See spec 01 D4. Free goods
-  (zero value with quantity) are flagged, not excluded.
+  blank Void sets void_flag = 0 (not void); the original value is
+  kept. See spec 01 D3.
+- Exact duplicates: DECIDED (provisional, client to confirm):
+  excluded (all source columns identical except _source_row; first
+  occurrence kept) in silver/gold, recorded in silver.excluded_rows,
+  bronze untouched, effect stated in the quality report. See spec 01
+  D4. Free goods (zero value with quantity) are flagged, not
+  excluded.
 - Customer identity (multi-spelling and multi-branch codes). Do not
   merge near-duplicate codes.
 - Permission to send evidence to an external AI service.
@@ -44,9 +48,11 @@ inventory, promotion, forecasting, competitor and macro data.
 ## 5. Architecture
 Medallion on DuckDB, Polars at the edges, SQL in the middle.
 - Bronze: raw sheets as Parquet, all text, lineage columns. Polars.
-- Silver: typed, normalised, flagged (never delete). DuckDB SQL.
+- Silver: typed, normalised, flagged. Keeps every bronze row; marks
+  the stray row and exact duplicates as excluded and records them
+  in silver.excluded_rows. DuckDB SQL.
 - Gold: star schema (dim_customer, dim_product, dim_branch,
-  dim_date, fact_sales), marts (mart_*), opportunities (opp_*).
+  dim_date, fact_sales; excluded rows are not loaded), marts (mart_*), opportunities (opp_*).
 - App state (AI outputs, evidence snapshots, action status) lives in
   a separate app.duckdb file (DuckDB single writer).
 - Net sales is defined once, in one view, driven by config.

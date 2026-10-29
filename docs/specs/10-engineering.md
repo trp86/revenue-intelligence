@@ -52,6 +52,7 @@ frontend/                 React app
 | `revint ai generate` | Spec 05 |
 | `revint app init` | Create app.duckdb |
 | `revint serve` | Start API |
+Until the epic that owns a command implements it, the command is a stub: it validates the settings, prints "not implemented" and exits with code 3 without doing any work. Exit code 1 means invalid or missing settings; `--help` needs no settings.
 Rules: SQL files run in filename order inside one DuckDB transaction per
 stage; failure stops the stage and prints the failing file; stage run
 records written to `build_log` (counts, durations, config hash).

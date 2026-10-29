@@ -35,6 +35,8 @@ frontend/                 React app
 - Loaded into a pydantic `Settings` model; unknown keys fail; every key has a documented default.
 - Sections: `paths`, `ingest`, `labels`, `net_sales`, `void`, `duplicates`, `peer_groups`, `recovery`, `dormancy`, `whitespace`, `crosssell`, `scoring`, `value`, `backtest`, `ai`, `assistant`, `explore`, `api`, `actions`, `recon`, `asof`.
 - `asof.date` default `2020-02-29`.
+- `paths` and `asof` are required; every other section may be left out of the file and then takes its documented defaults. Within a section an unknown key fails and an out-of-range value fails naming the key.
+- `duplicates.key_columns`, when unset, is derived as `ingest.expected_columns` minus `_source_row` (`Settings.duplicate_key_columns`).
 - Business-decision changes happen through PR (process.md rule 7).
 - Env overrides only for paths and secrets, never thresholds.
 - Config hash computed and stored with each build and each backtest run. It covers the business sections only; `paths` is excluded because it is machine-specific.

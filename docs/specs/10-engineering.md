@@ -79,6 +79,8 @@ Every acceptance criterion maps to at least one named test.
 - Logs: counts and aggregates only; never customer-level values; test with a log-capture check.
 - Never write under data/raw (guard in code: raw opened read-only; test).
 - Dependencies pinned by `uv.lock`.
+- Guards live in `src/revint/guards.py` (tracked files under `data/`, tracked `.env`, non-empty values in `.env.example`) and are enforced by `tests/unit/test_guards.py`, which CI runs.
+- Raw files are opened only through `revint.ingest.raw.open_raw`: binary read-only, no mode argument, paths outside `paths.raw` refused. It logs sizes and counts only.
 
 ## 9. Edge cases
 - Windows paths and PowerShell quoting; use `pathlib`, no shell-specific scripts in code.

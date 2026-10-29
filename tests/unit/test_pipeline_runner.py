@@ -69,6 +69,8 @@ def hold_open(path: Path) -> Iterator[None]:
     finally:
         proc.kill()
         proc.wait()
+        if proc.stdout is not None:
+            proc.stdout.close()
 
 
 # AC1: files run in filename order ---------------------------------------------

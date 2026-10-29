@@ -39,6 +39,7 @@ Blocked is used at any time when something external is needed.
       comment (test name, query result or output)
 - [ ] Tests pass
 - [ ] Lint passes (ruff for Python, sqlfluff for SQL)
+- [ ] `uv run revint-gate` passes (see "Checks while there is no CI runner")
 - [ ] Docs and data dictionary updated if affected
 - [ ] PR opened with "Closes #n", reviewed and merged by a human
 - [ ] Board item moved to Done
@@ -53,6 +54,21 @@ Blocked is used at any time when something external is needed.
 6. Comment on the issue: what changed and evidence per criterion.
    Tick the criteria that are met.
 7. Open a PR with "Closes #n"; move the item to In review.
+
+## Checks while there is no CI runner
+The company GitHub has no runner for this repo, so the CI workflow
+(`.github/workflows/ci.yml`) is started by hand only and PRs show no
+CI check. Until a runner exists (issue #27):
+- `uv run revint-gate` runs the same checks as CI, in the same order:
+  ruff, sqlfluff and pytest without `realdata`. It stops at the first
+  failing step, names it, and exits non-zero.
+- A passing `uv run revint-gate` is the evidence of green checks.
+  The evidence comment on the story states that it was run and that it
+  passed, with the pass counts.
+- The reviewer can run the same command on the PR branch before
+  merging.
+- When a runner exists, issue #27 restores the `pull_request`
+  trigger and this section is removed.
 
 ## Project references
 - Repo: tpradha/revenue-intelligence (company GitHub:

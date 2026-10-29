@@ -1,7 +1,11 @@
 name: CI
 
+# Manual only: this host has no runner, so a pull_request trigger would leave a
+# queued check on every PR. Until a runner exists, `uv run revint-gate` is the
+# evidence of green checks (docs/process.md). Restoring pull_request is tracked
+# in issue #27. The commands below are the ones in src/revint/gate.py.
 on:
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read

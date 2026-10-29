@@ -1110,6 +1110,7 @@ dependencies = [
     { name = "google-genai" },
     { name = "polars" },
     { name = "pydantic" },
+    { name = "pyyaml" },
     { name = "typer" },
 ]
 
@@ -1127,6 +1128,7 @@ requires-dist = [
     { name = "google-genai" },
     { name = "polars" },
     { name = "pydantic" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "typer" },
 ]
 

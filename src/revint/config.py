@@ -12,10 +12,10 @@ import os
 from collections.abc import Mapping
 from datetime import date as Date
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SETTINGS_FILE = PROJECT_ROOT / "config" / "settings.yaml"
@@ -45,12 +45,94 @@ class AsofSettings(_Section):
     date: Date = Field(description="As-of date for the data; 2020-02-29 for the POC.")
 
 
+class IngestSettings(_Section):
+    """Bronze ingestion (spec 01 B2, B3, B7)."""
+
+    sheets: list[str] = Field(
+        default=["RAW SCJ SALES"], min_length=1, description="Sheet names to load."
+    )
+    header_search_rows: int = Field(
+        default=30, gt=0, description="How many leading rows to search for the header."
+    )
+    header_min_match: float = Field(
+        default=0.8,
+        gt=0,
+        le=1,
+        description="Share of expected_columns that must match for a row to be the header.",
+    )
+    expected_columns: list[str] = Field(
+        default=[],
+        description="The source column names after suffixing; filled from profiling (D2).",
+    )
+
+
+class VoidSettings(_Section):
+    """Void handling (spec 01 S6, decision D3, provisional)."""
+
+    blank_means: Literal["not_void", "void"] = Field(
+        default="not_void", description="What a blank Void means; not_void sets void_flag = 0."
+    )
+    value_map: dict[str, Literal[0, 1]] = Field(
+        default={},
+        description="Non-blank Void value -> void_flag (0 or 1); empty until profiling lists them.",
+    )
+
+
+class DuplicatesSettings(_Section):
+    """Exact duplicates (spec 01 S5, decision D4, provisional)."""
+
+    exclude_from_net_sales: StrictBool = Field(
+        default=True,
+        description="Whether gold omits the extra copies; silver marks them either way.",
+    )
+    key_columns: list[str] | None = Field(
+        default=None,
+        description="Columns compared for duplicates; unset means ingest.expected_columns "
+        "minus _source_row (see Settings.duplicate_key_columns).",
+    )
+
+
+class LabelsSettings(_Section):
+    """Label normalisation (spec 01 S3); filled from profiling."""
+
+    channel_map: dict[str, str] = Field(default={}, description="Source channel -> canonical.")
+    branch_map: dict[str, str] = Field(default={}, description="Source branch -> canonical.")
+
+
+class NetSalesSettings(_Section):
+    field: str = Field(
+        default="Net AMOUNT",
+        min_length=1,
+        description="Source amount column treated as net sales (provisional, decisions.md §3).",
+    )
+
+
+class ReconSettings(_Section):
+    tolerance_amount: float = Field(
+        default=0.01, ge=0, description="Allowed difference in amount reconciliation checks."
+    )
+
+
 class Settings(_Section):
     """Top-level settings. Each field is a section and needs a test module
     tests/unit/test_settings_<section>.py."""
 
     paths: PathsSettings
+    ingest: IngestSettings = Field(default_factory=IngestSettings)
+    void: VoidSettings = Field(default_factory=VoidSettings)
+    duplicates: DuplicatesSettings = Field(default_factory=DuplicatesSettings)
+    labels: LabelsSettings = Field(default_factory=LabelsSettings)
+    net_sales: NetSalesSettings = Field(default_factory=NetSalesSettings)
+    recon: ReconSettings = Field(default_factory=ReconSettings)
     asof: AsofSettings
+
+    @property
+    def duplicate_key_columns(self) -> list[str]:
+        """Columns that define an exact duplicate: `duplicates.key_columns`, or when
+        unset every expected column except the lineage key `_source_row` (S5)."""
+        if self.duplicates.key_columns is not None:
+            return list(self.duplicates.key_columns)
+        return [c for c in self.ingest.expected_columns if c != "_source_row"]
 
 
 def _format_errors(error: ValidationError) -> str:

@@ -1,7 +1,8 @@
 # Business decisions and paths. Changes go through a PR (docs/process.md rule 7).
-# Unknown or missing keys fail validation. Every key is documented here and in
-# the Settings model (src/revint/config.py). Only the paths below can be
-# overridden from the environment (REVINT_PATHS_<KEY>), never business keys.
+# Unknown or missing required keys fail validation. Every key is documented here and in
+# the Settings model (src/revint/config.py); a section left out takes its documented
+# defaults. Only the paths below can be overridden from the environment
+# (REVINT_PATHS_<KEY>), never business keys.
 #
 # Each new section needs a model in Settings and tests/unit/test_settings_<section>.py.
 
@@ -11,6 +12,37 @@ paths:
   bronze: data/bronze                    # bronze Parquet
   warehouse: data/warehouse.duckdb       # silver and gold
   app_db: data/app.duckdb                # app state (AI output, actions)
+
+# Bronze ingestion (spec 01 B2, B3, B7).
+ingest:
+  sheets:                                # sheet names to load
+    - RAW SCJ SALES
+  header_search_rows: 30                 # rows searched for the header row
+  header_min_match: 0.8                  # share of expected_columns that must match (0 to 1]
+  expected_columns: []                   # 75 source names after suffixing; filled by profiling
+
+# Void handling (spec 01 S6, decision D3: provisional, client to confirm).
+void:
+  blank_means: not_void                  # not_void -> void_flag = 0; or void
+  value_map: {}                          # non-blank Void value -> 0 or 1; filled by profiling
+
+# Exact duplicates (spec 01 S5, decision D4: provisional, client to confirm).
+duplicates:
+  exclude_from_net_sales: true           # gold omits the extra copies; silver marks them either way
+  # key_columns: unset means ingest.expected_columns minus _source_row
+
+# Label normalisation (spec 01 S3); source label -> canonical label.
+labels:
+  channel_map: {}
+  branch_map: {}
+
+# Net sales field (provisional, docs/decisions.md section 3). Defined once; gold uses it.
+net_sales:
+  field: Net AMOUNT
+
+# Reconciliation (spec 01 section 6).
+recon:
+  tolerance_amount: 0.01                 # allowed difference for amount checks
 
 asof:
   date: 2020-02-29                       # as-of date of the data

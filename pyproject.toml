@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 revint = "revint.cli:app"
+revint-gate = "revint.gate:main"
 
 [dependency-groups]
 dev = [

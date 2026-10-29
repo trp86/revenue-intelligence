@@ -73,6 +73,7 @@ Every acceptance criterion maps to at least one named test.
 - On PR: `uv sync`, ruff, sqlfluff, pytest (without realdata), frontend lint/type-check/test/build, OpenAPI drift.
 - No network calls to Gemini; no secrets needed.
 - Required to pass before a human merges. [x] runner availability on the enterprise host.
+- No runner exists on the host yet, so `ci.yml` runs on `workflow_dispatch` only and `uv run revint-gate` (`src/revint/gate.py`) runs the same checks locally; see docs/process.md. The command list lives in `gate.CHECK_STEPS`, and a test asserts `ci.yml` runs exactly those commands. Restoring the `pull_request` trigger is tracked in issue #27.
 - A secret-scan step (e.g. gitleaks) [x] if available.
 
 ## 8. Secrets and safety

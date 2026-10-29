@@ -49,11 +49,14 @@ def test_ac1_workflow_file_exists_and_is_valid_yaml(workflow: dict[str, Any]) ->
     assert "jobs" in workflow
 
 
-def test_ac1_triggers_on_pull_requests(workflow: dict[str, Any]) -> None:
+def test_ac1_is_started_by_hand_while_no_runner_exists(workflow: dict[str, Any]) -> None:
+    # Story #48: the host has no runner, so a pull_request trigger would leave a queued
+    # check on every PR. Story #27 restores pull_request once a runner exists; this test
+    # and test_gate.py::test_ac4_workflow_triggers_only_on_workflow_dispatch change then.
     # PyYAML (YAML 1.1) reads the bare key `on` as the boolean True.
     triggers = workflow.get("on", workflow.get(True))
     assert triggers is not None, "workflow has no trigger"
-    assert "pull_request" in triggers
+    assert set(triggers) == {"workflow_dispatch"}
 
 
 def test_ac1_runs_the_four_commands_in_order(workflow: dict[str, Any]) -> None:

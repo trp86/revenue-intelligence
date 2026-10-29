@@ -26,7 +26,7 @@ Status: DRAFT. FR-D1, FR-D2, FR-D5.
 |---|---|
 | B1 | Polars reads Excel; every column stored as text (no inference) |
 | B2 | Header row detected, not hard-coded: first row within `ingest.header_search_rows` where at least `ingest.header_min_match` of the expected columns (config) match. Known (decision D2): in RAW SCJ SALES there are 3 blank rows, the header is on row 7 and data starts on row 8; the detector must find row 7 and a test asserts it |
-| B3 | Duplicate column names are suffixed deterministically, in source order, as `name_1`, `name_2`, ... (decision D2); names that are unique stay unsuffixed. Mapping of source position to final name saved in `bronze_column_map`. The sheet has 75 columns |
+| B3 | Final column names (decision D2, naming rule decided on issue #31), implemented in `revint.ingest.columns`: (1) trim spaces at both ends of the source name; (2) replace each remaining space with `_`, keeping every other character; (3) names that are equal ignoring case, which includes exact repeats, are suffixed in source order as `name_1`, `name_2`, ..., each keeping its own capitalisation, because DuckDB treats column names case-insensitively; names that are unique ignoring case stay unsuffixed. Mapping of source position, raw name and final name saved in `bronze_column_map`. The sheet has 75 columns |
 | B4 | Lineage columns on every row: `_source_file`, `_sheet`, `_source_row`, `_ingested_at`, `_file_hash`. `_source_row` is the 1-based Excel row number in the sheet (decision D5), so the first data row of RAW SCJ SALES is 8 and a row "about 662,135" is read in the same numbering |
 | B5 | Row count in bronze equals data rows in the sheet (after header); logged |
 | B6 | Re-run is idempotent: same input gives identical Parquet content apart from `_ingested_at` |
@@ -76,7 +76,7 @@ rows, and as % of the total for the configured net sales field).
 |---|---|
 | `ingest.sheets` | `RAW SCJ SALES` |
 | `ingest.expected_columns` | list of the 75 source column names after suffixing, filled from profiling (decision D2) |
-| `void.blank_means` | `not_void` (provisional; sets `void_flag = 0`) |
+| `void.blank_means` | `not_void` (provisional; sets `void_flag = 0`) |
 | `void.value_map` | empty until the first profiling story lists the distinct Void values (section 10a); unmapped non-blank values are reported |
 | `duplicates.exclude_from_net_sales` | `true` (provisional). Controls gold only: when `true`, `fact_sales` omits the extra copies; when `false`, gold keeps them (still flagged `is_duplicate`) and the report shows both totals. Silver marks and records them either way |
 | `duplicates.key_columns` | all source columns except `_source_row` (from `ingest.expected_columns`) |
@@ -135,6 +135,8 @@ are counts and aggregates only, never customer-level values.
 - [ ] Count exact duplicates (D4) and compare with the ~556 in the docs
 - [ ] Count zero-value lines with quantity (free goods)
 - [ ] Distinct channel and branch labels, for the label maps
+
+Profiling results (story #31, counts and aggregates from `uv run python -m revint.ingest.profile`): header row 7, data from row 8 to row 662134 (662,127 rows), 75 columns, exactly one stray row candidate at `_source_row` 662135, 556 exact-duplicate extra copies in 547 groups (matches the docs figure), two distinct Void values (`Unvoid` and blank). The 75 final names are in `config/settings.yaml` (`ingest.expected_columns`). `Void` has no mapping yet: `void.value_map` stays empty until a human supplies it.
 
 ## 11. Decisions
 Recorded from the spec review. Reasoning kept from the original

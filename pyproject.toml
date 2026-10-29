@@ -12,6 +12,7 @@ dependencies = [
     "typer",
     "google-genai",
     "pyyaml>=6.0.3",
+    "fastexcel>=0.21.0",
 ]
 
 [project.scripts]
@@ -23,6 +24,7 @@ dev = [
     "pytest",
     "ruff",
     "sqlfluff",
+    "xlsxwriter>=3.3.1",
 ]
 
 [build-system]

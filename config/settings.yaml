@@ -19,7 +19,82 @@ ingest:
     - RAW SCJ SALES
   header_search_rows: 30                 # rows searched for the header row
   header_min_match: 0.8                  # share of expected_columns that must match (0 to 1]
-  expected_columns: []                   # 75 source names after suffixing; filled by profiling
+  expected_columns:                      # 75 final names (spec 01 B3), from profiling (#31)
+    - OrderReference
+    - VoucherNo
+    - CustomerCode
+    - Customer
+    - SalemanName
+    - SALES_MAN_RBD
+    - KAM
+    - SalePlanDay
+    - Date
+    - SCJ_FISCAL_YEAR
+    - SCJ_FISCAL_HALF_YEAR
+    - QTR
+    - Year
+    - Month
+    - SWE_ZIN_MONTH
+    - SCJ_FISCAL_MONTH
+    - PaymentType
+    - Paid
+    - Void
+    - SAP_CODE
+    - SCJ_CODE_1
+    - Product_Decription
+    - SCJ_CODE_2
+    - UOM
+    - FOB
+    - TOTAL_FOB_IN_AMOUNT
+    - Internal_Category
+    - SCJ_VOLVAL_FILE
+    - FRAGRANCES
+    - Size
+    - Actual_Brands_1
+    - SCJ_SEGMENT
+    - Actual_Brands_2
+    - Sticker_(Individual/Shared)
+    - Sticker_Size
+    - Selling_Price
+    - Selling_Amount
+    - RBD_DISCOUNT_AMOUNT
+    - Quantity(PCS)
+    - Change_to_Ctn
+    - PRICE
+    - NET_AMOUNT_1
+    - DISCOUNT_1
+    - AMOUNT_AF_DIS
+    - Discount_2
+    - Net_Amount_2
+    - Back_Margin_3%
+    - Net_AMOUNT_3
+    - CT_5%
+    - TAX_AMOUNT
+    - "price_LEVEL_ျပန္ေရြးရန္"
+    - UnitPrice
+    - Original_price
+    - Diff_Price
+    - Diff_Amount
+    - Discount(%)_1
+    - Discount(%)_2
+    - DiscountAmount
+    - Tax
+    - SaleTeam
+    - PaymentTerm
+    - Channel_Type
+    - RBD_CHANNEL_BREAKDOWN
+    - Channel_Category
+    - SCJ_CHAIN_2
+    - SCJ_CHANNEL
+    - Chain_Type
+    - Chain_Name
+    - DC
+    - TOWNSHIP
+    - CITY/TOWN
+    - Branch_Name
+    - SCJ_CITIES
+    - Branch_Type
+    - Region
 
 # Void handling (spec 01 S6, decision D3: provisional, client to confirm).
 void:

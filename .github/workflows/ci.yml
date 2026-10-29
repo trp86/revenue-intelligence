@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync
+      - name: Ruff
+        run: uv run ruff check .
+      - name: Sqlfluff
+        run: uv run sqlfluff lint sql
+      - name: Pytest
+        run: uv run pytest -m "not realdata"

@@ -11,6 +11,7 @@ dependencies = [
     "pydantic",
     "typer",
     "google-genai",
+    "pyyaml>=6.0.3",
 ]
 
 [dependency-groups]

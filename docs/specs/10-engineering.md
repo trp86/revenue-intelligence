@@ -37,7 +37,9 @@ frontend/                 React app
 - `asof.date` default `2020-02-29`.
 - Business-decision changes happen through PR (process.md rule 7).
 - Env overrides only for paths and secrets, never thresholds.
-- Config hash computed and stored with each build and each backtest run.
+- Config hash computed and stored with each build and each backtest run. It covers the business sections only; `paths` is excluded because it is machine-specific.
+- Relative `paths` resolve against the project root. Env overrides use `REVINT_PATHS_<KEY>` (for example `REVINT_PATHS_RAW`); no other key is read from the environment.
+- Every section added to `Settings` ships with its own test module `tests/unit/test_settings_<section>.py`; a test fails if a section has none.
 
 ## 5. CLI (typer, `revint`)
 | Command | Does |

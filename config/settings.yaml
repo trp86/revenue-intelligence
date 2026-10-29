@@ -1,0 +1,16 @@
+# Business decisions and paths. Changes go through a PR (docs/process.md rule 7).
+# Unknown or missing keys fail validation. Every key is documented here and in
+# the Settings model (src/revint/config.py). Only the paths below can be
+# overridden from the environment (REVINT_PATHS_<KEY>), never business keys.
+#
+# Each new section needs a model in Settings and tests/unit/test_settings_<section>.py.
+
+# Relative paths resolve against the project root, not the working directory.
+paths:
+  raw: data/raw                          # source Excel files, read-only
+  bronze: data/bronze                    # bronze Parquet
+  warehouse: data/warehouse.duckdb       # silver and gold
+  app_db: data/app.duckdb                # app state (AI output, actions)
+
+asof:
+  date: 2020-02-29                       # as-of date of the data

@@ -21,25 +21,27 @@ def normalise_name(raw: str) -> str:
     return raw.strip().replace(" ", "_")
 
 
-def final_column_names(raw_names: Sequence[str]) -> list[str]:
+def final_column_names(raw_names: Sequence[str], allow_blank: bool = False) -> list[str]:
     """The final name for every header cell, in source order (step 3 applied).
 
-    Raises `ValueError` for an empty header cell, naming its 1-based position.
+    An empty header cell raises `ValueError` naming its 1-based position, unless
+    `allow_blank` is set: then it stays an empty name and takes no part in suffixing.
     """
     normalised = []
     for position, raw in enumerate(raw_names, start=1):
         name = normalise_name(raw)
-        if not name:
+        if not name and not allow_blank:
             raise ValueError(f"empty column name at column {position}")
         normalised.append(name)
 
-    total = Counter(name.casefold() for name in normalised)
-    taken = {name.casefold() for name in normalised if total[name.casefold()] == 1}
+    named = [name for name in normalised if name]
+    total = Counter(name.casefold() for name in named)
+    taken = {name.casefold() for name in named if total[name.casefold()] == 1}
     seen: Counter[str] = Counter()
     result: list[str] = []
     for name in normalised:
         key = name.casefold()
-        if total[key] == 1:
+        if not name or total[key] == 1:
             result.append(name)
             continue
         seen[key] += 1

@@ -104,6 +104,16 @@ def test_an_empty_header_cell_is_refused() -> None:
         final_column_names(["A", "  ", "C"])
 
 
+def test_allow_blank_keeps_empty_cells_as_empty_names_and_never_suffixes_them() -> None:
+    names = final_column_names(["A", "", "A", " ", "B"], allow_blank=True)
+    assert names == ["A_1", "", "A_2", "", "B"]
+
+
+def test_allow_blank_gives_the_same_names_as_the_strict_form_when_nothing_is_blank() -> None:
+    raw = ["SCJ CODE", "x", "SCJ CODE", "NET AMOUNT", "Net Amount"]
+    assert final_column_names(raw, allow_blank=True) == final_column_names(raw)
+
+
 def test_no_header_cells_gives_an_empty_list() -> None:
     assert final_column_names([]) == []
 

@@ -1,0 +1,20 @@
+# SQL lint for the numbered files under sql/ (spec 10 section 3).
+# `sqlfluff lint sql` exits 0 while sql/ holds no .sql files, so no placeholder
+# SQL is committed; the rules below are exercised by tests/unit/test_tooling.py.
+
+[sqlfluff]
+dialect = duckdb
+max_line_length = 100
+
+# Code standards: lowercase keywords.
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.types]
+extended_capitalisation_policy = lower

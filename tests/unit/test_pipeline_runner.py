@@ -15,6 +15,7 @@ import duckdb
 import pytest
 from pydantic import BaseModel
 
+from revint.config import load_settings
 from revint.pipeline import (
     EXIT_STAGE_FAILED,
     EXIT_WAREHOUSE_LOCKED,
@@ -414,13 +415,12 @@ def test_ac3_a_dollar_name_inside_a_string_literal_is_not_a_parameter(
 
 
 def test_ac3_parameter_names_are_section_then_key() -> None:
-    from revint.config import load_settings
-
     params = settings_parameters(load_settings(env={}))
     assert params["asof_date"] == date(2020, 2, 29)
     assert params["net_sales_field"] == "Net AMOUNT"
     assert params["ingest_sheets"] == ["RAW SCJ SALES"]
-    assert params["duplicates_key_columns"] == []
+    # Derived from ingest.expected_columns minus _source_row (filled by story #31).
+    assert params["duplicates_key_columns"] == load_settings(env={}).duplicate_key_columns
     assert list(params) == sorted(set(params), key=list(params).index), "names are unique"
 
 

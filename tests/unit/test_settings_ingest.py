@@ -12,7 +12,16 @@ def test_ac1_committed_config_has_the_spec_01_defaults() -> None:
     assert ingest.sheets == ["RAW SCJ SALES"]
     assert ingest.header_search_rows == 30
     assert ingest.header_min_match == 0.8
-    assert ingest.expected_columns == []
+
+
+def test_ac1_committed_config_lists_the_75_final_column_names() -> None:
+    # Filled by story #31 from the real header; names follow spec 01 B3.
+    columns = load_settings(env={}).ingest.expected_columns
+    assert len(columns) == 75
+    assert len({c.casefold() for c in columns}) == 75, "no two names equal ignoring case"
+    assert not [c for c in columns if " " in c or c != c.strip()]
+    assert columns[45] == "Net_Amount_2"  # source column 46
+    assert columns[38] == "Quantity(PCS)"  # source column 39
 
 
 def test_ac1_defaults_apply_when_the_section_is_absent(load_with) -> None:
@@ -20,6 +29,7 @@ def test_ac1_defaults_apply_when_the_section_is_absent(load_with) -> None:
     assert ingest.sheets == ["RAW SCJ SALES"]
     assert ingest.header_search_rows == 30
     assert ingest.header_min_match == 0.8
+    assert ingest.expected_columns == []
 
 
 def test_ac1_values_from_the_file_override_the_defaults(load_with) -> None:

@@ -2,7 +2,7 @@
 --
 -- Silver keeps every bronze row. A row is excluded by setting is_excluded = true and giving
 -- the reason; it is never deleted. The only reasons allowed are stray_row and
--- exact_duplicate (S10); 06_checks.sql fails the stage if any other reason appears.
+-- exact_duplicate (S10); 07_checks.sql fails the stage if any other reason appears.
 -- Whether gold omits the rows is decided in gold (spec 02). This file does not read
 -- duplicates.exclude_from_net_sales, so is_excluded and silver_excluded_rows are the same
 -- whichever way that setting is (S5).
@@ -17,7 +17,7 @@ alter table silver_sales add column is_duplicate boolean default false;
 -- S9, D1: the stray row is the row where "Change to Ctn" is 1 and every other source cell
 -- is blank. Every source column is looked at, so a new column cannot hide a second value.
 -- Blank means NULL, empty or only spaces (silver_text). The number of matching rows is
--- checked in 06_checks.sql: more than one matching row fails the build for review.
+-- checked in 07_checks.sql: more than one matching row fails the build for review.
 create or replace temp table stray_rows as
 with candidates as (
     select * exclude (_source_file, _sheet, _ingested_at, _file_hash)

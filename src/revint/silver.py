@@ -34,7 +34,7 @@ AMOUNT_COLUMNS = (
     "TAX_AMOUNT",
 )
 
-# S10: the only reasons for which silver marks a row as excluded. `06_checks.sql` fails the
+# S10: the only reasons for which silver marks a row as excluded. `07_checks.sql` fails the
 # stage if any other reason appears; a test compares this tuple with that file.
 ALLOWED_EXCLUSION_REASONS = ("stray_row", "exact_duplicate")
 
@@ -147,6 +147,26 @@ def check_duplicate_key_columns(path: Path, settings: Settings) -> None:
         )
 
 
+def check_value_flag_columns(settings: Settings) -> None:
+    """The columns the value flags read must be typed numbers (S7, S8).
+
+    A text column cannot be tested for zero or below, so naming one in config fails the build
+    with the key name, before the SQL would fail with a type error.
+    """
+    net = settings.net_sales
+    not_numeric = [c for c in net.candidate_columns if column_type(c) not in {"decimal", "integer"}]
+    if not_numeric:
+        raise SilverError(
+            "net_sales.candidate_columns names columns that silver does not type as numbers: "
+            + ", ".join(not_numeric)
+        )
+    if column_type(net.quantity_field) not in {"decimal", "integer"}:
+        raise SilverError(
+            f"net_sales.quantity_field '{net.quantity_field}' is not a typed number "
+            "column in silver"
+        )
+
+
 def run_silver(settings: Settings) -> SilverResult:
     """Build `silver_sales` in the warehouse from the bronze file.
 
@@ -156,6 +176,7 @@ def run_silver(settings: Settings) -> SilverResult:
     bronze = find_bronze_file(settings)
     check_bronze_columns(bronze, settings)
     check_duplicate_key_columns(bronze, settings)
+    check_value_flag_columns(settings)
     expected_rows = bronze_row_count(bronze)
     try:
         stage = run_stage(

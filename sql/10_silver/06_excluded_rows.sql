@@ -4,7 +4,8 @@
 -- rebuilt in full on every silver build.
 --
 -- It runs after every file that can exclude a row (03_exclusions.sql for the stray row,
--- 04_duplicates.sql for exact duplicates), so it holds all of them.
+-- 04_duplicates.sql for exact duplicates), so it holds all of them. 05_value_flags.sql only
+-- flags rows and excludes none.
 -- duplicate_of_source_row is the kept first occurrence for an exact duplicate and NULL for
 -- a stray row. excluded_at is one UTC timestamp for the whole build.
 create or replace table silver_excluded_rows as

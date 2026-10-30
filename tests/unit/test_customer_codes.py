@@ -190,7 +190,7 @@ def test_ac1_the_lines_add_up_to_the_kept_rows_with_a_code(silver_settings: Sett
 def test_ac1_a_broken_customer_table_fails_the_checks(
     silver_settings: Settings, tmp_path: Path
 ) -> None:
-    files = {"08b_break.sql": "delete from silver_customer_codes where customer_code = 'C1';"}
+    files = {"09b_break.sql": "delete from silver_customer_codes where customer_code = 'C1';"}
     with pytest.raises(StageError, match=r"99_checks\.sql.*customer"):
         run_custom_stage(silver_settings, [line(8, "C1"), line(9, "C2")], tmp_path / "s", files)
 
@@ -277,7 +277,7 @@ def test_ac3_a_failed_check_names_counts_never_a_code_or_name(
     silver_settings: Settings, tmp_path: Path
 ) -> None:
     files = {
-        "08b_break.sql": "delete from silver_customer_codes where customer_code = 'SECRET-CODE';"
+        "09b_break.sql": "delete from silver_customer_codes where customer_code = 'SECRET-CODE';"
     }
     rows = [line(8, "SECRET-CODE", "SECRET-NAME"), line(9, "C2")]
     with pytest.raises(StageError) as info:
@@ -319,7 +319,7 @@ def test_the_code_name_and_branch_columns_come_from_config(load_with) -> None:
 
 
 def test_no_silver_sql_file_hard_codes_the_customer_columns() -> None:
-    text = (SILVER_DIR / "08_customer_codes.sql").read_text(encoding="utf-8")
+    text = (SILVER_DIR / "09_customer_codes.sql").read_text(encoding="utf-8")
     code_lines = [line for line in text.splitlines() if not line.lstrip().startswith("--")]
     body = "\n".join(code_lines)
     # the source column names are never written in the SQL itself, only the config parameters
@@ -346,8 +346,8 @@ def test_a_customer_column_missing_from_the_bronze_file_fails_the_build(load_wit
 
 def test_the_customer_table_is_built_after_the_audit_table_and_before_the_checks() -> None:
     names = sorted(p.name for p in SILVER_DIR.glob("*.sql"))
-    assert names.index("07_excluded_rows.sql") < names.index("08_customer_codes.sql")
-    assert names.index("08_customer_codes.sql") < names.index("99_checks.sql")
+    assert names.index("08_excluded_rows.sql") < names.index("09_customer_codes.sql")
+    assert names.index("09_customer_codes.sql") < names.index("99_checks.sql")
 
 
 def test_silver_sales_is_unchanged_by_the_customer_table(silver_settings: Settings) -> None:

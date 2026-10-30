@@ -11,7 +11,13 @@ import pytest
 import xlsxwriter
 import yaml
 
-from revint.config import CustomersSettings, NetSalesSettings, Settings, load_settings
+from revint.config import (
+    CustomersSettings,
+    LabelsSettings,
+    NetSalesSettings,
+    Settings,
+    load_settings,
+)
 
 BASE: dict[str, Any] = {
     "paths": {
@@ -31,8 +37,8 @@ def load_with(tmp_path: Path) -> Callable[..., Settings]:
     `extra` maps a section name to its keys. Pass `name` to load two different
     files in one test.
 
-    A test that gives its own `ingest.expected_columns` list but no `net_sales` or
-    `customers` section gets sections that fit the list (the settings check those column
+    A test that gives its own `ingest.expected_columns` list but no `net_sales`,
+    `customers` or `labels` section gets sections that fit the list (the settings check those column
     names against it): the real defaults when the list contains them, otherwise the list's
     first column. To test the real defaults against a list that lacks them, pass the section
     explicitly, even as `{}`.
@@ -47,6 +53,8 @@ def load_with(tmp_path: Path) -> Callable[..., Settings]:
             net_wanted = {net.field, net.quantity_field, *net.candidate_columns}
             cust = CustomersSettings()
             cust_wanted = {cust.code_column, cust.name_column, cust.branch_column}
+            lab = LabelsSettings()
+            lab_wanted = {*lab.channel_columns, *lab.branch_columns}
             if "net_sales" not in sections:
                 sections["net_sales"] = (
                     {}
@@ -58,6 +66,12 @@ def load_with(tmp_path: Path) -> Callable[..., Settings]:
                     {}
                     if cust_wanted <= set(columns)
                     else {"code_column": first, "name_column": first, "branch_column": first}
+                )
+            if "labels" not in sections:
+                sections["labels"] = (
+                    {}
+                    if lab_wanted <= set(columns)
+                    else {"channel_columns": [first], "branch_columns": [first]}
                 )
         path = tmp_path / name / "config" / "settings.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)

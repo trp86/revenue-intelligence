@@ -106,10 +106,24 @@ duplicates:
   exclude_from_net_sales: true           # gold omits the extra copies; silver marks them either way
   # key_columns: unset means ingest.expected_columns minus _source_row
 
-# Label normalisation (spec 01 S3); source label -> canonical label.
+# Label normalisation (spec 01 S3). A map turns a source label into its canonical name; a
+# label with no entry is kept as it is and flagged f_unmapped_label. Matching is exact text
+# after trimming both ends, case-sensitive. Only the obvious spelling variants are mapped
+# (maintainer's decision on issue #37); every other label stays unmapped until a person adds it.
 labels:
-  channel_map: {}
-  branch_map: {}
+  channel_columns:                       # columns whose values are channel labels
+    - Channel_Category
+  branch_columns:                        # columns whose values are branch labels
+    - Branch_Name
+  channel_map:
+    MODERN TRADE: Modern Trade
+    MT: Modern Trade
+  branch_map:
+    MAGWAY: Magway
+    Hpa-an: Hpa-An
+    PyinooLwin: Pyinoolwin
+    PYAY: Pyay
+    DAWEI: Dawei
 
 # Net sales (provisional, client to confirm; docs/decisions.md section 3). Defined once; gold
 # uses it. Names are the final column names listed in ingest.expected_columns.

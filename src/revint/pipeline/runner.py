@@ -81,10 +81,16 @@ def flatten_parameters(
 ) -> dict[str, Any]:
     """Flatten a settings model to `{section_key: value}` SQL parameters.
 
-    `skip` names top-level fields to leave out. Mappings are not parameters. Two
-    fields that would get the same name are refused.
+    `skip` names top-level fields to leave out. A mapping is not itself a parameter: it is
+    given as two lists in the same order, `<name>_keys` and `<name>_values`, which SQL joins
+    with `unnest`. Two fields that would get the same name are refused.
     """
     found: dict[str, Any] = {}
+
+    def put(name: str, value: Any) -> None:
+        if name in found:
+            raise ValueError(f"parameter name collision: {name}")
+        found[name] = value
 
     def add(current: BaseModel, path: str, omit: frozenset[str]) -> None:
         for field_name in type(current).model_fields:
@@ -95,11 +101,10 @@ def flatten_parameters(
             if isinstance(value, BaseModel):
                 add(value, name, frozenset())
             elif isinstance(value, dict):
-                continue
-            elif name in found:
-                raise ValueError(f"parameter name collision: {name}")
+                put(f"{name}_keys", list(value.keys()))
+                put(f"{name}_values", list(value.values()))
             else:
-                found[name] = list(value) if isinstance(value, list) else value
+                put(name, list(value) if isinstance(value, list) else value)
 
     add(model, prefix, skip)
     return found
@@ -231,9 +236,7 @@ def run_stage(
     params = settings_parameters(settings)
     clashing = sorted(set(extra_parameters or {}) & set(params))
     if clashing:
-        raise StageError(
-            f"extra parameters clash with settings parameters: {', '.join(clashing)}"
-        )
+        raise StageError(f"extra parameters clash with settings parameters: {', '.join(clashing)}")
     params.update(extra_parameters or {})
     try:
         plan = _plan(stage_dir, params)

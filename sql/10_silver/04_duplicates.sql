@@ -17,7 +17,7 @@
 -- Nothing is deleted: the copy stays in silver_sales (S10).
 --
 -- The stray row can also be a member of a group only if another stray row exists, and two
--- stray rows already fail the build (07_checks.sql), so a stray row is never a copy.
+-- stray rows already fail the build (99_checks.sql), so a stray row is never a copy.
 
 create or replace temp macro silver_blank_to_null(x) as
 case when silver_text(x) is null then null else x end;

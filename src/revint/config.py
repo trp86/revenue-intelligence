@@ -101,10 +101,52 @@ class DuplicatesSettings(_Section):
 
 
 class LabelsSettings(_Section):
-    """Label normalisation (spec 01 S3); filled from profiling."""
+    """Label normalisation (spec 01 S3).
 
+    A map turns a source label into its canonical name; a label with no entry is kept as it is
+    and flagged. The columns the labels come from are listed separately, because a flat map
+    has no column in it. Channel labels come from `Channel_Category` and branch labels from
+    `Branch_Name` (maintainer's decision on issue #37), and the maps hold only the obvious
+    spelling variants. Column names are final names (spec 01 B3); the cross-check against
+    `ingest.expected_columns` is in `Settings`.
+    """
+
+    channel_columns: list[str] = Field(
+        default=["Channel_Category"],
+        min_length=1,
+        description="Columns whose values are channel labels.",
+    )
+    branch_columns: list[str] = Field(
+        default=["Branch_Name"],
+        min_length=1,
+        description="Columns whose values are branch labels.",
+    )
     channel_map: dict[str, str] = Field(default={}, description="Source channel -> canonical.")
     branch_map: dict[str, str] = Field(default={}, description="Source branch -> canonical.")
+
+    @field_validator("channel_columns", "branch_columns")
+    @classmethod
+    def _no_repeated_columns(cls, value: list[str]) -> list[str]:
+        repeated = sorted({name for name in value if value.count(name) > 1})
+        if repeated:
+            raise ValueError(f"names repeat: {', '.join(repeated)}")
+        return value
+
+    @field_validator("channel_map", "branch_map")
+    @classmethod
+    def _keys_and_values_are_usable(cls, value: dict[str, str]) -> dict[str, str]:
+        """A key matches after trimming both ends, so two keys that trim to the same text
+        would be ambiguous, and a blank key or value maps nothing useful."""
+        trimmed: dict[str, str] = {}
+        for key, canonical in value.items():
+            if not key.strip():
+                raise ValueError("a label key is blank")
+            if not canonical.strip():
+                raise ValueError(f"the canonical name for '{key.strip()}' is blank")
+            if key.strip() in trimmed:
+                raise ValueError(f"two keys are the same once trimmed: {key.strip()}")
+            trimmed[key.strip()] = canonical
+        return value
 
 
 class NetSalesSettings(_Section):
@@ -197,7 +239,7 @@ class Settings(_Section):
 
     @model_validator(mode="after")
     def _net_sales_columns_exist(self) -> Settings:
-        """Every net sales and customer column must be a column the sheet has (spec 02 N2).
+        """Every net sales, customer and label column must be a column the sheet has.
 
         Skipped while `ingest.expected_columns` is empty, that is before profiling has filled it.
         """
@@ -225,6 +267,12 @@ class Settings(_Section):
             column = getattr(customers, role)
             if column not in known:
                 problems.append(f"customers.{role} '{column}' is not in ingest.expected_columns")
+        for role in ("channel_columns", "branch_columns"):
+            absent = [c for c in getattr(self.labels, role) if c not in known]
+            if absent:
+                problems.append(
+                    f"labels.{role} has names not in ingest.expected_columns: {', '.join(absent)}"
+                )
         if problems:
             raise ValueError("; ".join(problems))
         return self

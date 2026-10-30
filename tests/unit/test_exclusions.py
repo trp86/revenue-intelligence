@@ -432,12 +432,12 @@ def test_ac4_an_excluded_row_missing_from_the_audit_table_fails_the_check(
     silver_settings: Settings, tmp_path: Path
 ) -> None:
     files = {
-        "07b_force.sql": (
+        "08b_force.sql": (
             "update silver_sales set is_excluded = true, exclusion_reason = 'stray_row' "
             "where _source_row = 9;"
         )
     }
-    # runs after 07_excluded_rows.sql, so the audit table lacks row 9
+    # runs after 08_excluded_rows.sql, so the audit table lacks row 9
     with pytest.raises(
         StageError, match=r"silver_excluded_rows.*differ|differ.*silver_excluded_rows"
     ):
@@ -530,7 +530,7 @@ def test_the_silver_stage_has_the_exclusion_file_between_typing_and_checks() -> 
     assert names.index("02_silver_sales.sql") < names.index("03_exclusions.sql")
     assert (
         names.index("03_exclusions.sql")
-        < names.index("07_excluded_rows.sql")
+        < names.index("08_excluded_rows.sql")
         < names.index("99_checks.sql")
     )
     assert "03_checks.sql" not in names and "04_checks.sql" not in names

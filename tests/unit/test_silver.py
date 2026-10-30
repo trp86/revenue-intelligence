@@ -279,7 +279,8 @@ def test_ac2_silver_holds_all_75_source_columns_the_raw_twins_and_the_lineage(
     # (is_excluded, exclusion_reason, f_stray_row, is_duplicate; duplicate_of_source_row)
     # + 3 value flags (f_zero_value_with_qty, f_negative_qty, f_negative_value)
     # + 3 void columns (void_flag, f_blank_void, f_unmapped_void)
-    assert len(names) == len(EXPECTED) + 2 * len(typed) + 6 + 5 + 3 + 3
+    # + 3 label columns (Channel_Category_normalised, Branch_Name_normalised, f_unmapped_label)
+    assert len(names) == len(EXPECTED) + 2 * len(typed) + 6 + 5 + 3 + 3 + 3
 
 
 def test_ac2_the_sql_selects_every_expected_column_exactly_once() -> None:

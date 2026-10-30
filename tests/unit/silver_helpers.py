@@ -64,6 +64,12 @@ def query(settings: Settings, sql: str, *args: Any) -> list[tuple[Any, ...]]:
         con.close()
 
 
+def silver_columns(settings: Settings) -> set[str]:
+    """The column names of silver_sales."""
+    sql = "select column_name from information_schema.columns where table_name = 'silver_sales'"
+    return {name for (name,) in query(settings, sql)}
+
+
 def build(settings: Settings, rows: list[dict[str, str | None]]) -> None:
     write_bronze(settings, rows)
     run_silver(settings)
@@ -76,12 +82,12 @@ def one(settings: Settings, column: str, source_row: int = 8) -> Any:
 
 
 def audit_table_sql() -> str:
-    """The statement in 07_excluded_rows.sql that builds silver_excluded_rows.
+    """The statement in 08_excluded_rows.sql that builds silver_excluded_rows.
 
     A test that forces a row into an excluded state runs this afterwards, as the real stage
     does, so the audit table matches silver again.
     """
-    return (SILVER_DIR / "07_excluded_rows.sql").read_text(encoding="utf-8")
+    return (SILVER_DIR / "08_excluded_rows.sql").read_text(encoding="utf-8")
 
 
 def force_exact_duplicate_sql(source_row: int) -> str:

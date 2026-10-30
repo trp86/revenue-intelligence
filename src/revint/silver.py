@@ -167,6 +167,27 @@ def check_value_flag_columns(settings: Settings) -> None:
         )
 
 
+def check_label_columns(settings: Settings) -> None:
+    """The columns the label rule reads must be text, and no column may be in both lists (S3).
+
+    A typed column (a date or a number) has no label to map, and a column in both lists would
+    get one twin column built twice. Either fails the build with the key name.
+    """
+    labels = settings.labels
+    for role in ("channel_columns", "branch_columns"):
+        typed = [c for c in getattr(labels, role) if column_type(c) != "text"]
+        if typed:
+            raise SilverError(
+                f"labels.{role} names columns that silver types and so cannot hold labels: "
+                + ", ".join(typed)
+            )
+    both = sorted(set(labels.channel_columns) & set(labels.branch_columns))
+    if both:
+        raise SilverError(
+            "labels.channel_columns and labels.branch_columns both name: " + ", ".join(both)
+        )
+
+
 def run_silver(settings: Settings) -> SilverResult:
     """Build `silver_sales` in the warehouse from the bronze file.
 
@@ -177,6 +198,7 @@ def run_silver(settings: Settings) -> SilverResult:
     check_bronze_columns(bronze, settings)
     check_duplicate_key_columns(bronze, settings)
     check_value_flag_columns(settings)
+    check_label_columns(settings)
     expected_rows = bronze_row_count(bronze)
     try:
         stage = run_stage(

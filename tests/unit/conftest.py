@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -60,12 +61,15 @@ def build_workbook() -> Callable[..., Path]:
         book = xlsxwriter.Workbook(str(path))
         sheets = [book.add_worksheet(sheet), *[book.add_worksheet(n) for n in extra_sheets]]
         fmt = book.add_format({"bold": True})
+        date_fmt = book.add_format({"num_format": 14})  # the date format the real sheet uses
         main = sheets[0]
         for row in styled_blank:
             main.write_blank(row - 1, 0, None, fmt)
         for row, values in rows.items():
             for col, value in enumerate(values):
-                if value is not None:
+                if isinstance(value, datetime):
+                    main.write_datetime(row - 1, col, value, date_fmt)
+                elif value is not None:
                     main.write(row - 1, col, value)
         book.close()
         return path

@@ -42,19 +42,29 @@ def _fail(message: str, code: int) -> NoReturn:
     raise typer.Exit(code=code)
 
 
-def _stub(command: str) -> NoReturn:
-    """Validate the settings once, then report that the command is a stub."""
+def _load_settings() -> config.Settings:
+    """Load the settings once per invocation; invalid settings end the command."""
     try:
-        config.load_settings(config.DEFAULT_SETTINGS_FILE)
+        return config.load_settings(config.DEFAULT_SETTINGS_FILE)
     except config.ConfigError as exc:
         _fail(f"revint: {exc}", EXIT_CONFIG_ERROR)
+
+
+def _stub(command: str) -> NoReturn:
+    """Validate the settings once, then report that the command is a stub."""
+    _load_settings()
     _fail(f"revint {command}: not implemented yet", EXIT_NOT_IMPLEMENTED)
 
 
 @build_app.command("bronze")
 def build_bronze() -> None:
     """Build bronze Parquet from the raw workbook."""
-    _stub("build bronze")
+    settings = _load_settings()
+    from revint.ingest.bronze import execute_bronze  # imported here to keep --help fast
+
+    code = execute_bronze(settings)
+    if code:
+        raise typer.Exit(code=code)
 
 
 @build_app.command("silver")

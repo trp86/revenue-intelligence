@@ -183,9 +183,7 @@ def test_ac1_the_warehouse_folder_is_created_when_absent(tmp_path: Path, load_wi
     assert settings.paths.warehouse.is_file()
 
 
-def test_ac1_an_explicit_warehouse_overrides_the_settings_path(
-    tmp_path: Path, load_with
-) -> None:
+def test_ac1_an_explicit_warehouse_overrides_the_settings_path(tmp_path: Path, load_with) -> None:
     settings = load_with()
     other = tmp_path / "other" / "w.duckdb"
     stage = write_sql(tmp_path / "sql", {"01_a.sql": "create table t (n integer);"})
@@ -216,9 +214,7 @@ def test_ac2_failing_second_file_rolls_back_the_first(tmp_path: Path, load_with)
     assert table_names(settings) == [], "nothing from the stage may remain"
 
 
-def test_ac2_rollback_leaves_earlier_committed_work_untouched(
-    tmp_path: Path, load_with
-) -> None:
+def test_ac2_rollback_leaves_earlier_committed_work_untouched(tmp_path: Path, load_with) -> None:
     settings = load_with()
     good = write_sql(tmp_path / "10_good", {"01_a.sql": "create table t as select 1 as n;"})
     bad = write_sql(
@@ -263,9 +259,7 @@ def test_ac2_a_syntax_error_names_the_file_and_runs_nothing(tmp_path: Path, load
 
 def test_ac2_error_text_masks_quoted_values(tmp_path: Path, load_with) -> None:
     settings = load_with()
-    stage = write_sql(
-        tmp_path / "sql", {"01_a.sql": "select cast('SECRET-VALUE-123' as integer);"}
-    )
+    stage = write_sql(tmp_path / "sql", {"01_a.sql": "select cast('SECRET-VALUE-123' as integer);"})
     with pytest.raises(StageError) as info:
         run_stage(stage, settings)
     assert "SECRET-VALUE-123" not in str(info.value)
@@ -403,6 +397,50 @@ def test_ac3_paths_and_maps_are_not_parameters(tmp_path: Path, load_with) -> Non
             run_stage(stage, settings)
 
 
+def test_ac3_a_mapping_is_given_as_two_lists_in_the_same_order(load_with) -> None:
+    settings = load_with({"void": {"value_map": {"A": 1, "B": 0}}})
+    params = settings_parameters(settings)
+    assert params["void_value_map_keys"] == ["A", "B"]
+    assert params["void_value_map_values"] == [1, 0]
+    assert params["labels_channel_map_keys"] == [] and params["labels_channel_map_values"] == []
+
+
+def test_ac3_the_two_lists_of_a_mapping_can_be_joined_in_sql(tmp_path: Path, load_with) -> None:
+    settings = load_with({"void": {"value_map": {"Voided": 1, "Unvoid": 0, "it's": 1}}})
+    stage = write_sql(
+        tmp_path / "sql",
+        {
+            "01_a.sql": (
+                "create table m as select unnest(cast($void_value_map_keys as varchar[])) as k, "
+                "unnest(cast($void_value_map_values as integer[])) as v;"
+            )
+        },
+    )
+    run_stage(stage, settings)
+    assert rows(settings, "select k, v from m order by k") == [
+        ("Unvoid", 0),
+        ("Voided", 1),
+        ("it's", 1),
+    ]
+
+
+def test_ac3_an_empty_mapping_gives_empty_lists_that_join_to_no_rows(
+    tmp_path: Path, load_with
+) -> None:
+    stage = write_sql(
+        tmp_path / "sql",
+        {
+            "01_a.sql": (
+                "create table m as select unnest(cast($void_value_map_keys as varchar[])) as k, "
+                "unnest(cast($void_value_map_values as integer[])) as v;"
+            )
+        },
+    )
+    settings = load_with()
+    run_stage(stage, settings)
+    assert rows(settings, "select count(*) from m") == [(0,)]
+
+
 def test_ac3_a_dollar_name_inside_a_string_literal_is_not_a_parameter(
     tmp_path: Path, load_with
 ) -> None:
@@ -436,9 +474,7 @@ def test_ac3_colliding_parameter_names_are_refused() -> None:
         flatten_parameters(Outer(), "o")
 
 
-def test_ac3_only_the_parameters_a_statement_names_are_bound(
-    tmp_path: Path, load_with
-) -> None:
+def test_ac3_only_the_parameters_a_statement_names_are_bound(tmp_path: Path, load_with) -> None:
     # DuckDB rejects extra bound values, so a statement with no parameters must still run.
     settings = load_with()
     stage = write_sql(tmp_path / "sql", {"01_a.sql": "create table t (n integer);"})
@@ -493,9 +529,7 @@ def test_ac4_the_stage_runs_once_the_lock_is_released(tmp_path: Path, load_with)
     assert table_names(settings) == ["t"]
 
 
-def test_ac4_an_unusable_warehouse_folder_is_a_clear_stage_error(
-    tmp_path: Path, load_with
-) -> None:
+def test_ac4_an_unusable_warehouse_folder_is_a_clear_stage_error(tmp_path: Path, load_with) -> None:
     settings = load_with()
     blocker = tmp_path / "not_a_folder"
     blocker.write_text("file", encoding="utf-8")
@@ -527,9 +561,7 @@ def test_logs_on_failure_name_the_file_and_hide_values(
     tmp_path: Path, load_with, caplog: pytest.LogCaptureFixture
 ) -> None:
     settings = load_with()
-    stage = write_sql(
-        tmp_path / "sql", {"01_a.sql": "select cast('ROW-VALUE-98765' as integer);"}
-    )
+    stage = write_sql(tmp_path / "sql", {"01_a.sql": "select cast('ROW-VALUE-98765' as integer);"})
     with caplog.at_level(logging.DEBUG, logger="revint"), pytest.raises(StageError):
         run_stage(stage, settings)
     assert "01_a.sql" in caplog.text

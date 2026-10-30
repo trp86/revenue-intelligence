@@ -221,7 +221,7 @@ def test_ac2_the_error_names_counts_and_source_rows_but_no_cell_values(
         run_silver(silver_settings)
     message = str(info.value)
     assert "SECRET-CUSTOMER" not in message
-    assert "07_checks.sql" in message
+    assert "99_checks.sql" in message
     assert "source rows 9, 10" in message
     assert "\n" not in message
 
@@ -230,7 +230,7 @@ def test_ac2_the_check_is_a_sql_check_inside_the_stage(
     silver_settings: Settings, tmp_path: Path
 ) -> None:
     rows = [data_row(8), bronze_row(9, **STRAY), bronze_row(10, **STRAY)]
-    with pytest.raises(StageError, match=r"07_checks\.sql.*2 rows match the stray-row rule"):
+    with pytest.raises(StageError, match=r"99_checks\.sql.*2 rows match the stray-row rule"):
         run_custom_stage(silver_settings, rows, tmp_path / "10_silver")
 
 
@@ -432,12 +432,12 @@ def test_ac4_an_excluded_row_missing_from_the_audit_table_fails_the_check(
     silver_settings: Settings, tmp_path: Path
 ) -> None:
     files = {
-        "06b_force.sql": (
+        "07b_force.sql": (
             "update silver_sales set is_excluded = true, exclusion_reason = 'stray_row' "
             "where _source_row = 9;"
         )
     }
-    # runs after 06_excluded_rows.sql, so the audit table lacks row 9
+    # runs after 07_excluded_rows.sql, so the audit table lacks row 9
     with pytest.raises(
         StageError, match=r"silver_excluded_rows.*differ|differ.*silver_excluded_rows"
     ):
@@ -530,8 +530,8 @@ def test_the_silver_stage_has_the_exclusion_file_between_typing_and_checks() -> 
     assert names.index("02_silver_sales.sql") < names.index("03_exclusions.sql")
     assert (
         names.index("03_exclusions.sql")
-        < names.index("06_excluded_rows.sql")
-        < names.index("07_checks.sql")
+        < names.index("07_excluded_rows.sql")
+        < names.index("99_checks.sql")
     )
     assert "03_checks.sql" not in names and "04_checks.sql" not in names
 

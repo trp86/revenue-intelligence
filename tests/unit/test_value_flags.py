@@ -272,8 +272,9 @@ def test_the_value_flags_run_between_the_duplicates_and_the_audit_table() -> Non
         "03_exclusions.sql",
         "04_duplicates.sql",
         "05_value_flags.sql",
-        "06_excluded_rows.sql",
-        "07_checks.sql",
+        "06_void_flags.sql",
+        "07_excluded_rows.sql",
+        "99_checks.sql",
     ]
 
 

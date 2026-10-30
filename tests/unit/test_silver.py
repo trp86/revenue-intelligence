@@ -81,11 +81,11 @@ def test_ac1_the_sql_check_rolls_the_stage_back_if_a_row_goes_missing(
         "create or replace table silver_sales as select * from read_parquet($bronze_file) limit 1;",
         encoding="utf-8",
     )
-    (stage / "07_checks.sql").write_text(
-        (SILVER_DIR / "07_checks.sql").read_text(encoding="utf-8"), encoding="utf-8"
+    (stage / "99_checks.sql").write_text(
+        (SILVER_DIR / "99_checks.sql").read_text(encoding="utf-8"), encoding="utf-8"
     )
     with pytest.raises(
-        StageError, match=r"07_checks\.sql.*silver row count 1 does not match bronze row count 2"
+        StageError, match=r"99_checks\.sql.*silver row count 1 does not match bronze row count 2"
     ):
         run_stage(stage, silver_settings, extra_parameters={"bronze_file": bronze.as_posix()})
     tables = query(silver_settings, "select table_name from information_schema.tables")
@@ -278,7 +278,8 @@ def test_ac2_silver_holds_all_75_source_columns_the_raw_twins_and_the_lineage(
     # 75 source + a raw twin and a flag per typed column + 6 lineage + 5 exclusion columns
     # (is_excluded, exclusion_reason, f_stray_row, is_duplicate; duplicate_of_source_row)
     # + 3 value flags (f_zero_value_with_qty, f_negative_qty, f_negative_value)
-    assert len(names) == len(EXPECTED) + 2 * len(typed) + 6 + 5 + 3
+    # + 3 void columns (void_flag, f_blank_void, f_unmapped_void)
+    assert len(names) == len(EXPECTED) + 2 * len(typed) + 6 + 5 + 3 + 3
 
 
 def test_ac2_the_sql_selects_every_expected_column_exactly_once() -> None:

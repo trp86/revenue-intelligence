@@ -76,12 +76,12 @@ def one(settings: Settings, column: str, source_row: int = 8) -> Any:
 
 
 def audit_table_sql() -> str:
-    """The statement in 06_excluded_rows.sql that builds silver_excluded_rows.
+    """The statement in 07_excluded_rows.sql that builds silver_excluded_rows.
 
     A test that forces a row into an excluded state runs this afterwards, as the real stage
     does, so the audit table matches silver again.
     """
-    return (SILVER_DIR / "06_excluded_rows.sql").read_text(encoding="utf-8")
+    return (SILVER_DIR / "07_excluded_rows.sql").read_text(encoding="utf-8")
 
 
 def force_exact_duplicate_sql(source_row: int) -> str:

@@ -34,7 +34,7 @@ AMOUNT_COLUMNS = (
     "TAX_AMOUNT",
 )
 
-# S10: the only reasons for which silver marks a row as excluded. `04_checks.sql` fails the
+# S10: the only reasons for which silver marks a row as excluded. `06_checks.sql` fails the
 # stage if any other reason appears; a test compares this tuple with that file.
 ALLOWED_EXCLUSION_REASONS = ("stray_row", "exact_duplicate")
 
@@ -125,6 +125,28 @@ def check_bronze_columns(path: Path, settings: Settings) -> None:
         raise SilverError(f"bronze file has unexpected columns: {', '.join(extra)}")
 
 
+def check_duplicate_key_columns(path: Path, settings: Settings) -> None:
+    """The columns that define an exact duplicate must exist in the bronze file (S5).
+
+    The SQL selects them by name and would silently ignore a name that is not there, which
+    would make rows look more alike than they are. An empty list is refused for the same
+    reason: every row would be a duplicate of the first.
+    """
+    keys = settings.duplicate_key_columns
+    if not keys:
+        raise SilverError(
+            "duplicates.key_columns is empty and ingest.expected_columns gives no columns "
+            "to compare; exact duplicates cannot be detected"
+        )
+    actual = pl.read_parquet_schema(path)
+    missing = [c for c in keys if c not in actual]
+    if missing:
+        raise SilverError(
+            f"duplicates.key_columns names columns that are not in the bronze file: "
+            f"{', '.join(missing)}"
+        )
+
+
 def run_silver(settings: Settings) -> SilverResult:
     """Build `silver_sales` in the warehouse from the bronze file.
 
@@ -133,6 +155,7 @@ def run_silver(settings: Settings) -> SilverResult:
     """
     bronze = find_bronze_file(settings)
     check_bronze_columns(bronze, settings)
+    check_duplicate_key_columns(bronze, settings)
     expected_rows = bronze_row_count(bronze)
     try:
         stage = run_stage(

@@ -76,21 +76,20 @@ def one(settings: Settings, column: str, source_row: int = 8) -> Any:
 
 
 def audit_table_sql() -> str:
-    """The statement in 03_exclusions.sql that builds silver_excluded_rows.
+    """The statement in 05_excluded_rows.sql that builds silver_excluded_rows.
 
-    A test that forces a row into an excluded state (for example an exact duplicate, whose
-    rule arrives in story #39) runs this afterwards, as the real rule will, so the audit table
-    matches silver again.
+    A test that forces a row into an excluded state runs this afterwards, as the real stage
+    does, so the audit table matches silver again.
     """
-    text = (SILVER_DIR / "03_exclusions.sql").read_text(encoding="utf-8")
-    return (
-        "create or replace table silver_excluded_rows"
-        + text.split("create or replace table silver_excluded_rows", 1)[1]
-    )
+    return (SILVER_DIR / "05_excluded_rows.sql").read_text(encoding="utf-8")
 
 
 def force_exact_duplicate_sql(source_row: int) -> str:
-    """SQL that marks one row as an exact duplicate, the state story #39 will produce."""
+    """SQL that marks one row as an exact duplicate, as 04_duplicates.sql does for a real one.
+
+    Used to reach a state the data does not contain, and to see whether the checks catch a
+    broken one.
+    """
     return (
         "update silver_sales set is_excluded = true, exclusion_reason = 'exact_duplicate', "
         f"is_duplicate = true where _source_row = {source_row};"

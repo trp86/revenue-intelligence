@@ -15,7 +15,6 @@ from silver_helpers import (
     COLUMN_TYPES_SQL,
     EXPECTED,
     SIX_AMOUNTS,
-    audit_table_sql,
     bronze_row,
     build,
     force_exact_duplicate_sql,
@@ -222,7 +221,7 @@ def test_ac2_the_error_names_counts_and_source_rows_but_no_cell_values(
         run_silver(silver_settings)
     message = str(info.value)
     assert "SECRET-CUSTOMER" not in message
-    assert "04_checks.sql" in message
+    assert "06_checks.sql" in message
     assert "source rows 9, 10" in message
     assert "\n" not in message
 
@@ -231,7 +230,7 @@ def test_ac2_the_check_is_a_sql_check_inside_the_stage(
     silver_settings: Settings, tmp_path: Path
 ) -> None:
     rows = [data_row(8), bronze_row(9, **STRAY), bronze_row(10, **STRAY)]
-    with pytest.raises(StageError, match=r"04_checks\.sql.*2 rows match the stray-row rule"):
+    with pytest.raises(StageError, match=r"06_checks\.sql.*2 rows match the stray-row rule"):
         run_custom_stage(silver_settings, rows, tmp_path / "10_silver")
 
 
@@ -278,7 +277,7 @@ def test_ac3_the_six_amounts_are_copied_from_silver_for_an_excluded_row(
     silver_settings: Settings, tmp_path: Path
 ) -> None:
     """An exact duplicate (story #39) is a full order line, so its amounts must be copied."""
-    files = {"03b_force.sql": force_exact_duplicate_sql(9), "03c_audit.sql": audit_table_sql()}
+    files = {"04b_force.sql": force_exact_duplicate_sql(9)}  # after 04, before the audit file
     rows = [
         data_row(8),
         data_row(9, **amounts(Selling_Amount="5", Net_Amount_2="12.5", TAX_AMOUNT="3")),
@@ -433,12 +432,12 @@ def test_ac4_an_excluded_row_missing_from_the_audit_table_fails_the_check(
     silver_settings: Settings, tmp_path: Path
 ) -> None:
     files = {
-        "03b_force.sql": (
+        "05b_force.sql": (
             "update silver_sales set is_excluded = true, exclusion_reason = 'stray_row' "
             "where _source_row = 9;"
         )
     }
-    # the audit table is built before this update, so it lacks row 9
+    # runs after 05_excluded_rows.sql, so the audit table lacks row 9
     with pytest.raises(
         StageError, match=r"silver_excluded_rows.*differ|differ.*silver_excluded_rows"
     ):
@@ -455,7 +454,7 @@ def test_ac4_two_reasons_that_are_allowed_pass_the_check(
 ) -> None:
     # exact_duplicate is a valid reason even though the rule that sets it arrives in #39;
     # the audit table is rebuilt after the forced update, so the checks pass.
-    files = {"03b_force.sql": force_exact_duplicate_sql(9), "03c_audit.sql": audit_table_sql()}
+    files = {"04b_force.sql": force_exact_duplicate_sql(9)}  # after 04, before the audit file
     result = run_custom_stage(silver_settings, [data_row(8), data_row(9)], tmp_path / "s", files)
     assert result.statements > 0
     assert query(silver_settings, "select exclusion_reason from silver_excluded_rows") == [
@@ -507,7 +506,7 @@ def test_ac5_the_setting_is_not_read_by_the_silver_sql() -> None:
 def test_ac5_the_setting_changes_nothing_in_silver_even_with_an_exact_duplicate_present(
     load_with, tmp_path: Path
 ) -> None:
-    files = {"03b_force.sql": force_exact_duplicate_sql(9), "03c_audit.sql": audit_table_sql()}
+    files = {"04b_force.sql": force_exact_duplicate_sql(9)}  # after 04, before the audit file
     rows = [data_row(8), data_row(9), bronze_row(10, **STRAY)]
     seen = []
     for exclude in (True, False):
@@ -529,8 +528,12 @@ def test_the_silver_stage_has_the_exclusion_file_between_typing_and_checks() -> 
 
     names = sorted(p.name for p in SILVER_DIR.glob("*.sql"))
     assert names.index("02_silver_sales.sql") < names.index("03_exclusions.sql")
-    assert names.index("03_exclusions.sql") < names.index("04_checks.sql")
-    assert "03_checks.sql" not in names
+    assert (
+        names.index("03_exclusions.sql")
+        < names.index("05_excluded_rows.sql")
+        < names.index("06_checks.sql")
+    )
+    assert "03_checks.sql" not in names and "04_checks.sql" not in names
 
 
 def test_every_bronze_row_still_has_a_silver_row(silver_settings: Settings) -> None:

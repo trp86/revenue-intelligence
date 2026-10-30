@@ -34,6 +34,10 @@ AMOUNT_COLUMNS = (
     "TAX_AMOUNT",
 )
 
+# S10: the only reasons for which silver marks a row as excluded. `04_checks.sql` fails the
+# stage if any other reason appears; a test compares this tuple with that file.
+ALLOWED_EXCLUSION_REASONS = ("stray_row", "exact_duplicate")
+
 _DATES = ("Date", "SCJ_FISCAL_MONTH")
 _INTEGERS = ("Year", "Quantity(PCS)", "UOM")
 _DECIMALS = (

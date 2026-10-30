@@ -9,14 +9,22 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
 
 import duckdb
 import polars as pl
 import pytest
+from silver_helpers import (
+    COLUMN_TYPES_SQL,
+    EXPECTED,
+    SIX_AMOUNTS,
+    bronze_row,
+    build,
+    one,
+    query,
+    write_bronze,
+)
 
 from revint.config import Settings, load_settings
-from revint.ingest.bronze import LINEAGE_COLUMNS
 from revint.silver import (
     AMOUNT_COLUMNS,
     COLUMN_TYPES,
@@ -25,69 +33,10 @@ from revint.silver import (
     run_silver,
 )
 
-# The silver SQL names the real 75 columns, so the synthetic bronze file has all of them.
-EXPECTED = load_settings(env={}).ingest.expected_columns
-SIX_AMOUNTS = [
-    "Selling_Amount",
-    "NET_AMOUNT_1",
-    "AMOUNT_AF_DIS",
-    "Net_Amount_2",
-    "Net_AMOUNT_3",
-    "TAX_AMOUNT",
-]
-
-
-def bronze_row(source_row: int, **cells: str | None) -> dict[str, str | None]:
-    base: dict[str, str | None] = dict.fromkeys(EXPECTED)
-    base.update(cells)
-    return {
-        **base,
-        "_source_file": "sales.xlsx",
-        "_sheet": "RAW SCJ SALES",
-        "_source_row": str(source_row),
-        "_ingested_at": "2026-10-30T09:00:00Z",
-        "_file_hash": "h" * 64,
-    }
-
 
 @pytest.fixture
 def silver_settings(load_with) -> Settings:
     return load_with({"ingest": {"expected_columns": EXPECTED, "sheets": ["RAW SCJ SALES"]}})
-
-
-COLUMN_TYPES_SQL = (
-    "select column_name, data_type from information_schema.columns "
-    "where table_name = 'silver_sales'"
-)
-
-
-def write_bronze(settings: Settings, rows: list[dict[str, str | None]]) -> Path:
-    settings.paths.bronze.mkdir(parents=True, exist_ok=True)
-    target = settings.paths.bronze / "sales__RAW_SCJ_SALES.parquet"
-    columns = [*EXPECTED, *LINEAGE_COLUMNS]
-    pl.DataFrame(
-        {c: [r.get(c) for r in rows] for c in columns}, schema=dict.fromkeys(columns, pl.String)
-    ).write_parquet(target)
-    return target
-
-
-def query(settings: Settings, sql: str, *args: Any) -> list[tuple[Any, ...]]:
-    con = duckdb.connect(str(settings.paths.warehouse), read_only=True)
-    try:
-        return con.execute(sql, list(args)).fetchall()
-    finally:
-        con.close()
-
-
-def build(settings: Settings, rows: list[dict[str, str | None]]) -> None:
-    write_bronze(settings, rows)
-    run_silver(settings)
-
-
-def one(settings: Settings, column: str, source_row: int = 8) -> Any:
-    return query(
-        settings, f'select "{column}" from silver_sales where _source_row = ?', source_row
-    )[0][0]
 
 
 # AC1: count(silver_sales) equals the bronze row count -----------------------------------------
@@ -132,11 +81,11 @@ def test_ac1_the_sql_check_rolls_the_stage_back_if_a_row_goes_missing(
         "create or replace table silver_sales as select * from read_parquet($bronze_file) limit 1;",
         encoding="utf-8",
     )
-    (stage / "03_checks.sql").write_text(
-        (SILVER_DIR / "03_checks.sql").read_text(encoding="utf-8"), encoding="utf-8"
+    (stage / "04_checks.sql").write_text(
+        (SILVER_DIR / "04_checks.sql").read_text(encoding="utf-8"), encoding="utf-8"
     )
     with pytest.raises(
-        StageError, match=r"03_checks\.sql.*silver row count 1 does not match bronze row count 2"
+        StageError, match=r"04_checks\.sql.*silver row count 1 does not match bronze row count 2"
     ):
         run_stage(stage, silver_settings, extra_parameters={"bronze_file": bronze.as_posix()})
     tables = query(silver_settings, "select table_name from information_schema.tables")
@@ -326,7 +275,8 @@ def test_ac2_silver_holds_all_75_source_columns_the_raw_twins_and_the_lineage(
         "_ingested_at",
         "_file_hash",
     } <= names
-    assert len(names) == len(EXPECTED) + 2 * len(typed) + 6
+    # 75 source + a raw twin and a flag per typed column + 6 lineage + 4 exclusion columns (#38)
+    assert len(names) == len(EXPECTED) + 2 * len(typed) + 6 + 4
 
 
 def test_ac2_the_sql_selects_every_expected_column_exactly_once() -> None:

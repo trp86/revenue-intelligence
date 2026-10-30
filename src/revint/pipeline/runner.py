@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import re
 import sys
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -211,10 +212,15 @@ def _run_plan(con: duckdb.DuckDBPyConnection, plan: list[_SqlFile], params: dict
 
 
 def run_stage(
-    stage_dir: Path, settings: Settings, warehouse: Path | None = None
+    stage_dir: Path,
+    settings: Settings,
+    warehouse: Path | None = None,
+    extra_parameters: Mapping[str, Any] | None = None,
 ) -> StageResult:
     """Run every `.sql` file in `stage_dir` in filename order, in one transaction.
 
+    `extra_parameters` adds named parameters the caller knows and `Settings` does not, such
+    as the bronze file for silver; a name that a settings parameter already uses is refused.
     Raises `StageError` (naming the failing file; the stage is rolled back) or
     `WarehouseLockedError`. `warehouse` defaults to `paths.warehouse`.
     """
@@ -223,6 +229,12 @@ def run_stage(
     if not stage_dir.is_dir():
         raise StageError(f"stage folder not found: {stage_dir}")
     params = settings_parameters(settings)
+    clashing = sorted(set(extra_parameters or {}) & set(params))
+    if clashing:
+        raise StageError(
+            f"extra parameters clash with settings parameters: {', '.join(clashing)}"
+        )
+    params.update(extra_parameters or {})
     try:
         plan = _plan(stage_dir, params)
         con = _connect(warehouse if warehouse is not None else settings.paths.warehouse)
@@ -242,11 +254,16 @@ def run_stage(
     return result
 
 
-def execute_stage(stage_dir: Path, settings: Settings, warehouse: Path | None = None) -> int:
+def execute_stage(
+    stage_dir: Path,
+    settings: Settings,
+    warehouse: Path | None = None,
+    extra_parameters: Mapping[str, Any] | None = None,
+) -> int:
     """Run a stage for the command line: print a one-line outcome, return an exit code."""
     name = Path(stage_dir).name
     try:
-        result = run_stage(stage_dir, settings, warehouse)
+        result = run_stage(stage_dir, settings, warehouse, extra_parameters)
     except WarehouseLockedError as exc:
         print(f"stage {name}: {exc}", file=sys.stderr)
         return EXIT_WAREHOUSE_LOCKED

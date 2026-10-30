@@ -1,10 +1,18 @@
 # SQL lint for the numbered files under sql/ (spec 10 section 3).
-# `sqlfluff lint sql` exits 0 while sql/ holds no .sql files, so no placeholder
-# SQL is committed; the rules below are exercised by tests/unit/test_tooling.py.
+# The rules below are exercised by tests/unit/test_tooling.py.
 
 [sqlfluff]
 dialect = duckdb
+templater = placeholder
 max_line_length = 100
+
+# Named parameters such as $bronze_file are bound by the stage runner (src/revint/pipeline).
+# The linter only needs a stand-in value to parse the file; a SQL file that uses a new
+# parameter adds a line here.
+[sqlfluff:templater:placeholder]
+param_style = dollar
+bronze_file = 'bronze.parquet'
+asof_date = '2020-02-29'
 
 # Code standards: lowercase keywords.
 [sqlfluff:rules:capitalisation.keywords]

@@ -425,6 +425,7 @@ def test_the_stage_runs_the_duplicate_rule_before_the_audit_table_and_the_checks
         "05_value_flags.sql",
         "06_void_flags.sql",
         "07_excluded_rows.sql",
+        "08_customer_codes.sql",
         "99_checks.sql",
     ]
 

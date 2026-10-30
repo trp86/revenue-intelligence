@@ -131,3 +131,42 @@ select
             )
     end as audit_table_check
 from differences;
+
+-- S4: silver_customer_codes accounts for every kept order line that has a customer code, and
+-- holds one row per code. The lines in the table add up to the kept lines with a code; codes
+-- are never merged, so the number of rows equals the number of distinct codes.
+with expected as (
+    select
+        count(*) as kept_lines,
+        count(distinct customer_code) as distinct_codes
+    from customer_lines
+    where silver_text(customer_code) is not null
+),
+
+actual as (
+    select
+        coalesce(sum(order_lines), 0) as table_lines,
+        count(*) as table_codes,
+        count(distinct customer_code) as table_distinct_codes
+    from silver_customer_codes
+)
+
+select
+    case
+        when expected.kept_lines <> actual.table_lines
+            then error(
+                'silver_customer_codes covers ' || actual.table_lines::varchar
+                || ' order lines but silver has ' || expected.kept_lines::varchar
+                || ' kept lines with a customer code'
+            )
+        when expected.distinct_codes <> actual.table_codes
+            then error(
+                'silver_customer_codes has ' || actual.table_codes::varchar
+                || ' rows but silver has ' || expected.distinct_codes::varchar
+                || ' distinct customer codes'
+            )
+        when actual.table_codes <> actual.table_distinct_codes
+            then error('silver_customer_codes has a customer code more than once')
+    end as customer_table_check
+from expected
+cross join actual;

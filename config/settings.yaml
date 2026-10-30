@@ -124,6 +124,13 @@ net_sales:
     - TAX_AMOUNT
   quantity_field: Quantity(PCS)          # quantity column for free goods (spec 01 S7)
 
+# Customer identity (spec 01 S4): the code is the key; near-duplicate codes are NOT merged.
+# These are the source columns the customer-code table is built from (final column names).
+customers:
+  code_column: CustomerCode
+  name_column: Customer
+  branch_column: Branch_Name
+
 # Reconciliation (spec 01 section 6).
 recon:
   tolerance_amount: 0.01                 # allowed difference for amount checks

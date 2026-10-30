@@ -155,6 +155,26 @@ class NetSalesSettings(_Section):
         return self
 
 
+class CustomersSettings(_Section):
+    """The source columns the customer-code table is built from (spec 01 S4).
+
+    Customer identity is an open business question: the code is the key and near-duplicate
+    codes are not merged. Which columns hold the code, the name and the branch is a business
+    input, so it is config. Names are final column names (spec 01 B3); the cross-check against
+    `ingest.expected_columns` is in `Settings`.
+    """
+
+    code_column: str = Field(
+        default="CustomerCode", min_length=1, description="Column holding the customer code."
+    )
+    name_column: str = Field(
+        default="Customer", min_length=1, description="Column holding the customer name."
+    )
+    branch_column: str = Field(
+        default="Branch_Name", min_length=1, description="Column holding the branch name."
+    )
+
+
 class ReconSettings(_Section):
     tolerance_amount: float = Field(
         default=0.01, ge=0, description="Allowed difference in amount reconciliation checks."
@@ -171,12 +191,13 @@ class Settings(_Section):
     duplicates: DuplicatesSettings = Field(default_factory=DuplicatesSettings)
     labels: LabelsSettings = Field(default_factory=LabelsSettings)
     net_sales: NetSalesSettings = Field(default_factory=NetSalesSettings)
+    customers: CustomersSettings = Field(default_factory=CustomersSettings)
     recon: ReconSettings = Field(default_factory=ReconSettings)
     asof: AsofSettings
 
     @model_validator(mode="after")
     def _net_sales_columns_exist(self) -> Settings:
-        """Every net sales column must be a column the sheet has (spec 02 N2).
+        """Every net sales and customer column must be a column the sheet has (spec 02 N2).
 
         Skipped while `ingest.expected_columns` is empty, that is before profiling has filled it.
         """
@@ -199,6 +220,11 @@ class Settings(_Section):
                 f"net_sales.quantity_field '{self.net_sales.quantity_field}' "
                 "is not in ingest.expected_columns"
             )
+        customers = self.customers
+        for role in ("code_column", "name_column", "branch_column"):
+            column = getattr(customers, role)
+            if column not in known:
+                problems.append(f"customers.{role} '{column}' is not in ingest.expected_columns")
         if problems:
             raise ValueError("; ".join(problems))
         return self

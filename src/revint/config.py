@@ -15,7 +15,15 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SETTINGS_FILE = PROJECT_ROOT / "config" / "settings.yaml"
@@ -100,11 +108,51 @@ class LabelsSettings(_Section):
 
 
 class NetSalesSettings(_Section):
+    """Which source column is net sales (provisional, docs/decisions.md section 3).
+
+    Column names are the final bronze and silver names (spec 01 B3). The cross-check against
+    `ingest.expected_columns` is in `Settings`, which holds both sections.
+    """
+
     field: str = Field(
-        default="Net AMOUNT",
+        default="Net_Amount_2",
         min_length=1,
-        description="Source amount column treated as net sales (provisional, decisions.md §3).",
+        description="Final name of the column treated as net sales: source column 46 (Excel "
+        "AT), net of discounts and before the 3% back margin. Must be a candidate.",
     )
+    candidate_columns: list[str] = Field(
+        default=[
+            "Selling_Amount",
+            "NET_AMOUNT_1",
+            "AMOUNT_AF_DIS",
+            "Net_Amount_2",
+            "Net_AMOUNT_3",
+            "TAX_AMOUNT",
+        ],
+        min_length=1,
+        description="The amount columns net sales may be chosen from (spec 01 S11, spec 02 N2).",
+    )
+    quantity_field: str = Field(
+        default="Quantity(PCS)",
+        min_length=1,
+        description="Final name of the quantity column, used for free goods (spec 01 S7).",
+    )
+
+    @field_validator("candidate_columns")
+    @classmethod
+    def _no_repeated_candidates(cls, value: list[str]) -> list[str]:
+        repeated = sorted({name for name in value if value.count(name) > 1})
+        if repeated:
+            raise ValueError(f"names repeat: {', '.join(repeated)}")
+        return value
+
+    @model_validator(mode="after")
+    def _field_is_a_candidate(self) -> NetSalesSettings:
+        if self.field not in self.candidate_columns:
+            raise ValueError(
+                f"net_sales.field '{self.field}' is not one of net_sales.candidate_columns"
+            )
+        return self
 
 
 class ReconSettings(_Section):
@@ -126,6 +174,35 @@ class Settings(_Section):
     recon: ReconSettings = Field(default_factory=ReconSettings)
     asof: AsofSettings
 
+    @model_validator(mode="after")
+    def _net_sales_columns_exist(self) -> Settings:
+        """Every net sales column must be a column the sheet has (spec 02 N2).
+
+        Skipped while `ingest.expected_columns` is empty, that is before profiling has filled it.
+        """
+        known = set(self.ingest.expected_columns)
+        if not known:
+            return self
+        problems = []
+        if self.net_sales.field not in known:
+            problems.append(
+                f"net_sales.field '{self.net_sales.field}' is not in ingest.expected_columns"
+            )
+        missing = [c for c in self.net_sales.candidate_columns if c not in known]
+        if missing:
+            problems.append(
+                "net_sales.candidate_columns has names not in ingest.expected_columns: "
+                + ", ".join(missing)
+            )
+        if self.net_sales.quantity_field not in known:
+            problems.append(
+                f"net_sales.quantity_field '{self.net_sales.quantity_field}' "
+                "is not in ingest.expected_columns"
+            )
+        if problems:
+            raise ValueError("; ".join(problems))
+        return self
+
     @property
     def duplicate_key_columns(self) -> list[str]:
         """Columns that define an exact duplicate: `duplicates.key_columns`, or when
@@ -143,6 +220,11 @@ def _format_errors(error: ValidationError) -> str:
             lines.append(f"missing required key: {key}")
         elif item["type"] == "extra_forbidden":
             lines.append(f"unknown key: {key}")
+        elif item["type"] == "value_error":
+            # A rule written in the model, for example a cross-check between two keys.
+            message = item["msg"].removeprefix("Value error, ")
+            named = key == "<root>" or message.startswith(key)
+            lines.append(message if named else f"invalid value for {key}: {message}")
         else:
             lines.append(f"invalid value for {key}: {item['msg']}")
     return "; ".join(lines)

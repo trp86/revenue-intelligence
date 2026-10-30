@@ -57,7 +57,7 @@ should the team do next. Not a reporting dashboard.
 | Term | Definition |
 |---|---|
 | Order line | One row of RAW SCJ SALES |
-| Net sales | Provisional measure chosen in config (default Net AMOUNT) |
+| Net sales | Provisional measure chosen in config (default `Net_Amount_2`, source column 46) |
 | As-of date | Date up to which data is used to build opportunities; default 2020-02-29 |
 | Opportunity | A ranked, evidence-backed candidate action for a customer (or customer x category) |
 | Engine | Rule/SQL module producing one opportunity type |

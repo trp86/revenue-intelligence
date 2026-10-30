@@ -24,7 +24,7 @@ Status: DRAFT. FR-D3, FR-D4.
 | ID | Rule |
 |---|---|
 | N1 | `v_net_sales` is the ONLY place net sales is defined. All marts and queries use it |
-| N2 | Net sales column = `config.net_sales.field` (default `Net AMOUNT`, provisional). Must be one of the six candidate columns, else the build fails |
+| N2 | Net sales column = `config.net_sales.field` (default `Net_Amount_2`, source column 46, provisional). Must be one of `config.net_sales.candidate_columns` (the six candidate amount columns), else loading the settings fails; every net sales column must also be in `ingest.expected_columns` |
 | N3 | Row inclusion driven by config: `net_sales.exclude_flags` (default empty list). Gold never loads the stray row, and loads exact-duplicate extra copies only when `duplicates.exclude_from_net_sales` is false, so the view needs no extra filter for them |
 | N4 | View exposes `net_sales`, `net_sales_field_used`, `included` (bool) so the UI can label the definition |
 | N5 | Switching `net_sales.field` changes marts after rebuild without code edits; a test proves it |
@@ -71,7 +71,9 @@ hand-written definitions in `config/definitions.yaml` shown in UI
 ## 8. Configurable parameters
 | Key | Default |
 |---|---|
-| `net_sales.field` | `Net AMOUNT` |
+| `net_sales.field` | `Net_Amount_2` |
+| `net_sales.candidate_columns` | `Selling_Amount`, `NET_AMOUNT_1`, `AMOUNT_AF_DIS`, `Net_Amount_2`, `Net_AMOUNT_3`, `TAX_AMOUNT` |
+| `net_sales.quantity_field` | `Quantity(PCS)` |
 | `net_sales.exclude_flags` | `[]` |
 | `duplicates.exclude_from_net_sales` | `true` (provisional, owned by spec 01) |
 | `marts.zero_fill` | true |
@@ -104,8 +106,10 @@ hand-written definitions in `config/definitions.yaml` shown in UI
 Spec 01 (silver), spec 10 (config). Feeds 03, 06, 08.
 
 ## 12. OPEN QUESTIONS
-- OPEN QUESTION: Final net sales field. Default: Net AMOUNT, labelled
-  "provisional" in UI. Why: stated in decisions.md.
+- OPEN QUESTION: Final net sales field. Default: `Net_Amount_2` (source
+  column 46, before the 3% back margin), labelled "provisional" in UI. The
+  alternative is `Net_AMOUNT_3` (column 48, after back margin). Why: stated in
+  decisions.md.
 - OPEN QUESTION: Product hierarchy: which source columns give brand
   and category? Default: derive from profiling, record in config.
   Why: whitespace needs a category level.

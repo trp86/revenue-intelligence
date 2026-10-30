@@ -336,7 +336,7 @@ def test_ac3_parameters_are_taken_from_settings(tmp_path: Path, load_with) -> No
     )
     run_stage(stage, settings)
     assert rows(settings, "select d, tol, ex, vb, nf, hr from p") == [
-        (date(2020, 2, 29), 0.01, True, "not_void", "Net AMOUNT", 30)
+        (date(2020, 2, 29), 0.01, True, "not_void", "Net_Amount_2", 30)
     ]
 
 
@@ -417,7 +417,7 @@ def test_ac3_a_dollar_name_inside_a_string_literal_is_not_a_parameter(
 def test_ac3_parameter_names_are_section_then_key() -> None:
     params = settings_parameters(load_settings(env={}))
     assert params["asof_date"] == date(2020, 2, 29)
-    assert params["net_sales_field"] == "Net AMOUNT"
+    assert params["net_sales_field"] == "Net_Amount_2"
     assert params["ingest_sheets"] == ["RAW SCJ SALES"]
     # Derived from ingest.expected_columns minus _source_row (filled by story #31).
     assert params["duplicates_key_columns"] == load_settings(env={}).duplicate_key_columns

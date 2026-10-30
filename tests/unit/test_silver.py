@@ -52,12 +52,7 @@ def bronze_row(source_row: int, **cells: str | None) -> dict[str, str | None]:
 
 @pytest.fixture
 def silver_settings(load_with) -> Settings:
-    return load_with(
-        {
-            "ingest": {"expected_columns": EXPECTED, "sheets": ["RAW SCJ SALES"]},
-            "net_sales": {"field": "Net AMOUNT"},
-        }
-    )
+    return load_with({"ingest": {"expected_columns": EXPECTED, "sheets": ["RAW SCJ SALES"]}})
 
 
 COLUMN_TYPES_SQL = (

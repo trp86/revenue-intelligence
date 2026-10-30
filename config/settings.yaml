@@ -111,9 +111,18 @@ labels:
   channel_map: {}
   branch_map: {}
 
-# Net sales field (provisional, docs/decisions.md section 3). Defined once; gold uses it.
+# Net sales (provisional, client to confirm; docs/decisions.md section 3). Defined once; gold
+# uses it. Names are the final column names listed in ingest.expected_columns.
 net_sales:
-  field: Net AMOUNT
+  field: Net_Amount_2                    # source column 46 (Excel AT): net of discounts, before the 3% back margin
+  candidate_columns:                     # the amount columns net sales may be chosen from (spec 01 S11)
+    - Selling_Amount
+    - NET_AMOUNT_1
+    - AMOUNT_AF_DIS
+    - Net_Amount_2
+    - Net_AMOUNT_3
+    - TAX_AMOUNT
+  quantity_field: Quantity(PCS)          # quantity column for free goods (spec 01 S7)
 
 # Reconciliation (spec 01 section 6).
 recon:

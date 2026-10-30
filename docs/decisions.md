@@ -20,7 +20,15 @@ where can we generate extra revenue, why, and what should we do?
   services unmasked.
 
 ## 3. Open business questions (use defaults in config until answered)
-- Net sales field (provisional: Net AMOUNT, labelled in the UI).
+- Net sales field: DECIDED (provisional, client to confirm): source column
+  46 (Excel AT, raw header `Net Amount`), final name `Net_Amount_2`. It is
+  net of the first and second discount and before the 3% back margin.
+  Why: it is the last step of the price chain that does not depend on a
+  margin the client may treat as a cost; column 48 (`Net_AMOUNT_3`, after
+  back margin) differs from it on about 8,700 of 658,763 rows and by about
+  0.11% of the total. The client may prefer column 48; changing it is a
+  one-line change to `net_sales.field` in `config/settings.yaml` through a
+  PR. The value is labelled provisional in the UI. See story #51.
 - Meaning of blank Void: DECIDED (provisional, client to confirm):
   blank Void sets void_flag = 0 (not void); the original value is
   kept. See spec 01 D3.

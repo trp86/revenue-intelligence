@@ -30,12 +30,26 @@ def load_with(tmp_path: Path) -> Callable[..., Settings]:
 
     `extra` maps a section name to its keys. Pass `name` to load two different
     files in one test.
+
+    A test that gives its own small `ingest.expected_columns` list but no `net_sales`
+    section gets a `net_sales` section that points at the list's first column, so it need not
+    repeat the real net sales names (spec 02 N2 checks them against that list). To test the
+    real defaults against a list, pass `net_sales` explicitly, even as `{}`.
     """
 
     def _load(extra: dict[str, Any] | None = None, name: str = "cfg") -> Settings:
+        sections = {**BASE, **(extra or {})}
+        columns = sections.get("ingest", {}).get("expected_columns") or []
+        if columns and "net_sales" not in sections:
+            first = columns[0]
+            sections["net_sales"] = {
+                "field": first,
+                "candidate_columns": [first],
+                "quantity_field": first,
+            }
         path = tmp_path / name / "config" / "settings.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(yaml.safe_dump({**BASE, **(extra or {})}), encoding="utf-8")
+        path.write_text(yaml.safe_dump(sections), encoding="utf-8")
         return load_settings(path, env={})
 
     return _load

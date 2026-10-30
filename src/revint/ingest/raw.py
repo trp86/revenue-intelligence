@@ -19,6 +19,10 @@ class RawAccessError(Exception):
     """A raw-file access was refused."""
 
 
+class RawFileInUseError(RawAccessError):
+    """A raw file is locked by another process, for example open in Excel."""
+
+
 def open_raw(path: Path, raw_dir: Path | None = None) -> BinaryIO:
     """Open a file under `raw_dir` (default `paths.raw` from settings) read-only.
 
@@ -34,6 +38,13 @@ def open_raw(path: Path, raw_dir: Path | None = None) -> BinaryIO:
         raise FileNotFoundError(f"raw file not found: {target}")
     if not target.is_file():
         raise RawAccessError(f"not a file: {target}")
-    handle = target.open("rb")
+    try:
+        handle = target.open("rb")
+    except PermissionError as exc:
+        logger.warning("refused 1 raw file: locked by another process or not readable")
+        raise RawFileInUseError(
+            f"raw file {target.name} is locked by another process or not readable; "
+            "close it (for example in Excel) and run the build again"
+        ) from exc
     logger.info("opened 1 raw file read-only (%d bytes)", target.stat().st_size)
     return handle

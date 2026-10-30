@@ -38,6 +38,9 @@ LEAF_COMMANDS = [
     ["serve"],
 ]
 
+# `build bronze` is real since story #33 (tests/unit/test_bronze.py); the rest stay stubs.
+STUB_COMMANDS = [args for args in LEAF_COMMANDS if args != ["build", "bronze"]]
+
 VALID_YAML = """\
 paths:
   raw: data/raw
@@ -152,7 +155,7 @@ def test_ac1_installed_script_prints_help() -> None:
 # AC2: every stub exits non-zero, says "not implemented", does no work ---------
 
 
-@pytest.mark.parametrize("args", LEAF_COMMANDS, ids=ids)
+@pytest.mark.parametrize("args", STUB_COMMANDS, ids=ids)
 def test_ac2_stub_exits_non_zero_with_not_implemented_message(
     project: Path, args: list[str]
 ) -> None:
@@ -162,7 +165,7 @@ def test_ac2_stub_exits_non_zero_with_not_implemented_message(
     assert f"revint {args[0]}" in result.output
 
 
-@pytest.mark.parametrize("args", LEAF_COMMANDS, ids=ids)
+@pytest.mark.parametrize("args", STUB_COMMANDS, ids=ids)
 def test_ac2_stub_creates_no_files_or_databases(project: Path, args: list[str]) -> None:
     before = snapshot(project)
     runner.invoke(app, args)

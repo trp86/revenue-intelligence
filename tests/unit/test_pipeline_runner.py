@@ -534,3 +534,41 @@ def test_logs_on_failure_name_the_file_and_hide_values(
         run_stage(stage, settings)
     assert "01_a.sql" in caplog.text
     assert "ROW-VALUE-98765" not in caplog.text
+
+
+# Extra parameters a stage's caller passes in (story #34: the bronze file for silver) ----------
+
+
+def test_extra_parameters_are_bound_alongside_the_settings_parameters(
+    tmp_path: Path, load_with
+) -> None:
+    settings = load_with()
+    stage = write_sql(
+        tmp_path / "sql", {"01_a.sql": "create table p as select $my_file as f, $asof_date as d;"}
+    )
+    run_stage(stage, settings, extra_parameters={"my_file": "x/y.parquet"})
+    assert rows(settings, "select f, d from p") == [("x/y.parquet", date(2020, 2, 29))]
+
+
+def test_extra_parameters_may_not_shadow_a_settings_parameter(tmp_path: Path, load_with) -> None:
+    settings = load_with()
+    stage = write_sql(tmp_path / "sql", {"01_a.sql": "select 1;"})
+    with pytest.raises(StageError, match="asof_date"):
+        run_stage(stage, settings, extra_parameters={"asof_date": "2000-01-01"})
+    assert table_names(settings) == []
+
+
+def test_a_missing_extra_parameter_is_still_named(tmp_path: Path, load_with) -> None:
+    settings = load_with()
+    stage = write_sql(tmp_path / "sql", {"01_a.sql": "select $my_file;"})
+    with pytest.raises(StageError, match=r"\$my_file"):
+        run_stage(stage, settings)
+    with pytest.raises(StageError, match=r"\$my_file"):
+        run_stage(stage, settings, extra_parameters={"other": "x"})
+
+
+def test_execute_stage_passes_extra_parameters_through(tmp_path: Path, load_with) -> None:
+    settings = load_with()
+    stage = write_sql(tmp_path / "10_x", {"01_a.sql": "create table p as select $my_file as f;"})
+    assert execute_stage(stage, settings, extra_parameters={"my_file": "z"}) == 0
+    assert rows(settings, "select f from p") == [("z",)]

@@ -422,8 +422,9 @@ def test_the_stage_runs_the_duplicate_rule_before_the_audit_table_and_the_checks
         "02_silver_sales.sql",
         "03_exclusions.sql",
         "04_duplicates.sql",
-        "05_excluded_rows.sql",
-        "06_checks.sql",
+        "05_value_flags.sql",
+        "06_excluded_rows.sql",
+        "07_checks.sql",
     ]
 
 

@@ -427,6 +427,7 @@ def test_the_stage_runs_the_duplicate_rule_before_the_audit_table_and_the_checks
         "07_label_normalisation.sql",
         "08_excluded_rows.sql",
         "09_customer_codes.sql",
+        "10_quality_results.sql",
         "99_checks.sql",
     ]
 

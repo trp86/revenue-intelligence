@@ -188,6 +188,22 @@ def check_label_columns(settings: Settings) -> None:
         )
 
 
+def silver_stage_parameters(bronze: Path) -> dict[str, object]:
+    """The extra SQL parameters the silver stage needs beyond `Settings`.
+
+    `bronze_file` is the bronze Parquet file. `dq_decimal_columns` lists the decimal columns
+    and `dq_decimal_raw_columns` their `<column>_raw` twins, in the same order, so the quality
+    SQL can find rows where rounding to four decimals changed a value (rule S1) without naming
+    any column itself.
+    """
+    decimals = [name for name, kind in COLUMN_TYPES.items() if kind == "decimal"]
+    return {
+        "bronze_file": bronze.as_posix(),
+        "dq_decimal_columns": decimals,
+        "dq_decimal_raw_columns": [f"{name}_raw" for name in decimals],
+    }
+
+
 def run_silver(settings: Settings) -> SilverResult:
     """Build `silver_sales` in the warehouse from the bronze file.
 
@@ -204,7 +220,7 @@ def run_silver(settings: Settings) -> SilverResult:
         stage = run_stage(
             SILVER_DIR,
             settings,
-            extra_parameters={"bronze_file": bronze.as_posix()},
+            extra_parameters=silver_stage_parameters(bronze),
         )
     except PipelineError as exc:
         raise SilverError(str(exc)) from exc

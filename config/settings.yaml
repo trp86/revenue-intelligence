@@ -145,6 +145,38 @@ customers:
   name_column: Customer
   branch_column: Branch_Name
 
+# Data quality results (spec 01 section 5; maintainer's decision on issue #41). Severity and
+# action are a fixed value per silver rule S1 to S12, not computed from a percentage, because
+# where to draw a threshold is a business judgement. high = rests on an unconfirmed client
+# assumption or changes which rows count.
+quality:
+  severity:
+    S1: info
+    S2: warning
+    S3: warning
+    S4: warning
+    S5: high
+    S6: high
+    S7: warning
+    S8: info
+    S9: high
+    S10: high
+    S11: warning
+    S12: info
+  action:                                # flagged | excluded | transformed | recorded
+    S1: transformed
+    S2: flagged
+    S3: transformed
+    S4: recorded
+    S5: excluded
+    S6: flagged
+    S7: flagged
+    S8: flagged
+    S9: excluded
+    S10: excluded
+    S11: flagged
+    S12: recorded
+
 # Reconciliation (spec 01 section 6).
 recon:
   tolerance_amount: 0.01                 # allowed difference for amount checks

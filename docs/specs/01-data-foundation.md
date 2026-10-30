@@ -54,6 +54,35 @@ One row per rule: `rule_id`, description, `rows_affected`,
 severity. Output as table and markdown. Counts and aggregates only;
 no customer-level values.
 
+Implemented in `sql/10_silver/10_quality_results.sql` (story #41), which builds three tables
+in the warehouse on every silver build. They hold counts and sums only, never a row, customer,
+label or order value. The markdown report is a separate story (#42).
+
+- `dq_rule_results`: one row per silver rule S1 to S12 with `rule_id`, `description`,
+  `rows_affected`, `pct_rows` (rows over all silver rows, NULL when silver is empty),
+  `net_sales_impact`, `action_taken` and `severity`.
+- `dq_exclusion_effect`: one row per exclusion reason (`exact_duplicate`, `stray_row`) and
+  candidate amount column, with `rows_excluded`, `excluded_amount`, `column_total`,
+  `pct_of_column_total`, `pct_of_net_sales_total` and `is_net_sales_field`.
+- `dq_void_effect`: one row with `voided_lines`, `voided_net_sales`, `blank_void_lines` and
+  `unmapped_void_lines`.
+
+`rows_affected` counts the PROBLEM rows of a rule (maintainer's decision on issue #41): S1 rows
+where rounding a decimal to four places changed a value; S2 rows with at least one value that
+could not be typed; S3 rows whose channel or branch label the map changed; S4 the kept order lines
+of customer codes with more than one name or branch or a near-duplicate; S5 duplicate copies; S6
+rows with a blank Void; S7 possible free goods; S8 negative quantity or value; S9 the stray row;
+S10 excluded rows of any reason; S11 rows with a bad value in a candidate amount column; S12 rows
+in `silver_excluded_rows`. `net_sales_impact` is the sum of `net_sales.field` over those rows,
+NULL for S1 and S4. A row with no net sales value adds 0, so the impact undercounts there; the
+description states how many such rows there are. The S6 description also states the voided lines
+(`void_flag = 1`) and the unmapped Void values. `severity` (`info`, `warning`, `high`) and
+`action_taken` (`flagged`, `excluded`, `transformed`, `recorded`) are a fixed value per rule in
+config (`quality.severity`, `quality.action`), not computed from a percentage, because where to
+draw a threshold is a business judgement. `99_checks.sql` fails the stage unless
+`dq_rule_results` has exactly one row per rule, the exclusion table one row per reason and
+candidate column, and the counts agree with the exclusion tables (S10 = S12 = S5 + S9).
+
 The report has an **Exclusions** block stating, per reason
 (`exact_duplicate`, `stray_row`): the excluded row count and the
 revenue effect (sum of each candidate amount column over the excluded
@@ -84,6 +113,7 @@ rows, and as % of the total for the configured net sales field).
 | `ingest.header_min_match` | 0.8 of expected columns |
 | `labels.channel_columns` / `labels.branch_columns` | `Channel_Category` / `Branch_Name` (issue #37) |
 | `labels.channel_map` / `labels.branch_map` | only the obvious spelling variants (see S3); every other label stays unmapped |
+| `quality.severity` / `quality.action` | one value per rule S1 to S12 (see section 5) |
 | `recon.tolerance_amount` | 0.01 |
 | `recon.tolerance_report_pct` | [x] |
 

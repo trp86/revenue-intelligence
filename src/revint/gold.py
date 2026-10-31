@@ -77,6 +77,10 @@ def _check_columns(settings: Settings) -> None:
     ):
         if COLUMN_TYPES.get(column, "text") != "text":
             raise GoldError(f"{key} '{column}' is a typed column; it must be text")
+    for key in ("code_column", "name_column", "brand_column", "category_column"):
+        column = getattr(settings.product, key)
+        if COLUMN_TYPES.get(column, "text") != "text":
+            raise GoldError(f"product.{key} '{column}' is a typed column; it must be text")
     region_column = settings.regions.source_column
     if COLUMN_TYPES.get(region_column, "text") != "text":
         raise GoldError(

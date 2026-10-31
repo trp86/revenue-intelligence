@@ -59,6 +59,17 @@ def _check_columns(settings: Settings) -> None:
         raise GoldError(
             f"calendar.date_column '{date_column}' is not a date column that silver types"
         )
+    branch_columns = settings.labels.branch_columns
+    if len(branch_columns) != 1:
+        raise GoldError(
+            "labels.branch_columns must name exactly one column for dim_branch, "
+            f"not {len(branch_columns)}"
+        )
+    region_column = settings.regions.source_column
+    if COLUMN_TYPES.get(region_column, "text") != "text":
+        raise GoldError(
+            f"regions.source_column '{region_column}' is a typed column; a region is text"
+        )
 
 
 def run_gold(settings: Settings) -> StageResult:

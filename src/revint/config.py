@@ -326,7 +326,8 @@ class PeerGroupsSettings(_Section):
 class ProductSettings(_Section):
     """The source columns the product dimension is built from (spec 02 section 4).
 
-    The brand and category columns are provisional until profiling (story #73) confirms them.
+    The brand and category columns were chosen from profiling (story #73, spec 02 section 12);
+    the choice is provisional until the maintainer confirms it.
     """
 
     code_column: str = Field(

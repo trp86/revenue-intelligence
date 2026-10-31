@@ -65,6 +65,18 @@ def _check_columns(settings: Settings) -> None:
             "labels.branch_columns must name exactly one column for dim_branch, "
             f"not {len(branch_columns)}"
         )
+    channel_columns = settings.labels.channel_columns
+    if len(channel_columns) != 1:
+        raise GoldError(
+            "labels.channel_columns must name exactly one column for dim_customer, "
+            f"not {len(channel_columns)}"
+        )
+    for key, column in (
+        ("customers.code_column", settings.customers.code_column),
+        ("customers.name_column", settings.customers.name_column),
+    ):
+        if COLUMN_TYPES.get(column, "text") != "text":
+            raise GoldError(f"{key} '{column}' is a typed column; it must be text")
     region_column = settings.regions.source_column
     if COLUMN_TYPES.get(region_column, "text") != "text":
         raise GoldError(

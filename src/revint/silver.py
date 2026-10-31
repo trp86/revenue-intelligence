@@ -27,6 +27,7 @@ from revint.pipeline import (
     WarehouseLockedError,
     run_stage,
 )
+from revint.silver_schema import COLUMN_TYPES
 
 logger = logging.getLogger(__name__)
 
@@ -46,42 +47,6 @@ AMOUNT_COLUMNS = (
 # S10: the only reasons for which silver marks a row as excluded. `99_checks.sql` fails the
 # stage if any other reason appears; a test compares this tuple with that file.
 ALLOWED_EXCLUSION_REASONS = ("stray_row", "exact_duplicate")
-
-_DATES = ("Date", "SCJ_FISCAL_MONTH")
-_INTEGERS = ("Year", "Quantity(PCS)", "UOM")
-_DECIMALS = (
-    "FOB",
-    "TOTAL_FOB_IN_AMOUNT",
-    "Selling_Price",
-    "Selling_Amount",
-    "RBD_DISCOUNT_AMOUNT",
-    "Change_to_Ctn",
-    "PRICE",
-    "NET_AMOUNT_1",
-    "DISCOUNT_1",
-    "AMOUNT_AF_DIS",
-    "Discount_2",
-    "Net_Amount_2",
-    "Back_Margin_3%",
-    "Net_AMOUNT_3",
-    "CT_5%",
-    "TAX_AMOUNT",
-    "UnitPrice",
-    "Original_price",
-    "Diff_Price",
-    "Diff_Amount",
-    "Discount(%)_1",
-    "Discount(%)_2",
-    "DiscountAmount",
-)
-
-# The type given to a source column; columns not listed here are text. The SQL file
-# `02_silver_sales.sql` lists the same columns; a test compares the two.
-COLUMN_TYPES: dict[str, str] = {
-    **dict.fromkeys(_DATES, "date"),
-    **dict.fromkeys(_INTEGERS, "integer"),
-    **dict.fromkeys(_DECIMALS, "decimal"),
-}
 
 
 class SilverError(Exception):

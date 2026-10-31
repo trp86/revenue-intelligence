@@ -15,7 +15,10 @@ from revint.config import (
     CustomersSettings,
     LabelsSettings,
     NetSalesSettings,
+    PeerGroupsSettings,
+    ProductSettings,
     ReconSettings,
+    RegionsSettings,
     Settings,
     load_settings,
 )
@@ -63,6 +66,31 @@ def load_with(tmp_path: Path) -> Callable[..., Settings]:
                     {}
                     if rec_wanted <= set(columns)
                     else {"product_column": first, "date_column": first}
+                )
+            prod = ProductSettings()
+            prod_wanted = {
+                prod.code_column,
+                prod.name_column,
+                prod.brand_column,
+                prod.category_column,
+            }
+            if "product" not in sections:
+                sections["product"] = (
+                    {}
+                    if prod_wanted <= set(columns)
+                    else dict.fromkeys(
+                        ("code_column", "name_column", "brand_column", "category_column"), first
+                    )
+                )
+            if "regions" not in sections:
+                sections["regions"] = (
+                    {} if RegionsSettings().source_column in columns else {"source_column": first}
+                )
+            if "peer_groups" not in sections:
+                sections["peer_groups"] = (
+                    {}
+                    if set(PeerGroupsSettings().columns) <= set(columns)
+                    else {"columns": [first], "fallback_columns": []}
                 )
             if "net_sales" not in sections:
                 sections["net_sales"] = (

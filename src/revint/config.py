@@ -20,10 +20,13 @@ from pydantic import (
     ConfigDict,
     Field,
     StrictBool,
+    StrictInt,
     ValidationError,
     field_validator,
     model_validator,
 )
+
+from revint.silver_schema import SILVER_FLAG_COLUMNS
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SETTINGS_FILE = PROJECT_ROOT / "config" / "settings.yaml"
@@ -104,6 +107,21 @@ class DuplicatesSettings(_Section):
     )
 
 
+def _check_text_map(value: dict[str, str]) -> dict[str, str]:
+    """A key matches after trimming both ends, so two keys that trim to the same text would be
+    ambiguous, and a blank key or value maps nothing useful."""
+    trimmed: dict[str, str] = {}
+    for key, canonical in value.items():
+        if not key.strip():
+            raise ValueError("a label key is blank")
+        if not canonical.strip():
+            raise ValueError(f"the canonical name for '{key.strip()}' is blank")
+        if key.strip() in trimmed:
+            raise ValueError(f"two keys are the same once trimmed: {key.strip()}")
+        trimmed[key.strip()] = canonical
+    return value
+
+
 class LabelsSettings(_Section):
     """Label normalisation (spec 01 S3).
 
@@ -139,18 +157,7 @@ class LabelsSettings(_Section):
     @field_validator("channel_map", "branch_map")
     @classmethod
     def _keys_and_values_are_usable(cls, value: dict[str, str]) -> dict[str, str]:
-        """A key matches after trimming both ends, so two keys that trim to the same text
-        would be ambiguous, and a blank key or value maps nothing useful."""
-        trimmed: dict[str, str] = {}
-        for key, canonical in value.items():
-            if not key.strip():
-                raise ValueError("a label key is blank")
-            if not canonical.strip():
-                raise ValueError(f"the canonical name for '{key.strip()}' is blank")
-            if key.strip() in trimmed:
-                raise ValueError(f"two keys are the same once trimmed: {key.strip()}")
-            trimmed[key.strip()] = canonical
-        return value
+        return _check_text_map(value)
 
 
 class NetSalesSettings(_Section):
@@ -184,12 +191,26 @@ class NetSalesSettings(_Section):
         description="Final name of the quantity column, used for free goods (spec 01 S7).",
     )
 
-    @field_validator("candidate_columns")
+    exclude_flags: list[str] = Field(
+        default=[],
+        description="Silver flag columns whose rows get included = false in v_net_sales (spec 02 "
+        "N3); the rows stay in the fact. Empty means every loaded row is included.",
+    )
+
+    @field_validator("candidate_columns", "exclude_flags")
     @classmethod
     def _no_repeated_candidates(cls, value: list[str]) -> list[str]:
         repeated = sorted({name for name in value if value.count(name) > 1})
         if repeated:
             raise ValueError(f"names repeat: {', '.join(repeated)}")
+        return value
+
+    @field_validator("exclude_flags")
+    @classmethod
+    def _flags_are_silver_flags(cls, value: list[str]) -> list[str]:
+        unknown = [name for name in value if name not in SILVER_FLAG_COLUMNS]
+        if unknown:
+            raise ValueError(f"not silver flag columns: {', '.join(unknown)}")
         return value
 
     @model_validator(mode="after")
@@ -218,6 +239,107 @@ class CustomersSettings(_Section):
     )
     branch_column: str = Field(
         default="Branch_Name", min_length=1, description="Column holding the branch name."
+    )
+
+
+class MartsSettings(_Section):
+    """Marts (spec 02 section 6)."""
+
+    zero_fill: StrictBool = Field(
+        default=True,
+        description="Whether a month with no sales is a row with 0 (true) or absent (false) in "
+        "the monthly marts, so engines that need continuity can rely on it.",
+    )
+
+
+class CalendarSettings(_Section):
+    """The date dimension (spec 02 section 4; the fiscal calendar is an open question)."""
+
+    fiscal_year_start_month: StrictInt = Field(
+        default=1,
+        ge=1,
+        le=12,
+        description="Month (1 to 12) the fiscal year starts; 1 makes the fiscal year the "
+        "calendar year.",
+    )
+
+
+class RegionsSettings(_Section):
+    """Where a branch's region comes from (spec 02 section 4)."""
+
+    source_column: str = Field(
+        default="Region",
+        min_length=1,
+        description="Source column holding a region; the default for a branch with no entry in "
+        "branch_to_region. Final column name (spec 01 B3).",
+    )
+    branch_to_region: dict[str, str] = Field(
+        default={}, description="Normalised branch name -> region; overrides the source column."
+    )
+
+    @field_validator("branch_to_region")
+    @classmethod
+    def _keys_and_values_are_usable(cls, value: dict[str, str]) -> dict[str, str]:
+        return _check_text_map(value)
+
+
+class PeerGroupsSettings(_Section):
+    """Peer groups for the peer category share mart (spec 02 section 6).
+
+    Only the group definition and its minimum size live here; the whitespace thresholds are
+    spec 03's. A group below min_size falls back to the group made of fallback_columns.
+    """
+
+    columns: list[str] = Field(
+        default=["Channel_Category", "Branch_Name"],
+        min_length=1,
+        description="Source columns that together define a peer group.",
+    )
+    min_size: StrictInt = Field(
+        default=10, ge=1, description="Fewest customers a peer group may have before it falls back."
+    )
+    fallback_columns: list[str] = Field(
+        default=["Channel_Category"],
+        description="Columns of the wider group used below min_size; a subset of columns, empty "
+        "for no fallback.",
+    )
+
+    @field_validator("columns", "fallback_columns")
+    @classmethod
+    def _no_repeated_columns(cls, value: list[str]) -> list[str]:
+        repeated = sorted({name for name in value if value.count(name) > 1})
+        if repeated:
+            raise ValueError(f"names repeat: {', '.join(repeated)}")
+        return value
+
+    @model_validator(mode="after")
+    def _fallback_is_part_of_the_group(self) -> PeerGroupsSettings:
+        outside = [c for c in self.fallback_columns if c not in self.columns]
+        if outside:
+            raise ValueError(
+                "peer_groups.fallback_columns has names not in peer_groups.columns: "
+                + ", ".join(outside)
+            )
+        return self
+
+
+class ProductSettings(_Section):
+    """The source columns the product dimension is built from (spec 02 section 4).
+
+    The brand and category columns are provisional until profiling (story #73) confirms them.
+    """
+
+    code_column: str = Field(
+        default="SCJ_CODE_1", min_length=1, description="Column holding the product code."
+    )
+    name_column: str = Field(
+        default="Product_Decription", min_length=1, description="Column holding the product name."
+    )
+    brand_column: str = Field(
+        default="Actual_Brands_1", min_length=1, description="Column holding the brand."
+    )
+    category_column: str = Field(
+        default="Internal_Category", min_length=1, description="Column holding the category."
     )
 
 
@@ -326,6 +448,11 @@ class Settings(_Section):
     customers: CustomersSettings = Field(default_factory=CustomersSettings)
     quality: QualitySettings = Field(default_factory=QualitySettings)
     recon: ReconSettings = Field(default_factory=ReconSettings)
+    marts: MartsSettings = Field(default_factory=MartsSettings)
+    calendar: CalendarSettings = Field(default_factory=CalendarSettings)
+    regions: RegionsSettings = Field(default_factory=RegionsSettings)
+    peer_groups: PeerGroupsSettings = Field(default_factory=PeerGroupsSettings)
+    product: ProductSettings = Field(default_factory=ProductSettings)
     asof: AsofSettings
 
     @model_validator(mode="after")
@@ -362,6 +489,21 @@ class Settings(_Section):
             column = getattr(self.recon, role)
             if column not in known:
                 problems.append(f"recon.{role} '{column}' is not in ingest.expected_columns")
+        for role in ("code_column", "name_column", "brand_column", "category_column"):
+            column = getattr(self.product, role)
+            if column not in known:
+                problems.append(f"product.{role} '{column}' is not in ingest.expected_columns")
+        if self.regions.source_column not in known:
+            problems.append(
+                f"regions.source_column '{self.regions.source_column}' "
+                "is not in ingest.expected_columns"
+            )
+        absent_peer = [c for c in self.peer_groups.columns if c not in known]
+        if absent_peer:
+            problems.append(
+                "peer_groups.columns has names not in ingest.expected_columns: "
+                + ", ".join(absent_peer)
+            )
         for role in ("channel_columns", "branch_columns"):
             absent = [c for c in getattr(self.labels, role) if c not in known]
             if absent:

@@ -281,8 +281,25 @@ class QualitySettings(_Section):
 
 
 class ReconSettings(_Section):
+    """Reconciliation checks (spec 01 section 6).
+
+    The product and date columns are the ones R4 counts and ranges over; names are final
+    column names (spec 01 B3), cross-checked against `ingest.expected_columns` in `Settings`.
+    The customer column is `customers.code_column`.
+    """
+
     tolerance_amount: float = Field(
         default=0.01, ge=0, description="Allowed difference in amount reconciliation checks."
+    )
+    product_column: str = Field(
+        default="SCJ_CODE_1",
+        min_length=1,
+        description="Column whose distinct values R4 counts as products.",
+    )
+    date_column: str = Field(
+        default="Date",
+        min_length=1,
+        description="Typed date column whose minimum and maximum R4 reports.",
     )
 
 
@@ -331,6 +348,10 @@ class Settings(_Section):
             column = getattr(customers, role)
             if column not in known:
                 problems.append(f"customers.{role} '{column}' is not in ingest.expected_columns")
+        for role in ("product_column", "date_column"):
+            column = getattr(self.recon, role)
+            if column not in known:
+                problems.append(f"recon.{role} '{column}' is not in ingest.expected_columns")
         for role in ("channel_columns", "branch_columns"):
             absent = [c for c in getattr(self.labels, role) if c not in known]
             if absent:

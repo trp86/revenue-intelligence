@@ -87,8 +87,13 @@ def build_all() -> None:
 
 @app.command("check")
 def check() -> None:
-    """Run SQL checks and reconciliation."""
-    _stub("check")
+    """Run SQL checks and reconciliation (R1 to R4); exit 7 if a check fails."""
+    settings = _load_settings()
+    from revint.recon import execute_recon  # imported here to keep --help fast
+
+    code = execute_recon(settings)
+    if code:
+        raise typer.Exit(code=code)
 
 
 @report_app.command("dq")

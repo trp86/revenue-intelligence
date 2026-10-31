@@ -180,6 +180,8 @@ quality:
 # Reconciliation (spec 01 section 6).
 recon:
   tolerance_amount: 0.01                 # allowed difference for amount checks
+  product_column: SCJ_CODE_1             # R4 counts its distinct values as products (181 expected)
+  date_column: Date                      # R4 reports its minimum and maximum (typed date column)
 
 asof:
   date: 2020-02-29                       # as-of date of the data

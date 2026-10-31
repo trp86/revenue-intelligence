@@ -39,6 +39,8 @@ Implemented in `sql/20_gold/01_v_net_sales.sql` (story #74), run by `revint.gold
 | dim_branch | `branch_key` | normalised name, region (config mapping) |
 | dim_date | `date_key` | date, week, month, quarter, year, month_start; fiscal fields if config enables |
 
+`dim_date` (story #75, `sql/20_gold/02_dim_date.sql`): one row per calendar day from the first to the last date in `silver_sales` (the column is `calendar.date_column`, default `Date`, which gold checks is a typed date column), with no gaps, so a month with no sales still has its days; dates silver could not type add no day. Columns: `date_key` (the day as yyyymmdd), `date`, `week` (ISO week, Monday first), `iso_year` (the year the ISO week belongs to; 30 December 2019 is week 1 of 2020), `week_start`, `month`, `quarter`, `year`, `month_start`, `fiscal_year`, `fiscal_quarter` and `f_after_asof` (the day is after `asof.date`; the fact uses it to flag a line dated after the as-of date, and keeps the line). The fiscal year is named by the calendar year it starts in: with `calendar.fiscal_year_start_month` 1 the fiscal fields equal the calendar ones; with 4 (April), March 2020 is fiscal year 2019, quarter 4. The unknown member `date_key = -1` has NULL fields and `f_after_asof = false`; a line with no usable date joins it. On the real file: 973 days (2017-07-02 to 2020-02-29), none after the as-of date.
+
 Rules: surrogate keys deterministic (hash of natural key); unknown
 members use key `-1` rather than dropping rows; near-duplicate
 customer codes remain separate rows.
@@ -80,6 +82,7 @@ hand-written definitions in `config/definitions.yaml` shown in UI
 | `duplicates.exclude_from_net_sales` | `true` (provisional, owned by spec 01) |
 | `marts.zero_fill` | true |
 | `calendar.fiscal_year_start_month` | 1 [x] |
+| `calendar.date_column` | `Date` (story #75): the typed silver date column that sets the range of `dim_date` |
 | `regions.branch_to_region` | empty, from profiling; overrides `regions.source_column` |
 | `regions.source_column` | `Region` (story #72): the source column a branch's region defaults to |
 | `peer_groups.columns` / `peer_groups.min_size` / `peer_groups.fallback_columns` | `Channel_Category`, `Branch_Name` / 10 / `Channel_Category` (story #72). A group below `min_size` falls back to the group made of `fallback_columns` (a subset of `columns`; empty = no fallback). Only the group definition is here; the whitespace thresholds are spec 03's |

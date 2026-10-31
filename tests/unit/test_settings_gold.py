@@ -58,6 +58,7 @@ def test_ac1_committed_config_has_the_spec_defaults() -> None:
     assert s.net_sales.exclude_flags == []
     assert s.marts.zero_fill is True
     assert s.calendar.fiscal_year_start_month == 1
+    assert s.calendar.date_column == "Date"
     assert s.regions.branch_to_region == {}
     assert s.regions.source_column == "Region"
     assert s.peer_groups.columns == ["Channel_Category", "Branch_Name"]
@@ -86,7 +87,7 @@ def test_ac1_defaults_apply_when_the_sections_are_absent(load_with: Loader) -> N
 def test_ac1_the_committed_file_lists_every_new_key() -> None:
     data = yaml.safe_load((ROOT / "config" / "settings.yaml").read_text(encoding="utf-8"))
     assert set(data["marts"]) == {"zero_fill"}
-    assert set(data["calendar"]) == {"fiscal_year_start_month"}
+    assert set(data["calendar"]) == {"fiscal_year_start_month", "date_column"}
     assert set(data["regions"]) == {"source_column", "branch_to_region"}
     assert set(data["peer_groups"]) == {"columns", "min_size", "fallback_columns"}
     assert set(data["product"]) == {"code_column", "name_column", "brand_column", "category_column"}
@@ -253,6 +254,7 @@ CHANGES = [
     {"net_sales": {"exclude_flags": ["f_blank_void"]}},
     {"marts": {"zero_fill": False}},
     {"calendar": {"fiscal_year_start_month": 4}},
+    {"calendar": {"date_column": "SCJ_FISCAL_MONTH"}},
     {"regions": {"branch_to_region": {"Yangon": "South"}}},
     {"regions": {"source_column": "DC"}},
     {"peer_groups": {"min_size": 25}},
@@ -297,6 +299,11 @@ def test_ac4_a_product_column_not_in_the_sheet_fails(load_with: Loader, key: str
 def test_ac4_a_peer_column_not_in_the_sheet_fails(load_with: Loader) -> None:
     with pytest.raises(ConfigError, match=r"peer_groups\.columns.*Nope"):
         load_with(small(peer_groups={"columns": ["Chan", "Nope"], "fallback_columns": ["Chan"]}))
+
+
+def test_ac4_a_calendar_date_column_not_in_the_sheet_fails(load_with: Loader) -> None:
+    with pytest.raises(ConfigError, match=r"calendar\.date_column 'Nope'"):
+        load_with(small(calendar={"date_column": "Nope"}))
 
 
 def test_ac4_a_region_source_column_not_in_the_sheet_fails(load_with: Loader) -> None:

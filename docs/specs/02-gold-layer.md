@@ -81,7 +81,7 @@ hand-written definitions in `config/definitions.yaml` shown in UI
 | `regions.branch_to_region` | empty, from profiling; overrides `regions.source_column` |
 | `regions.source_column` | `Region` (story #72): the source column a branch's region defaults to |
 | `peer_groups.columns` / `peer_groups.min_size` / `peer_groups.fallback_columns` | `Channel_Category`, `Branch_Name` / 10 / `Channel_Category` (story #72). A group below `min_size` falls back to the group made of `fallback_columns` (a subset of `columns`; empty = no fallback). Only the group definition is here; the whitespace thresholds are spec 03's |
-| `product.code_column` / `name_column` / `brand_column` / `category_column` | `SCJ_CODE_1`, `Product_Decription`, `Actual_Brands_1`, `Internal_Category` (story #72). Provisional: story #73 profiles the candidates and confirms or changes them |
+| `product.code_column` / `name_column` / `brand_column` / `category_column` | `SCJ_CODE_1`, `Product_Decription`, `Actual_Brands_1`, `Internal_Category` (story #72). Confirmed from profiling by story #73 (see section 12); the maintainer can change them |
 
 ## 9. Edge cases
 - Returns/negative values stay in net sales unless excluded by config.
@@ -113,9 +113,12 @@ Spec 01 (silver), spec 10 (config). Feeds 03, 06, 08.
   column 46, before the 3% back margin), labelled "provisional" in UI. The
   alternative is `Net_AMOUNT_3` (column 48, after back margin). Why: stated in
   decisions.md.
-- OPEN QUESTION: Product hierarchy: which source columns give brand
-  and category? Default: derive from profiling, record in config.
-  Why: whitespace needs a category level.
+- DECIDED (provisional, maintainer to confirm in the PR for story #73): Product hierarchy. `uv run python -m revint.product_profile` (counts only, `revint.product_profile`) profiled the six candidate columns on the real file: 662,128 rows, 181 product codes in `SCJ_CODE_1`, 1,107 rows with a blank code (none of them has a category, so they map to the unknown product).
+  Brand is `Actual_Brands_1`: it and `Actual_Brands_2` are equal on every row, with 7 values and 4 to 91 products each. It crosses categories (6 of the 7 brands appear under more than one `Internal_Category`), as a brand should. 4 codes have two brand values, 4 have none.
+  Category is `Internal_Category`: 40 values with 1 to 25 products each (median 3), 2 codes with two values, 4 codes with none. It nests inside `SCJ_SEGMENT` (17 values): all but one of the 40 categories sit in a single segment, so `SCJ_SEGMENT` is the coarser level and `Internal_Category` the finer one. The finer level gives the whitespace engine more categories per customer; the coarser one is a one-line change (`product.category_column`) if the client prefers it. `FRAGRANCES` (80 values) and `Size` (45 values) are attributes of a product, not categories.
+  Code is `SCJ_CODE_1` (`SCJ_CODE_2` has the same 181 values). Name is `Product_Decription` (183 distinct values; 12 codes have more than one name).
+  A product code with several values in a column takes the most frequent value; a tie goes to the value on the lowest _source_row.
+  No candidate column had a tied value on any code. A code with no value in a column (4 for each candidate) gets category `Unknown` in `dim_product`.
 - OPEN QUESTION: Customer identity beyond code (multi-spelling,
   multi-branch). Default: code is identity, variants surfaced as a
   flag. Why: decisions forbid merging near-duplicates.

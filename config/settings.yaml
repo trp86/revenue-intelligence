@@ -206,7 +206,8 @@ peer_groups:
   fallback_columns:                      # must be part of columns; empty = no fallback
     - Channel_Category
 
-# Product dimension columns. Brand and category are provisional until story #73 profiles them.
+# Product dimension columns, chosen from profiling (story #73, spec 02 section 12). Provisional:
+# the maintainer confirms. Category could be the coarser SCJ_SEGMENT instead.
 product:
   code_column: SCJ_CODE_1
   name_column: Product_Decription

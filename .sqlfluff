@@ -13,6 +13,7 @@ max_line_length = 100
 param_style = dollar
 bronze_file = 'bronze.parquet'
 asof_date = '2020-02-29'
+excel_rows = 1
 
 # Code standards: lowercase keywords.
 [sqlfluff:rules:capitalisation.keywords]

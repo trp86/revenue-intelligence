@@ -100,6 +100,8 @@ rows, and as % of the total for the configured net sales field).
 | R7 | Totals reconcile with and without exclusions, for every candidate amount column. With `duplicates.exclude_from_net_sales = true`: `sum(silver_sales)` = `sum(fact_sales)` + `sum(silver_excluded_rows)`. With `false`: `sum(silver_sales)` = `sum(fact_sales)` + `sum(silver_excluded_rows where exclusion_reason = 'stray_row')` | 0.01 |
 | R8 | Every `exact_duplicate` row in `excluded_rows` has an identical twin (all source columns) at a lower `_source_row` that is not excluded | 0 |
 
+How R1 to R4 run (story #43, `revint check`): the SQL is in `sql/checks` (numbered, run in order in one transaction by `revint.recon`), and the results are written to the warehouse table `recon_results` (`check_id`, `subject`, `description`, `status` = pass, fail or info, `expected`, `actual`, `difference` = actual - expected, `tolerance`, `detail`, `checked_at`), rebuilt on every run. R1 counts Excel data rows straight from the workbook (read-only): rows from the one under the header to the last row with any value, blank rows between data rows included. R2 has three results: `silver_rows`, `excluded_rows` and `stray_rows`. R3 has one result per `net_sales.candidate_columns` column; bronze text is cast the way silver casts it. R4 reports distinct `customers.code_column` values, distinct `recon.product_column` values and the minimum and maximum of `recon.date_column`, all as `info`; the +/- [x]% warning is still open. `revint check` prints every result and exits 0 when none failed, 7 when a check failed, 4 when the checks could not run (no warehouse, no silver, no workbook) and 5 when the warehouse is in use. R5, R6 and the gold form of R7 are not part of this command yet.
+
 ## 7. Configurable parameters
 | Key | Default |
 |---|---|
@@ -115,6 +117,7 @@ rows, and as % of the total for the configured net sales field).
 | `labels.channel_map` / `labels.branch_map` | only the obvious spelling variants (see S3); every other label stays unmapped |
 | `quality.severity` / `quality.action` | one value per rule S1 to S12 (see section 5) |
 | `recon.tolerance_amount` | 0.01 |
+| `recon.product_column` / `recon.date_column` | `SCJ_CODE_1` / `Date` (story #43): the columns R4 counts and ranges over |
 | `recon.tolerance_report_pct` | [x] |
 
 ## 8. Edge cases

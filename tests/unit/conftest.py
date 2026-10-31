@@ -15,6 +15,7 @@ from revint.config import (
     CustomersSettings,
     LabelsSettings,
     NetSalesSettings,
+    ReconSettings,
     Settings,
     load_settings,
 )
@@ -55,6 +56,14 @@ def load_with(tmp_path: Path) -> Callable[..., Settings]:
             cust_wanted = {cust.code_column, cust.name_column, cust.branch_column}
             lab = LabelsSettings()
             lab_wanted = {*lab.channel_columns, *lab.branch_columns}
+            rec = ReconSettings()
+            rec_wanted = {rec.product_column, rec.date_column}
+            if "recon" not in sections:
+                sections["recon"] = (
+                    {}
+                    if rec_wanted <= set(columns)
+                    else {"product_column": first, "date_column": first}
+                )
             if "net_sales" not in sections:
                 sections["net_sales"] = (
                     {}

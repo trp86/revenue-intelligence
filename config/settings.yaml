@@ -138,6 +138,7 @@ net_sales:
     - Net_AMOUNT_3
     - TAX_AMOUNT
   quantity_field: Quantity(PCS)          # quantity column for free goods (spec 01 S7)
+  exclude_flags: []                      # silver flag columns whose rows get included = false (spec 02 N3)
 
 # Customer identity (spec 01 S4): the code is the key; near-duplicate codes are NOT merged.
 # These are the source columns the customer-code table is built from (final column names).
@@ -184,6 +185,33 @@ recon:
   product_column: SCJ_CODE_1             # R4 counts its distinct values as products (181 expected)
   date_column: Date                      # R4 reports its minimum and maximum (typed date column)
   docs_duplicate_count: 556              # exact duplicates the docs state (D4); the report shows the actual count next to it
+
+# Gold layer (spec 02 section 8). Column names are final names (spec 01 B3).
+marts:
+  zero_fill: true                        # a month with no sales is a row with 0 (false: absent)
+
+calendar:
+  fiscal_year_start_month: 1             # 1 = fiscal year is the calendar year (open question)
+
+regions:
+  source_column: Region                  # default region of a branch
+  branch_to_region: {}                   # normalised branch name -> region; overrides the column
+
+# Peer groups for the peer category share mart. Thresholds for whitespace are spec 03's.
+peer_groups:
+  columns:                               # together define a peer group
+    - Channel_Category
+    - Branch_Name
+  min_size: 10                           # a smaller group falls back to fallback_columns
+  fallback_columns:                      # must be part of columns; empty = no fallback
+    - Channel_Category
+
+# Product dimension columns. Brand and category are provisional until story #73 profiles them.
+product:
+  code_column: SCJ_CODE_1
+  name_column: Product_Decription
+  brand_column: Actual_Brands_1
+  category_column: Internal_Category
 
 asof:
   date: 2020-02-29                       # as-of date of the data

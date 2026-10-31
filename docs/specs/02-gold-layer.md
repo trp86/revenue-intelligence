@@ -74,11 +74,14 @@ hand-written definitions in `config/definitions.yaml` shown in UI
 | `net_sales.field` | `Net_Amount_2` |
 | `net_sales.candidate_columns` | `Selling_Amount`, `NET_AMOUNT_1`, `AMOUNT_AF_DIS`, `Net_Amount_2`, `Net_AMOUNT_3`, `TAX_AMOUNT` |
 | `net_sales.quantity_field` | `Quantity(PCS)` |
-| `net_sales.exclude_flags` | `[]` |
+| `net_sales.exclude_flags` | `[]`. Each name must be a silver flag column (`revint.silver_schema.SILVER_FLAG_COLUMNS`: the rule flags, `is_duplicate`, `is_excluded` and one `f_bad_<column>` per typed column); a test compares the list with the real silver table. A row with such a flag gets `included = false` in `v_net_sales` and stays in the fact |
 | `duplicates.exclude_from_net_sales` | `true` (provisional, owned by spec 01) |
 | `marts.zero_fill` | true |
 | `calendar.fiscal_year_start_month` | 1 [x] |
-| `regions.branch_to_region` | empty, from profiling |
+| `regions.branch_to_region` | empty, from profiling; overrides `regions.source_column` |
+| `regions.source_column` | `Region` (story #72): the source column a branch's region defaults to |
+| `peer_groups.columns` / `peer_groups.min_size` / `peer_groups.fallback_columns` | `Channel_Category`, `Branch_Name` / 10 / `Channel_Category` (story #72). A group below `min_size` falls back to the group made of `fallback_columns` (a subset of `columns`; empty = no fallback). Only the group definition is here; the whitespace thresholds are spec 03's |
+| `product.code_column` / `name_column` / `brand_column` / `category_column` | `SCJ_CODE_1`, `Product_Decription`, `Actual_Brands_1`, `Internal_Category` (story #72). Provisional: story #73 profiles the candidates and confirms or changes them |
 
 ## 9. Edge cases
 - Returns/negative values stay in net sales unless excluded by config.

@@ -74,6 +74,8 @@ present as rows with 0 where an engine needs continuity (config
 `marts.zero_fill`, default true); every mart has a header comment
 stating grain and definition.
 
+`mart_customer_month` (story #80, `sql/20_gold/07_mart_customer_month.sql`): grain customer x month, where the month is `dim_date.month_start` and the customer is the fact's `customer_key` (-1, the unknown customer, is kept). Columns: `customer_key`, `month_start`, `net_sales`, `n_lines` and `f_zero_filled`. Net sales and the `included` flag come from `v_net_sales`; the fact supplies each line's customer and date. A line with `included = false` adds nothing, so the mart total equals the fact total of included rows whichever way `duplicates.exclude_from_net_sales` is set. With `marts.zero_fill` true, every month between a customer's own first and last month with sales that has none is present with `net_sales` 0, `n_lines` 0 and `f_zero_filled` true; with false such months are absent. Lines with no usable date have no month and keep a row with a NULL month. On the real file: 12,240 customers (the unknown customer included) over 32 months; with zero fill on, 203,183 rows of which 111,554 are filled; with it off, 91,629 rows; the net sales total equals the fact total of included rows in each case (15,471,215,121.1399 with the copies excluded, 15,473,904,687.2629 with them kept), and the line count equals the included fact rows (661,571 and 662,127).
+
 ## 7. Data dictionary outline
 Per column: name, table, type, plain-language definition, source
 column, rule ID, flags that affect it, example [x]. Generated, plus

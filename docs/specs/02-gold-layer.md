@@ -29,6 +29,8 @@ Status: DRAFT. FR-D3, FR-D4.
 | N4 | View exposes `net_sales`, `net_sales_field_used`, `included` (bool) so the UI can label the definition |
 | N5 | Switching `net_sales.field` changes marts after rebuild without code edits; a test proves it |
 
+Implemented in `sql/20_gold/01_v_net_sales.sql` (story #74), run by `revint.gold.run_gold` (the command `revint build gold` is story #87). A view cannot take bound parameters, so the parameterised result is the table `gold_net_sales_lines` (rebuilt in full on every gold run) and `v_net_sales` is a plain view over it. Columns: `sales_line_id` (the silver `_source_row`), `net_sales`, `net_sales_field_used`, `included`, `quantity` (from `net_sales.quantity_field`) and `amount_<column>` for each `net_sales.candidate_columns` column, so later SQL selects `amount_*` and never names a source amount column; this is the only gold file that names a column, and only through parameters. The rows are every silver row except the stray row, and except the exact-duplicate copies when `duplicates.exclude_from_net_sales` is true. `included` is false when the row has any flag in `net_sales.exclude_flags`; such a row stays in the view. On the real file: 661,571 rows (662,128 - 557) with the setting true and 662,127 with it false; the Net_Amount_2 total with it false is the silver total, 15,473,904,687.2629.
+
 ## 4. Dimensions
 | Table | Key | Key attributes |
 |---|---|---|

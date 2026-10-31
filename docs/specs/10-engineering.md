@@ -61,6 +61,8 @@ Rules: SQL files run in filename order inside one DuckDB transaction per
 stage; failure stops the stage and prints the failing file; stage run
 records written to `build_log` (counts, durations, config hash).
 
+`build_log` (story #30, `revint.build_log`) is a table in the warehouse file with one row per stage run: `run_id`, `stage`, `status` (`succeeded` or `failed`), `started_at` (UTC), `duration_seconds`, `files`, `statements`, `rows_out` (counts; NULL when unknown, and `files`, `statements` and `rows_out` are NULL for a failed stage), `failed_file` (the SQL file named by the error, else NULL) and `config_hash` (the hash of the business settings, `paths` excluded, so a changed setting changes it). `run_logged(settings, stage, run, to_counts)` wraps a stage, records the row whether it succeeds or fails, and re-raises the stage's own error unchanged. The table is written only by this module, never by stage SQL, so rebuilding a stage keeps the earlier rows; rows are only added. No message, row value or SQL text is stored or logged. If the row cannot be written after a success, `BuildLogError` is raised; after a failure the stage's own error is raised and a warning is logged. The commands call it when they are wired (story #45).
+
 ## 6. Testing
 | Layer | How |
 |---|---|

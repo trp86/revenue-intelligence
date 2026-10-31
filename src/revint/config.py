@@ -217,6 +217,69 @@ class CustomersSettings(_Section):
     )
 
 
+RULE_IDS = [f"S{i}" for i in range(1, 13)]
+
+Severity = Literal["info", "warning", "high"]
+Action = Literal["flagged", "excluded", "transformed", "recorded"]
+
+_DEFAULT_SEVERITY: dict[str, Severity] = {
+    "S1": "info",
+    "S2": "warning",
+    "S3": "warning",
+    "S4": "warning",
+    "S5": "high",
+    "S6": "high",
+    "S7": "warning",
+    "S8": "info",
+    "S9": "high",
+    "S10": "high",
+    "S11": "warning",
+    "S12": "info",
+}
+_DEFAULT_ACTION: dict[str, Action] = {
+    "S1": "transformed",
+    "S2": "flagged",
+    "S3": "transformed",
+    "S4": "recorded",
+    "S5": "excluded",
+    "S6": "flagged",
+    "S7": "flagged",
+    "S8": "flagged",
+    "S9": "excluded",
+    "S10": "excluded",
+    "S11": "flagged",
+    "S12": "recorded",
+}
+
+
+class QualitySettings(_Section):
+    """Severity and action of each silver rule S1 to S12 in the quality results (spec 01
+    section 5; maintainer's decision on issue #41).
+
+    Both are a fixed value per rule, not computed from a percentage, because where to draw a
+    threshold is a business judgement. `high` marks the rules that rest on an unconfirmed
+    client assumption or change which rows count (S5, S6, S9, S10).
+    """
+
+    severity: dict[str, Severity] = Field(
+        default=_DEFAULT_SEVERITY, description="Severity level of each rule S1 to S12."
+    )
+    action: dict[str, Action] = Field(
+        default=_DEFAULT_ACTION, description="What each rule S1 to S12 does to the rows."
+    )
+
+    @field_validator("severity", "action")
+    @classmethod
+    def _every_rule_exactly_once(cls, value: dict[str, str]) -> dict[str, str]:
+        missing = [r for r in RULE_IDS if r not in value]
+        unknown = sorted(set(value) - set(RULE_IDS))
+        if missing:
+            raise ValueError(f"missing rules: {', '.join(missing)}")
+        if unknown:
+            raise ValueError(f"unknown rules: {', '.join(unknown)}")
+        return value
+
+
 class ReconSettings(_Section):
     tolerance_amount: float = Field(
         default=0.01, ge=0, description="Allowed difference in amount reconciliation checks."
@@ -234,6 +297,7 @@ class Settings(_Section):
     labels: LabelsSettings = Field(default_factory=LabelsSettings)
     net_sales: NetSalesSettings = Field(default_factory=NetSalesSettings)
     customers: CustomersSettings = Field(default_factory=CustomersSettings)
+    quality: QualitySettings = Field(default_factory=QualitySettings)
     recon: ReconSettings = Field(default_factory=ReconSettings)
     asof: AsofSettings
 

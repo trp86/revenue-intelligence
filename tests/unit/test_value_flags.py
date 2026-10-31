@@ -276,6 +276,7 @@ def test_the_value_flags_run_between_the_duplicates_and_the_audit_table() -> Non
         "07_label_normalisation.sql",
         "08_excluded_rows.sql",
         "09_customer_codes.sql",
+        "10_quality_results.sql",
         "99_checks.sql",
     ]
 

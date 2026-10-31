@@ -170,3 +170,96 @@ select
     end as customer_table_check
 from expected
 cross join actual;
+
+-- Spec 01 section 5: dq_rule_results has exactly one row per rule S1 to S12, the exclusion table
+-- one row per allowed reason and candidate column, and the void table one row. Counts are never
+-- negative and no count is larger than the silver table.
+with results as (
+    select
+        count(*) as result_rows,
+        count(distinct rule_id) as distinct_rules,
+        count(*) filter (
+            where rule_id in (
+                'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12'
+            )
+        ) as known_rules,
+        count(*) filter (where rows_affected < 0) as negative_counts
+    from dq_rule_results
+),
+
+effect as (
+    select count(*) as effect_rows
+    from dq_exclusion_effect
+),
+
+void_rows as (
+    select count(*) as void_row_count
+    from dq_void_effect
+),
+
+silver as (
+    select count(*) as silver_rows
+    from silver_sales
+),
+
+too_large as (
+    select count(*) as n
+    from dq_rule_results
+    cross join silver
+    where
+        dq_rule_results.rule_id not in ('S4', 'S12')
+        and dq_rule_results.rows_affected > silver.silver_rows
+),
+
+expected_effect as (
+    select 2 * count(*) as effect_rows
+    from (
+        select unnest(cast($net_sales_candidate_columns as varchar[])) as amount_column
+    ) as candidate_columns
+)
+
+select
+    case
+        when results.result_rows <> 12 or results.distinct_rules <> 12 or results.known_rules <> 12
+            then error(
+                'dq_rule_results has ' || results.result_rows::varchar
+                || ' rows but needs exactly one row for each of the rules S1 to S12'
+            )
+        when results.negative_counts > 0
+            then error('dq_rule_results has a negative rows_affected')
+        when too_large.n > 0
+            then error('dq_rule_results has a rows_affected larger than the silver table')
+        when effect.effect_rows <> expected_effect.effect_rows
+            then error(
+                'dq_exclusion_effect has ' || effect.effect_rows::varchar || ' rows but needs '
+                || expected_effect.effect_rows::varchar
+                || ' (one for each exclusion reason and candidate amount column)'
+            )
+        when void_rows.void_row_count <> 1
+            then error('dq_void_effect must have exactly one row')
+    end as quality_table_check
+from results
+cross join effect
+cross join void_rows
+cross join too_large
+cross join expected_effect;
+
+-- dq_rule_results agrees with the rule tables it summarises: S10 and S12 count the excluded rows
+-- and S5 plus S9 are the two allowed reasons.
+with checked as (
+    select
+        max(rows_affected) filter (where rule_id = 'S5') as s5,
+        max(rows_affected) filter (where rule_id = 'S9') as s9,
+        max(rows_affected) filter (where rule_id = 'S10') as s10,
+        max(rows_affected) filter (where rule_id = 'S12') as s12
+    from dq_rule_results
+)
+
+select
+    case
+        when checked.s10 <> checked.s12
+            then error('dq_rule_results: S10 and S12 count a different number of excluded rows')
+        when checked.s10 <> checked.s5 + checked.s9
+            then error('dq_rule_results: S10 is not the sum of the duplicate and stray-row counts')
+    end as quality_consistency_check
+from checked;

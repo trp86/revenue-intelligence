@@ -15,7 +15,7 @@ import polars as pl
 from revint.config import Settings, load_settings
 from revint.ingest.bronze import LINEAGE_COLUMNS
 from revint.pipeline import StageResult, run_stage
-from revint.silver import SILVER_DIR, run_silver
+from revint.silver import SILVER_DIR, run_silver, silver_stage_parameters
 
 # The silver SQL names the real 75 columns, so the synthetic bronze file has all of them.
 EXPECTED = load_settings(env={}).ingest.expected_columns
@@ -121,4 +121,4 @@ def run_custom_stage(
             shutil.copy(path, stage_dir / path.name)
     for name, text in (extra_files or {}).items():
         (stage_dir / name).write_text(text, encoding="utf-8")
-    return run_stage(stage_dir, settings, extra_parameters={"bronze_file": bronze.as_posix()})
+    return run_stage(stage_dir, settings, extra_parameters=silver_stage_parameters(bronze))

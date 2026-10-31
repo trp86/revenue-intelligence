@@ -1,8 +1,8 @@
 """The `revint` command line (spec 10 section 5).
 
-Every command is a stub for now: it loads and validates the settings, then
-exits with code 3 and a "not implemented" message without doing any work.
-Later epics replace the stubs one by one.
+Every command loads and validates the settings first. A command whose epic has not been
+built yet is a stub: it exits with code 3 and a "not implemented" message without doing any
+work. Later epics replace the stubs one by one.
 """
 
 from __future__ import annotations
@@ -60,17 +60,22 @@ def _stub(command: str) -> NoReturn:
 def build_bronze() -> None:
     """Build bronze Parquet from the raw workbook."""
     settings = _load_settings()
-    from revint.ingest.bronze import execute_bronze  # imported here to keep --help fast
+    from revint.build import execute_bronze_stage  # imported here to keep --help fast
 
-    code = execute_bronze(settings)
+    code = execute_bronze_stage(settings)
     if code:
         raise typer.Exit(code=code)
 
 
 @build_app.command("silver")
 def build_silver() -> None:
-    """Build the silver layer."""
-    _stub("build silver")
+    """Build the silver layer from the bronze files."""
+    settings = _load_settings()
+    from revint.silver import execute_silver  # imported here to keep --help fast
+
+    code = execute_silver(settings)
+    if code:
+        raise typer.Exit(code=code)
 
 
 @build_app.command("gold")
@@ -81,8 +86,13 @@ def build_gold() -> None:
 
 @build_app.command("all")
 def build_all() -> None:
-    """Build every layer, raw to gold."""
-    _stub("build all")
+    """Build every layer that exists: bronze, then silver (no gold stage yet)."""
+    settings = _load_settings()
+    from revint.build import execute_build_all  # imported here to keep --help fast
+
+    code = execute_build_all(settings)
+    if code:
+        raise typer.Exit(code=code)
 
 
 @app.command("check")

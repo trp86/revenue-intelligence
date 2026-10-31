@@ -541,7 +541,7 @@ def test_ac7_build_bronze_with_an_open_workbook_exits_non_zero(
     assert not settings.paths.bronze.exists()
 
 
-@pytest.mark.parametrize("command", ["silver", "gold", "all"])
+@pytest.mark.parametrize("command", ["gold"])
 def test_ac7_the_other_build_commands_stay_stubs(
     settings_for: SheetFactory, monkeypatch: pytest.MonkeyPatch, command: str
 ) -> None:

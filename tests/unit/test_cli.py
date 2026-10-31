@@ -38,10 +38,16 @@ LEAF_COMMANDS = [
     ["serve"],
 ]
 
-# `build bronze` is real since story #33 (tests/unit/test_bronze.py); the rest stay stubs.
-STUB_COMMANDS = [
-    args for args in LEAF_COMMANDS if args not in (["build", "bronze"], ["check"], ["report", "dq"])
+# These commands are real: build bronze (#33), build silver and build all (#45,
+# tests/unit/test_build_commands.py), check (#43) and report dq (#42). The rest stay stubs.
+REAL_COMMANDS = [
+    ["build", "bronze"],
+    ["build", "silver"],
+    ["build", "all"],
+    ["check"],
+    ["report", "dq"],
 ]
+STUB_COMMANDS = [args for args in LEAF_COMMANDS if args not in REAL_COMMANDS]
 
 VALID_YAML = """\
 paths:
@@ -177,14 +183,14 @@ def test_ac2_stub_creates_no_files_or_databases(project: Path, args: list[str]) 
     assert not list(project.rglob("*.parquet"))
 
 
-def test_ac2_build_all_is_a_stub_not_a_pipeline(project: Path) -> None:
-    result = runner.invoke(app, ["build", "all"])
+def test_ac2_build_gold_is_a_stub_not_a_pipeline(project: Path) -> None:
+    result = runner.invoke(app, ["build", "gold"])
     assert result.exit_code == 3
     assert "not implemented" in result.output.lower()
 
 
-def test_ac2_real_script_build_all_exits_non_zero() -> None:
-    result = run_script("build", "all")
+def test_ac2_real_script_build_gold_exits_non_zero() -> None:
+    result = run_script("build", "gold")
     assert result.returncode == 3
     assert "not implemented" in result.stderr.lower()
 
@@ -234,7 +240,7 @@ def test_ac3_settings_are_loaded_once_per_invocation(
         return real_load(path, **kwargs)
 
     monkeypatch.setattr(config, "load_settings", counting_load)
-    runner.invoke(app, ["build", "all"])
+    runner.invoke(app, ["build", "gold"])
     assert len(calls) == 1
 
 

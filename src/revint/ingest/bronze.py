@@ -238,8 +238,13 @@ def run_bronze(settings: Settings, now: datetime | None = None) -> BronzeResult:
     return BronzeResult(sheets=tuple(p.result for p in prepared), column_map=column_map)
 
 
-def execute_bronze(settings: Settings, now: datetime | None = None) -> int:
-    """Run the bronze build for the command line: print the outcome, return an exit code."""
+def execute_bronze(
+    settings: Settings, now: datetime | None = None, sink: list[BronzeResult] | None = None
+) -> int:
+    """Run the bronze build for the command line: print the outcome, return an exit code.
+
+    A caller that wants the counts passes a list as `sink`; the result is appended to it.
+    """
     try:
         result = run_bronze(settings, now)
     except RawFileInUseError as exc:
@@ -251,6 +256,8 @@ def execute_bronze(settings: Settings, now: datetime | None = None) -> int:
     except pl.exceptions.PolarsError as exc:
         print(f"bronze failed: {type(exc).__name__}; no bronze file was written", file=sys.stderr)
         return EXIT_BRONZE_FAILED
+    if sink is not None:
+        sink.append(result)
     for item in result.sheets:
         print(
             f"bronze: {item.sheet}: {item.data_rows:,} rows, {item.columns} columns, "

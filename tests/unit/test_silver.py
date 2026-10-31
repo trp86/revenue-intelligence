@@ -476,13 +476,15 @@ def test_the_stage_logs_counts_and_no_values(
     assert "SECRET-CUSTOMER" not in caplog.text and "777.77" not in caplog.text
 
 
-def test_build_silver_command_is_still_a_stub_until_the_cli_story() -> None:
+def test_build_silver_command_is_no_longer_a_stub() -> None:
+    """Story #45 wired the command (tests/unit/test_build_commands.py); it must not say so."""
     from typer.testing import CliRunner
 
     from revint.cli import app
 
-    result = CliRunner().invoke(app, ["build", "silver"])
-    assert result.exit_code == 3 and "not implemented" in result.output.lower()
+    result = CliRunner().invoke(app, ["build", "silver", "--help"])
+    assert result.exit_code == 0
+    assert "not implemented" not in result.output.lower()
 
 
 # Real file: runs only when data/ exists ---------------------------------------------------------

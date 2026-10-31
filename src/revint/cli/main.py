@@ -98,8 +98,13 @@ def check() -> None:
 
 @report_app.command("dq")
 def report_dq() -> None:
-    """Write the data quality report."""
-    _stub("report dq")
+    """Write the data quality report to reports/data_quality.md."""
+    settings = _load_settings()
+    from revint.report import execute_report  # imported here to keep --help fast
+
+    code = execute_report(settings)
+    if code:
+        raise typer.Exit(code=code)
 
 
 @opportunities_app.command("build")

@@ -65,3 +65,26 @@ def test_story43_changing_an_r4_column_changes_the_config_hash(load_with) -> Non
     a = load_with(name="a")
     b = load_with({"recon": {"product_column": "SAP_CODE"}}, name="b")
     assert config_hash(a) != config_hash(b)
+
+
+# Story #46: the duplicate count the docs state --------------------------------------------------
+
+
+def test_story46_committed_config_states_the_docs_duplicate_count() -> None:
+    assert load_settings(env={}).recon.docs_duplicate_count == 556
+
+
+def test_story46_docs_duplicate_count_defaults_when_absent(load_with) -> None:
+    assert load_with().recon.docs_duplicate_count == 556
+
+
+@pytest.mark.parametrize("value", [-1, "many", 1.5])
+def test_story46_invalid_docs_duplicate_count_fails_and_names_the_key(load_with, value) -> None:
+    with pytest.raises(ConfigError, match=r"recon\.docs_duplicate_count"):
+        load_with({"recon": {"docs_duplicate_count": value}})
+
+
+def test_story46_changing_the_docs_count_changes_the_config_hash(load_with) -> None:
+    a = load_with(name="a")
+    b = load_with({"recon": {"docs_duplicate_count": 600}}, name="b")
+    assert config_hash(a) != config_hash(b)

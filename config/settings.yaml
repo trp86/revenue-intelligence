@@ -183,6 +183,7 @@ recon:
   tolerance_amount: 0.01                 # allowed difference for amount checks
   product_column: SCJ_CODE_1             # R4 counts its distinct values as products (181 expected)
   date_column: Date                      # R4 reports its minimum and maximum (typed date column)
+  docs_duplicate_count: 556              # exact duplicates the docs state (D4); the report shows the actual count next to it
 
 asof:
   date: 2020-02-29                       # as-of date of the data

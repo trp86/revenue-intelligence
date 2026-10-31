@@ -120,6 +120,7 @@ How R1 to R4 run (story #43, `revint check`): the SQL is in `sql/checks` (number
 | `quality.severity` / `quality.action` | one value per rule S1 to S12 (see section 5) |
 | `recon.tolerance_amount` | 0.01 |
 | `recon.product_column` / `recon.date_column` | `SCJ_CODE_1` / `Date` (story #43): the columns R4 counts and ranges over |
+| `recon.docs_duplicate_count` | `556` (story #46): the exact-duplicate count the project docs state; the data quality report shows the actual count next to it. A reference figure, not a rule |
 | `recon.tolerance_report_pct` | [x] |
 
 ## 8. Edge cases
@@ -135,12 +136,12 @@ How R1 to R4 run (story #43, `revint check`): the SQL is in `sql/checks` (number
 - [ ] Header detected on a fixture with 3 blank rows and the header on row 7 (data from row 8), and on a fixture with the header on row 1
 - [ ] Real file: 75 columns, expected-column list in config matches
 - [ ] Duplicate column fixture yields `name_1`, `name_2`
-- [ ] R1-R3 pass on the real file; R5 reported
+- [x] R1-R3 pass on the real file (story #46, `tests/unit/test_real_file_acceptance.py`, run with `uv run pytest -m realdata`); R5 is not reported yet (E1-20)
 - [ ] Each flag has a test with a crafted row
 - [ ] Bronze is unchanged by the build (file hash before and after)
 - [ ] `count(silver_sales)` = bronze rows; no silver row is dropped (count test)
 - [ ] `silver_excluded_rows` and `is_excluded` are identical for both settings of `duplicates.exclude_from_net_sales`
-- [ ] Excluded rows counted: `count(silver_excluded_rows)` = stray rows + extra duplicate copies = rows with `is_excluded`; actual value reported against the ~556 in the docs
+- [x] Excluded rows counted: `count(silver_excluded_rows)` = stray rows + extra duplicate copies = rows with `is_excluded`; actual value reported against the ~556 in the docs (the report's Exclusions block, story #46)
 - [ ] Duplicate fixture: 3 identical rows keep only the lowest `_source_row`; rows differing in one column are not duplicates; `is_duplicate` and `exclusion_reason` are set on the extra copies only
 - [ ] Stray-row fixture: only the row with "Change to Ctn" = 1 and all else blank is excluded; a second match fails the build
 - [ ] Duplicate fixture with NULL, empty-string and whitespace-only cells in the same column: treated as identical; "A" and "a" or "A " are not

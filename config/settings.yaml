@@ -12,6 +12,7 @@ paths:
   bronze: data/bronze                    # bronze Parquet
   warehouse: data/warehouse.duckdb       # silver and gold
   app_db: data/app.duckdb                # app state (AI output, actions)
+  reports: reports                       # generated reports, git-ignored (optional; this is the default)
 
 # Bronze ingestion (spec 01 B2, B3, B7).
 ingest:

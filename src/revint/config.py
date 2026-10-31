@@ -47,6 +47,10 @@ class PathsSettings(_Section):
     bronze: Path = Field(description="Folder for bronze Parquet files.")
     warehouse: Path = Field(description="DuckDB warehouse file (silver and gold).")
     app_db: Path = Field(description="DuckDB app state file (AI output, actions).")
+    reports: Path = Field(
+        default=Path("reports"),
+        description="Folder for generated reports (git-ignored); relative to the project root.",
+    )
 
 
 class AsofSettings(_Section):
@@ -435,6 +439,8 @@ def load_settings(
     environ = os.environ if env is None else env
     root = path.resolve().parent.parent
     data = _read_yaml(path)
+    if isinstance(data.get("paths"), dict):
+        data["paths"].setdefault("reports", "reports")
     _apply_path_overrides(data, environ)
     _resolve_paths(data, root)
     try:

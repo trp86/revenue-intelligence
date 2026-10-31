@@ -39,7 +39,9 @@ LEAF_COMMANDS = [
 ]
 
 # `build bronze` is real since story #33 (tests/unit/test_bronze.py); the rest stay stubs.
-STUB_COMMANDS = [args for args in LEAF_COMMANDS if args not in (["build", "bronze"], ["check"])]
+STUB_COMMANDS = [
+    args for args in LEAF_COMMANDS if args not in (["build", "bronze"], ["check"], ["report", "dq"])
+]
 
 VALID_YAML = """\
 paths:

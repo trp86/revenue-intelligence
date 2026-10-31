@@ -56,7 +56,7 @@ no customer-level values.
 
 Implemented in `sql/10_silver/10_quality_results.sql` (story #41), which builds three tables
 in the warehouse on every silver build. They hold counts and sums only, never a row, customer,
-label or order value. The markdown report is a separate story (#42).
+label or order value. The markdown report is `revint report dq` (story #42, below).
 
 - `dq_rule_results`: one row per silver rule S1 to S12 with `rule_id`, `description`,
   `rows_affected`, `pct_rows` (rows over all silver rows, NULL when silver is empty),
@@ -82,6 +82,8 @@ config (`quality.severity`, `quality.action`), not computed from a percentage, b
 draw a threshold is a business judgement. `99_checks.sql` fails the stage unless
 `dq_rule_results` has exactly one row per rule, the exclusion table one row per reason and
 candidate column, and the counts agree with the exclusion tables (S10 = S12 = S5 + S9).
+
+`revint report dq` (story #42, `revint.report`) writes `reports/data_quality.md` from those three tables and the silver row count; it reads nothing else, so it holds counts, sums and percentages only. Sections: a header (generated time in UTC, silver rows, as-of date, net sales field), **Rules** (one row per rule S1 to S12: rows affected, % of rows, net sales impact, action, severity), **Exclusions** (rows and net sales excluded per reason, and the total), **Revenue effect** (every candidate amount column per reason, with its share of the column total and of the net sales total) and **Void**. A re-run changes only the `Generated:` line. The folder is `paths.reports` (default `reports`, git-ignored); the file is replaced through a temporary file, so a failed run keeps the old report. Exit codes: 0 written, 4 the report could not be built (no warehouse or no quality tables: build silver first), 1 invalid settings.
 
 The report has an **Exclusions** block stating, per reason
 (`exact_duplicate`, `stray_row`): the excluded row count and the

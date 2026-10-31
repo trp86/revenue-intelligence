@@ -15,7 +15,7 @@ import duckdb
 
 from revint.config import Settings
 from revint.pipeline import PipelineError, StageResult, run_stage
-from revint.silver_schema import COLUMN_TYPES
+from revint.silver_schema import COLUMN_TYPES, SILVER_FLAG_COLUMNS
 
 logger = logging.getLogger(__name__)
 
@@ -88,11 +88,20 @@ def _check_columns(settings: Settings) -> None:
         )
 
 
+def gold_stage_parameters() -> dict[str, object]:
+    """The extra SQL parameters the gold stage needs beyond `Settings`.
+
+    `silver_flag_columns` lists the silver flag columns, so the fact can carry every flag
+    without the SQL naming any of them.
+    """
+    return {"silver_flag_columns": list(SILVER_FLAG_COLUMNS)}
+
+
 def run_gold(settings: Settings) -> StageResult:
     """Build the gold tables and views from silver; rebuilt in full on every run."""
     _check_silver(settings)
     _check_columns(settings)
     try:
-        return run_stage(GOLD_DIR, settings)
+        return run_stage(GOLD_DIR, settings, extra_parameters=gold_stage_parameters())
     except PipelineError as exc:
         raise GoldError(str(exc)) from exc

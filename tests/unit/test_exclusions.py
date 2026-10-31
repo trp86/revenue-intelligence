@@ -584,12 +584,14 @@ def test_ac1_real_file_has_exactly_one_stray_row_and_it_is_the_last_row(tmp_path
             "(select count(*) from silver_excluded_rows), "
             "min(_source_row) filter (where f_stray_row) from silver_sales"
         ).fetchone()
-        assert (excluded, strays, audit) == (1, 1, 1)
+        # since story #39 the 556 exact-duplicate copies are excluded as well as the stray row
+        assert (excluded, strays, audit) == (557, 1, 557)
         assert stray_row == 662135
         reasons = con.execute(
-            "select distinct exclusion_reason from silver_sales where is_excluded"
+            "select exclusion_reason, count(*) from silver_sales where is_excluded "
+            "group by 1 order by 1"
         ).fetchall()
-        assert reasons == [("stray_row",)]
+        assert reasons == [("exact_duplicate", 556), ("stray_row", 1)]
         total = con.execute("select count(*) from silver_sales").fetchone()[0]
         assert total == 662_128
     finally:

@@ -70,6 +70,15 @@ CI check. Until a runner exists (issue #27):
 - When a runner exists, issue #27 restores the `pull_request`
   trigger and this section is removed.
 
+## Real-file checks
+Tests marked `realdata` need the client workbooks under `data/raw` and a
+built `data/bronze` (`uv run revint build bronze`). They are skipped when
+`data/` is absent, are not part of `revint-gate`, and never run in CI.
+Run them on the machine that holds the data before closing an epic:
+`uv run pytest -m realdata`. They work on a copy of bronze with a
+temporary warehouse, change nothing under `data/`, and assert counts, sums
+and structure only. Evidence posted from them is counts and aggregates.
+
 ## Project references
 - Repo: tpradha/revenue-intelligence (company GitHub:
   git.t3.daimlertruck.com)

@@ -155,6 +155,13 @@ def build_report(settings: Settings, now: datetime | None = None) -> str:
         "in silver_excluded_rows and are left out of gold.",
         "",
     ]
+    duplicates = next((row[2] for row in rules if row[0] == "S5"), 0)
+    docs_count = settings.recon.docs_duplicate_count
+    lines += [
+        f"Exact duplicates: {_count(duplicates)} found; the project docs state about "
+        f"{_count(docs_count)} (difference {duplicates - docs_count:+,}).",
+        "",
+    ]
     lines += _table(
         ["Reason", "Rows excluded", f"{field} excluded", f"% of {field} total"],
         [

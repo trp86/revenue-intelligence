@@ -305,6 +305,12 @@ class ReconSettings(_Section):
         min_length=1,
         description="Typed date column whose minimum and maximum R4 reports.",
     )
+    docs_duplicate_count: int = Field(
+        default=556,
+        ge=0,
+        description="The exact-duplicate count the project docs state (D4); the data quality "
+        "report shows the actual count next to it. A reference figure, not a rule.",
+    )
 
 
 class Settings(_Section):

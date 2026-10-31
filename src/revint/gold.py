@@ -81,6 +81,11 @@ def _check_columns(settings: Settings) -> None:
         column = getattr(settings.product, key)
         if COLUMN_TYPES.get(column, "text") != "text":
             raise GoldError(f"product.{key} '{column}' is a typed column; it must be text")
+    for column in settings.peer_groups.columns:
+        if COLUMN_TYPES.get(column, "text") != "text":
+            raise GoldError(
+                f"peer_groups.columns names '{column}', a typed column; a peer key must be text"
+            )
     region_column = settings.regions.source_column
     if COLUMN_TYPES.get(region_column, "text") != "text":
         raise GoldError(

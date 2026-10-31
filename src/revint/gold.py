@@ -15,6 +15,7 @@ import duckdb
 
 from revint.config import Settings
 from revint.pipeline import PipelineError, StageResult, run_stage
+from revint.silver_schema import COLUMN_TYPES
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +52,19 @@ def _check_silver(settings: Settings) -> None:
         )
 
 
+def _check_columns(settings: Settings) -> None:
+    """Column names that gold reads by name must be the right kind of silver column."""
+    date_column = settings.calendar.date_column
+    if COLUMN_TYPES.get(date_column) != "date":
+        raise GoldError(
+            f"calendar.date_column '{date_column}' is not a date column that silver types"
+        )
+
+
 def run_gold(settings: Settings) -> StageResult:
     """Build the gold tables and views from silver; rebuilt in full on every run."""
     _check_silver(settings)
+    _check_columns(settings)
     try:
         return run_stage(GOLD_DIR, settings)
     except PipelineError as exc:

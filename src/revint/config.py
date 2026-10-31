@@ -262,6 +262,12 @@ class CalendarSettings(_Section):
         description="Month (1 to 12) the fiscal year starts; 1 makes the fiscal year the "
         "calendar year.",
     )
+    date_column: str = Field(
+        default="Date",
+        min_length=1,
+        description="Typed silver date column whose first and last date set the range of "
+        "dim_date. Final column name (spec 01 B3); gold checks it is a date column.",
+    )
 
 
 class RegionsSettings(_Section):
@@ -494,6 +500,11 @@ class Settings(_Section):
             column = getattr(self.product, role)
             if column not in known:
                 problems.append(f"product.{role} '{column}' is not in ingest.expected_columns")
+        if self.calendar.date_column not in known:
+            problems.append(
+                f"calendar.date_column '{self.calendar.date_column}' "
+                "is not in ingest.expected_columns"
+            )
         if self.regions.source_column not in known:
             problems.append(
                 f"regions.source_column '{self.regions.source_column}' "

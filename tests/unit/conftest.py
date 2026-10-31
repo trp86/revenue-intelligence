@@ -12,6 +12,7 @@ import xlsxwriter
 import yaml
 
 from revint.config import (
+    CalendarSettings,
     CustomersSettings,
     LabelsSettings,
     NetSalesSettings,
@@ -81,6 +82,10 @@ def load_with(tmp_path: Path) -> Callable[..., Settings]:
                     else dict.fromkeys(
                         ("code_column", "name_column", "brand_column", "category_column"), first
                     )
+                )
+            if "calendar" not in sections:
+                sections["calendar"] = (
+                    {} if CalendarSettings().date_column in columns else {"date_column": first}
                 )
             if "regions" not in sections:
                 sections["regions"] = (

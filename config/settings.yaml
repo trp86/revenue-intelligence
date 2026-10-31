@@ -192,6 +192,7 @@ marts:
 
 calendar:
   fiscal_year_start_month: 1             # 1 = fiscal year is the calendar year (open question)
+  date_column: Date                      # typed silver date column that sets the range of dim_date
 
 regions:
   source_column: Region                  # default region of a branch

@@ -14,6 +14,7 @@ param_style = dollar
 bronze_file = 'bronze.parquet'
 asof_date = '2020-02-29'
 excel_rows = 1
+silver_flag_columns = 'f_stray_row'
 
 # Code standards: lowercase keywords.
 [sqlfluff:rules:capitalisation.keywords]

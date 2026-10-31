@@ -586,6 +586,214 @@ def test_ac6_every_ac_has_a_test_in_this_module() -> None:
         assert f"def test_ac{ac}_" in names
 
 
+# Story #44: R7 (silver side) and R8 ----------------------------------------------------------
+
+
+def keep_duplicates(root: Path, source: Settings) -> Settings:
+    return variant(root, source, duplicates={"exclude_from_net_sales": False})
+
+
+def r7(settings: Settings) -> dict[str, tuple[Any, ...]]:
+    return {s: v for (c, s), v in results(settings).items() if c == "R7"}
+
+
+def tamper_stray_amount(settings: Settings, amount: float = 5) -> None:
+    execute(
+        settings,
+        f"update silver_excluded_rows set net_amount_2 = coalesce(net_amount_2, 0) + {amount} "
+        "where exclusion_reason = 'stray_row'",
+    )
+
+
+def test_story44_ac1_r7_has_one_result_per_candidate_amount_column(built: Settings) -> None:
+    assert set(r7(built)) == set(built.net_sales.candidate_columns)
+
+
+def test_story44_ac1_r7_passes_on_untampered_data_when_duplicates_are_excluded(
+    built: Settings,
+) -> None:
+    assert {v[0] for v in r7(built).values()} == {"pass"}
+    # sum(silver) = sum(non-excluded rows) + sum(silver_excluded_rows): no difference
+    assert r7(built)["Net_Amount_2"][3] == 0
+
+
+def test_story44_ac1_r7_passes_when_duplicates_are_kept(built: Settings, tmp_path: Path) -> None:
+    work = copy_of(built, tmp_path / "w")
+    kept = keep_duplicates(tmp_path / "k", work)
+    run_recon(kept)
+    assert {v[0] for v in r7(kept).values()} == {"pass"}
+    assert set(r7(kept)) == set(kept.net_sales.candidate_columns)
+
+
+def test_story44_ac1_the_setting_decides_which_exclusions_are_added_back(
+    work: Settings, tmp_path: Path
+) -> None:
+    # Only the copy's amount is changed in the audit table. It is added back when copies are
+    # excluded, so that identity breaks; it is not added back when copies are kept.
+    execute(
+        work,
+        "update silver_excluded_rows set net_amount_2 = net_amount_2 + 1 "
+        "where exclusion_reason = 'exact_duplicate'",
+    )
+    run_recon(work)
+    assert status(work, "R7", "Net_Amount_2") == "fail"
+    kept = keep_duplicates(tmp_path / "k", work)
+    run_recon(kept)
+    assert status(kept, "R7", "Net_Amount_2") == "pass"
+
+
+def test_story44_ac1_r7_uses_the_tolerance_from_config(work: Settings, tmp_path: Path) -> None:
+    tamper_stray_amount(work, 0.005)
+    run_recon(work)
+    assert status(work, "R7", "Net_Amount_2") == "pass"
+    strict = variant(tmp_path / "strict", work, recon={"tolerance_amount": 0.001})
+    run_recon(strict)
+    assert status(strict, "R7", "Net_Amount_2") == "fail"
+
+
+def test_story44_ac1_r7_follows_the_net_sales_candidates(built: Settings, tmp_path: Path) -> None:
+    work = copy_of(built, tmp_path / "w")
+    narrow = variant(
+        tmp_path / "narrow", work, net_sales={"candidate_columns": ["Net_Amount_2", "TAX_AMOUNT"]}
+    )
+    run_recon(narrow)
+    assert set(r7(narrow)) == {"Net_Amount_2", "TAX_AMOUNT"}
+
+
+def test_story44_ac3_r7_fails_when_the_audit_table_amount_is_tampered(work: Settings) -> None:
+    tamper_stray_amount(work)
+    outcome = run_recon(work)
+    got = r7(work)
+    assert got["Net_Amount_2"][0] == "fail"
+    assert got["Net_Amount_2"][3] == 5
+    assert {v[0] for k, v in got.items() if k != "Net_Amount_2"} == {"pass"}
+    assert not outcome.passed
+
+
+def test_story44_ac3_r7_fails_for_a_tampered_stray_amount_when_duplicates_are_kept(
+    work: Settings, tmp_path: Path
+) -> None:
+    tamper_stray_amount(work)
+    kept = keep_duplicates(tmp_path / "k", work)
+    run_recon(kept)
+    assert status(kept, "R7", "Net_Amount_2") == "fail"
+
+
+def test_story44_ac3_r7_fails_when_a_row_is_missing_from_the_audit_table(work: Settings) -> None:
+    execute(work, "delete from silver_excluded_rows where exclusion_reason = 'exact_duplicate'")
+    run_recon(work)
+    assert status(work, "R7", "Net_Amount_2") == "fail"
+
+
+def r8(settings: Settings) -> tuple[Any, ...]:
+    return results(settings)[("R8", "exact_duplicate_twins")]
+
+
+def test_story44_ac2_r8_passes_when_every_copy_has_an_identical_kept_twin(built: Settings) -> None:
+    assert r8(built) == ("pass", 0, 0, 0)
+
+
+def test_story44_ac2_r8_says_how_many_copies_it_checked(built: Settings) -> None:
+    assert query(built, "select detail from recon_results where check_id = 'R8'") == [
+        ("1 exact_duplicate rows checked",)
+    ]
+
+
+def test_story44_ac2_r8_passes_with_no_copies_at_all(tmp_path: Path) -> None:
+    root = tmp_path / "none"
+    write_workbook(root / "raw" / "sales.xlsx", [ROWS[0], ROWS[1]])
+    settings = settings_in(root)
+    run_bronze(settings)
+    run_silver(settings)
+    run_recon(settings)
+    assert r8(settings) == ("pass", 0, 0, 0)
+    assert query(settings, "select detail from recon_results where check_id = 'R8'") == [
+        ("0 exact_duplicate rows checked",)
+    ]
+
+
+def test_story44_ac3_r8_fails_when_the_twin_is_not_identical(
+    built: Settings, tmp_path: Path
+) -> None:
+    work = copy_of(built, tmp_path)
+    bronze = next(work.paths.bronze.glob("*__RAW_SCJ_SALES.parquet"))
+    frame = pl.read_parquet(bronze)
+    changed = frame.with_columns(
+        pl.when(pl.col("_source_row") == "8")
+        .then(pl.lit("changed"))
+        .otherwise(pl.col("Customer"))
+        .alias("Customer")
+    )
+    changed.write_parquet(bronze)
+    outcome = run_recon(work)
+    assert r8(work)[0] == "fail"
+    assert r8(work)[2:] == (1, 1)
+    assert not outcome.passed
+
+
+def test_story44_ac3_r8_fails_when_the_twin_is_itself_excluded(work: Settings) -> None:
+    execute(work, "update silver_sales set is_excluded = true where _source_row = 8")
+    run_recon(work)
+    assert r8(work)[0] == "fail"
+
+
+def test_story44_ac3_r8_fails_when_the_twin_comes_after_the_copy(work: Settings) -> None:
+    execute(work, "update silver_excluded_rows set duplicate_of_source_row = 10")
+    run_recon(work)
+    assert r8(work)[0] == "fail"
+
+
+def test_story44_ac3_r8_fails_when_the_twin_row_is_missing_from_silver(work: Settings) -> None:
+    execute(work, "update silver_excluded_rows set duplicate_of_source_row = 999")
+    run_recon(work)
+    assert r8(work)[0] == "fail"
+
+
+def test_story44_ac3_r8_fails_when_a_copy_has_no_twin_recorded(work: Settings) -> None:
+    execute(work, "update silver_excluded_rows set duplicate_of_source_row = null")
+    run_recon(work)
+    assert r8(work)[0] == "fail"
+
+
+def test_story44_ac2_blank_cells_written_differently_still_count_as_identical(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "blank"
+    write_workbook(root / "raw" / "sales.xlsx", [ROWS[3], ROWS[3]])
+    settings = settings_in(root)
+    run_bronze(settings)
+    bronze = next(settings.paths.bronze.glob("*__RAW_SCJ_SALES.parquet"))
+    frame = pl.read_parquet(bronze)
+    frame.with_columns(
+        pl.when(pl.col("_source_row") == "6")
+        .then(pl.lit("  "))
+        .otherwise(pl.col("VoucherNo"))
+        .alias("VoucherNo")
+    ).write_parquet(bronze)
+    run_silver(settings)
+    run_recon(settings)
+    assert query(settings, "select count(*) from silver_excluded_rows") == [(1,)]
+    assert r8(settings)[0] == "pass"
+
+
+def test_story44_ac3_cli_check_fails_on_a_tampered_exclusion(
+    built: Settings, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    work = copy_of(built, tmp_path)
+    tamper_stray_amount(work)
+    for key, value in paths_env(tmp_path, raw=built.paths.raw).items():
+        monkeypatch.setenv(key, value)
+    result = runner.invoke(app, ["check"])
+    assert result.exit_code == EXIT_CHECK_FAILED
+    assert "R7 Net_Amount_2: fail" in result.output
+
+
+def test_story44_ac4_every_ac_has_a_test() -> None:
+    names = Path(__file__).read_text(encoding="utf-8")
+    for ac in range(1, 4):
+        assert f"def test_story44_ac{ac}_" in names
+
+
 @pytest.mark.realdata
 def test_ac1_to_ac5_real_file_reconciles(tmp_path: Path) -> None:
     """Counts only. Needs data/raw and a built data/bronze; builds silver in a temporary file."""
@@ -601,4 +809,7 @@ def test_ac1_to_ac5_real_file_reconciles(tmp_path: Path) -> None:
     assert {s for (c, s) in got if c == "R3"} == set(real.net_sales.candidate_columns)
     assert {got[k].status for k in got if k[0] == "R3"} == {"pass"}
     assert {got[k].status for k in got if k[0] == "R4"} == {"info"}
+    assert {got[k].status for k in got if k[0] == "R7"} == {"pass"}
+    assert {s for (c, s) in got if c == "R7"} == set(real.net_sales.candidate_columns)
+    assert got[("R8", "exact_duplicate_twins")].status == "pass"
     assert outcome.passed

@@ -9,15 +9,24 @@ column names, never cell values.
 from __future__ import annotations
 
 import logging
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import duckdb
 import polars as pl
 
+from revint.build_log import BuildLogError, StageCounts, run_logged
 from revint.config import Settings
 from revint.ingest.bronze import LINEAGE_COLUMNS, bronze_filename
-from revint.pipeline import PipelineError, StageResult, run_stage
+from revint.pipeline import (
+    EXIT_STAGE_FAILED,
+    EXIT_WAREHOUSE_LOCKED,
+    PipelineError,
+    StageResult,
+    WarehouseLockedError,
+    run_stage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -235,3 +244,33 @@ def run_silver(settings: Settings) -> SilverResult:
         )
     logger.info("silver_sales: %d rows, %d statements", silver_rows, stage.statements)
     return SilverResult(rows=silver_rows, bronze_file=bronze.name, stage=stage)
+
+
+def execute_silver(settings: Settings) -> int:
+    """Build silver for the command line and record the run in `build_log`.
+
+    Prints one line with the file, statement and row counts and returns an exit code: 0 done,
+    4 the build failed (a missing bronze file, a bad column, a failing SQL file), 5 the
+    warehouse is in use by another process. Messages hold counts and names, never values.
+    """
+    try:
+        result = run_logged(
+            settings,
+            "silver",
+            lambda: run_silver(settings),
+            lambda r: StageCounts(
+                files=len(r.stage.files), statements=r.stage.statements, rows_out=r.rows
+            ),
+        )
+    except SilverError as exc:
+        locked = isinstance(exc.__cause__, WarehouseLockedError)
+        print(f"silver failed: {exc}; no changes were made to silver", file=sys.stderr)
+        return EXIT_WAREHOUSE_LOCKED if locked else EXIT_STAGE_FAILED
+    except BuildLogError as exc:
+        print(f"silver was built but {exc}", file=sys.stderr)
+        return EXIT_STAGE_FAILED
+    print(
+        f"silver: {len(result.stage.files)} files, {result.stage.statements} statements, "
+        f"{result.rows:,} rows from {result.bronze_file}"
+    )
+    return 0

@@ -178,15 +178,14 @@ def test_ac2_rows_that_differ_in_one_column_are_not_duplicates(
     assert audit(silver_settings) == []
 
 
+@pytest.mark.parametrize("column", EXPECTED)
 def test_ac2_a_difference_in_any_of_the_75_source_columns_breaks_the_match(
-    silver_settings: Settings,
+    silver_settings: Settings, column: str
 ) -> None:
-    for column in EXPECTED:
-        build(silver_settings, [line(8, **{column: "same"}), line(9, **{column: "different"})])
-        found = query(
-            silver_settings, "select count(*) filter (where is_duplicate) from silver_sales"
-        )
-        assert found == [(0,)], f"{column} did not break the match"
+    """One test per column, so the 75 builds run on separate workers instead of one loop."""
+    build(silver_settings, [line(8, **{column: "same"}), line(9, **{column: "different"})])
+    found = query(silver_settings, "select count(*) filter (where is_duplicate) from silver_sales")
+    assert found == [(0,)], f"{column} did not break the match"
 
 
 def test_ac2_the_pair_is_a_duplicate_only_when_nothing_differs(silver_settings: Settings) -> None:

@@ -122,8 +122,10 @@ def _make_project(root: Path, with_data: bool) -> None:
     )
     tests = root / "tests"
     tests.mkdir()
-    conftest = (ROOT / "tests" / "conftest.py").read_text(encoding="utf-8")
-    (tests / "conftest.py").write_text(conftest, encoding="utf-8")
+    # the real conftest and the helper it imports (the repository snapshot guard, story #65)
+    for name in ("conftest.py", "repo_snapshot.py"):
+        text = (ROOT / "tests" / name).read_text(encoding="utf-8")
+        (tests / name).write_text(text, encoding="utf-8")
     (tests / "test_sample.py").write_text(REALDATA_TEST, encoding="utf-8")
     if with_data:
         (root / "data").mkdir()

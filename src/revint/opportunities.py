@@ -1,4 +1,5 @@
-"""The opportunity engines (spec 03): as-of inputs first, then the engines in later stories.
+"""The opportunity engines (spec 03): as-of inputs, the opportunity schema and run summary, and
+the engines in later stories.
 
 Engines read only the as-of inputs, never the all-data marts. `mart_customer_profile` and
 `mart_peer_category_share` hold values computed over every sale up to the data's last day, so an
@@ -12,6 +13,8 @@ run, without editing the config file. Messages and logs hold counts, never a cel
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 from datetime import date as Date
 from pathlib import Path
@@ -32,6 +35,35 @@ ASOF_INPUT_TABLES = (
     "asof_peer_category_share",
 )
 _REQUIRED_TABLES = ("fact_sales", "v_net_sales", "dim_date", "dim_product")
+
+# The four engines of spec 03. Each stores its algo_version (opp_engines in 02_schema.sql).
+ENGINES = ("dormancy", "recovery", "whitespace", "crosssell")
+
+# The columns of opp_opportunities, the unified and ranked table (spec 03 section 2).
+OPPORTUNITY_COLUMNS = (
+    "opp_id",
+    "type",
+    "customer_key",
+    "category",
+    "as_of_date",
+    "algo_version",
+    "score",
+    "priority",
+    "confidence",
+    "value_low",
+    "value_high",
+    "value_level",
+    "value_method",
+    "rank",
+    "reason_codes",
+)
+
+
+def opp_id(type_: str, customer_key: int, category: str | None, as_of: Date) -> str:
+    """The opportunity id, as the SQL macro opp_id makes it: md5 of a JSON list of the four
+    values (a NULL category is JSON null, so it differs from an empty one)."""
+    values = [type_, str(customer_key), category, as_of.isoformat()]
+    return hashlib.md5(json.dumps(values, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
 class OpportunitiesError(Exception):
@@ -69,17 +101,25 @@ def _check_gold(settings: Settings) -> None:
         )
 
 
-def build_asof_inputs(settings: Settings) -> StageResult:
-    """Build the as-of inputs for `settings.asof.date`; rebuilt in full on every run."""
+def run_opportunities(settings: Settings, stage_dir: Path = OPPORTUNITIES_DIR) -> StageResult:
+    """Run the opportunity stage for `settings.asof.date`: the as-of inputs, the schema, the
+    engines and the run summary, in one transaction; rebuilt in full on every run. `stage_dir`
+    lets a test run a copy of the stage with an extra file."""
     _check_gold(settings)
     try:
-        result = run_stage(OPPORTUNITIES_DIR, settings, extra_parameters=None)
+        result = run_stage(stage_dir, settings)
     except PipelineError as exc:
         raise OpportunitiesError(str(exc)) from exc
     logger.info(
-        "as-of inputs: %d files, %d statements, as of %s",
+        "opportunity stage: %d files, %d statements, as of %s",
         len(result.files),
         result.statements,
         settings.asof.date.isoformat(),
     )
     return result
+
+
+def build_asof_inputs(settings: Settings) -> StageResult:
+    """Build the as-of inputs (story #106). They are the first file of the opportunity stage, so
+    this runs the whole stage, which also rebuilds the schema and the run summary."""
+    return run_opportunities(settings)

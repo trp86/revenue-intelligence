@@ -40,11 +40,13 @@ LEAF_COMMANDS = [
 ]
 
 # These commands are real: build bronze (#33), build silver and build all (#45,
-# tests/unit/test_build_commands.py), check (#43), report dq (#42) and report dictionary (#86).
+# tests/unit/test_build_commands.py), build gold (#87), check (#43), report dq (#42) and
+# report dictionary (#86).
 # The rest stay stubs.
 REAL_COMMANDS = [
     ["build", "bronze"],
     ["build", "silver"],
+    ["build", "gold"],
     ["build", "all"],
     ["check"],
     ["report", "dq"],
@@ -120,8 +122,10 @@ def test_ac1_help_lists_every_command_group(project: Path) -> None:
 
 def test_ac1_registered_commands_match_the_spec(project: Path) -> None:
     registered = {path for path in leaf_paths(typer.main.get_command(app))}
-    expected = {tuple(a for a in args if not a.startswith("-") and a != "2020-01-31")
-                for args in LEAF_COMMANDS}
+    expected = {
+        tuple(a for a in args if not a.startswith("-") and a != "2020-01-31")
+        for args in LEAF_COMMANDS
+    }
     assert registered == expected
 
 
@@ -186,14 +190,14 @@ def test_ac2_stub_creates_no_files_or_databases(project: Path, args: list[str]) 
     assert not list(project.rglob("*.parquet"))
 
 
-def test_ac2_build_gold_is_a_stub_not_a_pipeline(project: Path) -> None:
-    result = runner.invoke(app, ["build", "gold"])
+def test_ac2_serve_is_a_stub_not_a_server(project: Path) -> None:
+    result = runner.invoke(app, ["serve"])
     assert result.exit_code == 3
     assert "not implemented" in result.output.lower()
 
 
-def test_ac2_real_script_build_gold_exits_non_zero() -> None:
-    result = run_script("build", "gold")
+def test_ac2_real_script_serve_exits_non_zero() -> None:
+    result = run_script("serve")
     assert result.returncode == 3
     assert "not implemented" in result.stderr.lower()
 
@@ -243,7 +247,7 @@ def test_ac3_settings_are_loaded_once_per_invocation(
         return real_load(path, **kwargs)
 
     monkeypatch.setattr(config, "load_settings", counting_load)
-    runner.invoke(app, ["build", "gold"])
+    runner.invoke(app, ["serve"])
     assert len(calls) == 1
 
 

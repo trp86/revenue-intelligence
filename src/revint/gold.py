@@ -2,8 +2,7 @@
 
 Gold is built from the silver tables in the warehouse file. This module checks that silver
 exists and runs the stage with `revint.pipeline` (one transaction, stop on the failing file).
-The command line (`revint build gold`) and the build log are wired in story #87; the SQL files
-arrive one story at a time (net sales view, dimensions, fact, marts).
+The command line (`revint build gold`, with the build log) is `revint.build.execute_gold`.
 """
 
 from __future__ import annotations
@@ -100,6 +99,15 @@ def gold_stage_parameters() -> dict[str, object]:
     without the SQL naming any of them.
     """
     return {"silver_flag_columns": list(SILVER_FLAG_COLUMNS)}
+
+
+def fact_row_count(settings: Settings) -> int:
+    """The number of rows in `fact_sales`, the count the gold stage reports."""
+    con = duckdb.connect(str(settings.paths.warehouse), read_only=True)
+    try:
+        return int(con.execute("select count(*) from fact_sales").fetchone()[0])
+    finally:
+        con.close()
 
 
 def run_gold(settings: Settings) -> StageResult:

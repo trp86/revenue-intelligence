@@ -28,6 +28,14 @@ of type + customer + category + as_of), `type`, `customer_key`,
 `value_low`, `value_high`, `value_level` (qualitative if no range),
 `value_method`, `rank`, `reason_codes`.
 
+### As-of inputs (story #106)
+The engines read only the as-of inputs, built by `revint.opportunities.build_asof_inputs` from `sql/30_opportunities/01_asof_inputs.sql`, never the all-data marts: `mart_customer_profile` and `mart_peer_category_share` are computed over every sale, so a run for an earlier as-of date would see the future through them (spec 04 P1). Each input repeats the logic of a mart, with one difference: only included sales lines dated on or before the as-of date count. A line with no date cannot be placed before the as-of date and is left out (the marts keep it with a NULL month).
+- `asof_orders`: one row per customer and order date (an order is a distinct customer and date), with its net sales and lines.
+- `asof_customer_month`, `asof_customer_category_month`: as `mart_customer_month` and `mart_customer_category_month`, zero filled (`marts.zero_fill`) only up to the month of the as-of date.
+- `asof_customer_profile`: as `mart_customer_profile` (last order, number of orders, median and mean interval, peer keys from `peer_groups.columns`).
+- `asof_peer_category_share`: as `mart_peer_category_share`, with the same `peer_groups` fallback.
+Every input carries `as_of_date`. The date is `asof.date`; `with_asof(settings, date)` gives a copy of the settings for one run, so the config file is never edited. At the last day of the data the inputs equal the four marts, on the real file with 0 differing rows; at 2019-06-30 they hold 11,044 customers and no order after 28 June 2019.
+
 ## 3. Engines
 ### 3.1 Recovery (FR-O1)
 - Compare the last `recovery.window_months` ending at as-of with the

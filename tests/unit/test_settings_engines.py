@@ -77,12 +77,13 @@ def test_ac1_the_committed_file_lists_every_new_section() -> None:
 # AC2: the two blank defaults are provisional ------
 
 
-def test_ac2_min_prior_sales_defaults_to_no_minimum() -> None:
-    assert load_settings(env={}).recovery.min_prior_sales == 0
+def test_ac2_min_prior_sales_is_the_profiled_default() -> None:
+    # story #105 chose it from the threshold profile
+    assert load_settings(env={}).recovery.min_prior_sales == 25000
 
 
-def test_ac2_top_n_per_type_defaults_to_no_limit() -> None:
-    assert load_settings(env={}).opportunities.top_n_per_type is None
+def test_ac2_top_n_per_type_is_the_profiled_default() -> None:
+    assert load_settings(env={}).opportunities.top_n_per_type == 250
 
 
 def test_ac2_both_are_marked_provisional_in_the_config_and_the_spec() -> None:
@@ -239,13 +240,13 @@ def test_ac5_a_changed_key_changes_the_config_hash(load_with: Loader, change: di
 def test_ac5_the_sections_are_sql_parameters_with_no_runner_change() -> None:
     params = settings_parameters(load_settings(env={}))
     assert params["recovery_window_months"] == 3
-    assert params["recovery_min_prior_sales"] == 0
+    assert params["recovery_min_prior_sales"] == 25000
     assert params["dormancy_interval_multiple"] == 2.0
     assert params["whitespace_min_peer_penetration"] == 0.5
     assert params["crosssell_lookback_months"] == 12
     assert params["scoring_weight_value"] == 0.40
     assert params["value_low_factor"] == 0.25
-    assert params["opportunities_top_n_per_type"] is None
+    assert params["opportunities_top_n_per_type"] == 250
 
 
 # AC6: each section has its own test module ------

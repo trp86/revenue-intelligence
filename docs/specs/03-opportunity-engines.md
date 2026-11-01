@@ -111,7 +111,7 @@ Ties broken by `value_high`, then `customer_key` (deterministic).
 |---|---|
 | `recovery.window_months` | 3 |
 | `recovery.min_decline_pct` | 20 |
-| `recovery.min_prior_sales` | 0 (no minimum); provisional until story E3-2 profiles it |
+| `recovery.min_prior_sales` | 25000; provisional (story #105, near p25 of prior-window net sales), the maintainer confirms |
 | `recovery.min_prior_orders` | 3 |
 | `dormancy.min_orders` | 4 |
 | `dormancy.interval_multiple` | 2.0 |
@@ -123,7 +123,7 @@ Ties broken by `value_high`, then `customer_key` (deterministic).
 | `crosssell.min_confidence` | 0.3 |
 | `crosssell.min_lift` | 1.2 |
 | `crosssell.lookback_months` | 12 (story #104: the months in which a candidate bought A) |
-| `opportunities.top_n_per_type` | unset (keep all); provisional until story E3-2 profiles it |
+| `opportunities.top_n_per_type` | 250; provisional (story #105), the maintainer confirms |
 | `scoring.weight_value` / `weight_evidence` / `weight_urgency` / `weight_data_quality` | 0.40 / 0.30 / 0.20 / 0.10 (they must sum to 1) |
 | `scoring.priority_high` / `priority_medium` | 70 / 40 (high above medium) |
 | `scoring.confidence_high` / `confidence_medium` | 0.7 / 0.4 (high above medium) |
@@ -169,3 +169,13 @@ Spec 02 (marts), spec 10 (config). Feeds 04, 05, 06.
   Default: customer. Why: identity decision.
 - OPEN QUESTION: Category or product level for cross-sell? Default:
   category. Why: 181 products is sparse per customer.
+
+### Threshold profile findings (story #105; provisional, the maintainer confirms)
+Run with `uv run python -m revint.threshold_profile` (counts and percentiles only; it builds the as-of inputs on a temporary copy of the warehouse). Real file, as of 2020-02-29, at the defaults of section 6 with `min_prior_sales` 0:
+- Recovery: 4,912 customers ordered in the prior window. Prior-window net sales per customer: p10 15,600, p25 28,800, p50 57,800, p75 144,600, p90 405,157. Pass on their own: `min_decline_pct` 3,051, `min_prior_orders` 1,073. Flagged by all three: 622 (362 not dormant). Flagged with `min_prior_sales` at p10/p25/p50/p75/p90: 615 / 609 / 565 / 360 / 170. No natural break (`min_prior_orders` already removes most small customers), so the minimum is a judgement: 25000, near p25, chosen.
+- Dormancy: 12,239 customers; 4,855 `insufficient_history`; flagged 2,425.
+- Whitespace: 12,211 evaluated (28 in a peer group below `peer_groups.min_size`); 15,724 customer-category pairs flagged across 8,159 customers.
+- Cross-sell: 8,557 customers and 36 categories in the lookback; 322 of 1,260 ordered pairs pass all three thresholds; 86,912 candidates across 7,187 customers.
+- Whitespace and cross-sell produce far more than a person can review, so `opportunities.top_n_per_type` is 250 per engine.
+
+The profile's reading of each rule, for the engine stories (E3-5 to E3-8) to confirm: recovery compares the last `window_months` months up to the as-of date with the same dates a year earlier and evaluates customers with an order in the prior window; dormancy's "sales before going quiet" is positive net sales in the `lookback_months` months up to the last order; whitespace evaluates a customer only when its peer group after fallback has at least `peer_groups.min_size` customers; a cross-sell candidate bought A in the lookback and never bought B up to the as-of date. The unknown customer and the 'Unknown' category are left out.

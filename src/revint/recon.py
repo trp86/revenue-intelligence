@@ -30,6 +30,8 @@ from revint.silver import SilverError, find_bronze_file
 logger = logging.getLogger(__name__)
 
 RECON_DIR = Path(__file__).resolve().parents[2] / "sql" / "checks"
+# Gold checks (story #85) run only once the gold layer is built, so they have their own folder.
+GOLD_CHECKS_DIR = RECON_DIR / "gold"
 EXIT_CHECK_FAILED = 7
 EXIT_RECON_FAILED = 4
 EXIT_WAREHOUSE_LOCKED = 5
@@ -123,6 +125,46 @@ def _check_warehouse(settings: Settings) -> None:
         )
 
 
+def gold_is_built(settings: Settings) -> bool:
+    """Whether the warehouse holds the gold fact table (the gold checks need all of gold)."""
+    warehouse = settings.paths.warehouse
+    if not warehouse.is_file():
+        return False
+    con = duckdb.connect(str(warehouse), read_only=True)
+    try:
+        return bool(
+            con.execute(
+                "select count(*) from information_schema.tables where table_name = 'fact_sales'"
+            ).fetchone()[0]
+        )
+    finally:
+        con.close()
+
+
+def _run_gold_checks_stage(settings: Settings) -> None:
+    try:
+        run_stage(GOLD_CHECKS_DIR, settings)
+    except WarehouseLockedError:
+        raise
+    except PipelineError as exc:
+        raise ReconError(str(exc)) from exc
+
+
+def run_gold_checks(settings: Settings) -> ReconOutcome:
+    """Run only the gold checks (R7 gold form, G1 to G5) and return all of `recon_results`.
+
+    Raises `ReconError` when the gold layer is not built, or when a check file fails to run.
+    The earlier results of a full run stay in the table; the gold rows are replaced.
+    """
+    _check_warehouse(settings)
+    if not gold_is_built(settings):
+        raise ReconError(
+            "the warehouse has no gold layer; run the gold stage before the gold checks"
+        )
+    _run_gold_checks_stage(settings)
+    return ReconOutcome(_read_results(settings))
+
+
 def _read_results(settings: Settings) -> tuple[ReconResult, ...]:
     con = duckdb.connect(str(settings.paths.warehouse), read_only=True)
     try:
@@ -157,6 +199,8 @@ def run_recon(settings: Settings) -> ReconOutcome:
         raise
     except PipelineError as exc:
         raise ReconError(str(exc)) from exc
+    if gold_is_built(settings):
+        _run_gold_checks_stage(settings)
     results = _read_results(settings)
     outcome = ReconOutcome(results)
     logger.info("recon: %d results, %d failed", len(results), len(outcome.failed))

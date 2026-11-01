@@ -29,6 +29,7 @@ LEAF_COMMANDS = [
     ["build", "all"],
     ["check"],
     ["report", "dq"],
+    ["report", "dictionary"],
     ["opportunities", "build"],
     ["opportunities", "build", "--as-of", "2020-01-31"],
     ["backtest", "run"],
@@ -39,13 +40,15 @@ LEAF_COMMANDS = [
 ]
 
 # These commands are real: build bronze (#33), build silver and build all (#45,
-# tests/unit/test_build_commands.py), check (#43) and report dq (#42). The rest stay stubs.
+# tests/unit/test_build_commands.py), check (#43), report dq (#42) and report dictionary (#86).
+# The rest stay stubs.
 REAL_COMMANDS = [
     ["build", "bronze"],
     ["build", "silver"],
     ["build", "all"],
     ["check"],
     ["report", "dq"],
+    ["report", "dictionary"],
 ]
 STUB_COMMANDS = [args for args in LEAF_COMMANDS if args not in REAL_COMMANDS]
 
@@ -126,7 +129,7 @@ def test_ac1_registered_commands_match_the_spec(project: Path) -> None:
     ("group", "subcommands"),
     [
         ("build", ["bronze", "silver", "gold", "all"]),
-        ("report", ["dq"]),
+        ("report", ["dq", "dictionary"]),
         ("opportunities", ["build"]),
         ("backtest", ["run", "report"]),
         ("ai", ["generate"]),

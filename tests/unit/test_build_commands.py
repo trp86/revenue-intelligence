@@ -26,7 +26,7 @@ from revint.silver import SILVER_DIR, execute_silver
 
 runner = CliRunner()
 SECRET = "SECRET-"
-STAGES = ("bronze", "silver")
+STAGES = ("bronze", "silver", "gold")
 
 
 def write_workbook(path: Path) -> None:
@@ -222,7 +222,7 @@ def test_ac1_build_silver_reports_a_locked_warehouse(
     assert "in use" in result.output
 
 
-# AC2: build all runs bronze then silver and says there is no gold stage ------
+# AC2: build all runs bronze, silver and gold (gold: tests/unit/test_build_gold.py) ------
 
 
 def test_ac2_build_all_runs_bronze_then_silver(
@@ -238,14 +238,14 @@ def test_ac2_build_all_runs_bronze_then_silver(
     assert query(settings, "select count(*) from silver_sales") == [(4,)]
 
 
-def test_ac2_build_all_states_that_no_gold_stage_exists_yet(
+def test_ac2_build_all_ends_with_a_line_that_names_all_three_stages(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     write_workbook(tmp_path / "raw" / "sales.xlsx")
     use(settings_in(tmp_path), monkeypatch)
     result = runner.invoke(app, ["build", "all"])
-    assert "no gold stage exists yet" in result.output
-    assert result.output.rstrip().splitlines()[-1].lower().startswith("build all")
+    assert "no gold stage" not in result.output
+    assert result.output.rstrip().splitlines()[-1] == "build all: bronze, silver and gold built"
 
 
 def test_ac2_build_all_records_the_stages_in_order(built: Settings) -> None:
@@ -281,7 +281,7 @@ def test_ac2_a_failing_silver_fails_build_all_and_says_which_stage(
     result = runner.invoke(app, ["build", "all"])
     assert result.exit_code == 4
     assert "silver" in result.output.lower()
-    assert "no gold stage" not in result.output
+    assert "gold" not in result.output.lower()  # silver failed, so gold never ran
 
 
 def test_ac2_build_all_with_a_locked_raw_workbook_exits_six(
@@ -294,11 +294,14 @@ def test_ac2_build_all_with_a_locked_raw_workbook_exits_six(
     assert result.exit_code == 6
 
 
-def test_ac2_build_gold_is_still_a_stub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ac2_build_gold_is_real_and_needs_silver(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     use(settings_in(tmp_path), monkeypatch)
     result = runner.invoke(app, ["build", "gold"])
-    assert result.exit_code == 3
-    assert "not implemented" in result.output.lower()
+    assert result.exit_code == 4
+    assert "not implemented" not in result.output.lower()
+    assert "revint build silver" in result.output
 
 
 # AC3: every stage run is recorded in build_log ------
@@ -381,7 +384,7 @@ def test_ac3_the_log_keeps_earlier_runs_when_stages_are_rebuilt(work: Settings) 
 def test_ac3_a_stub_command_writes_no_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     settings = settings_in(tmp_path)
     use(settings, monkeypatch)
-    runner.invoke(app, ["build", "gold"])
+    runner.invoke(app, ["serve"])
     assert not settings.paths.warehouse.exists()
 
 

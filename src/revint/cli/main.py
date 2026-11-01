@@ -81,13 +81,18 @@ def build_silver() -> None:
 
 @build_app.command("gold")
 def build_gold() -> None:
-    """Build the gold layer."""
-    _stub("build gold")
+    """Build the gold layer (the star schema and marts) from silver."""
+    settings = _load_settings()
+    from revint.build import execute_gold  # imported here to keep --help fast
+
+    code = execute_gold(settings)
+    if code:
+        raise typer.Exit(code=code)
 
 
 @build_app.command("all")
 def build_all() -> None:
-    """Build every layer that exists: bronze, then silver (no gold stage yet)."""
+    """Build every layer: bronze, then silver, then gold."""
     settings = _load_settings()
     from revint.build import execute_build_all  # imported here to keep --help fast
 

@@ -23,10 +23,18 @@ versioned: `algo_version` stored on every row.
 
 Common columns in `opp_opportunities`: `opp_id` (deterministic hash
 of type + customer + category + as_of), `type`, `customer_key`,
-`category_key` (nullable), `as_of_date`, `algo_version`, `score`,
+`category` (text, nullable; there is no category key in gold), `as_of_date`, `algo_version`, `score`,
 `priority` (High/Medium/Low), `confidence` (High/Medium/Low),
 `value_low`, `value_high`, `value_level` (qualitative if no range),
 `value_method`, `rank`, `reason_codes`.
+
+### Opportunity schema and run summary (story #107)
+The opportunity stage is `sql/30_opportunities`, run in filename order in one transaction by `revint.opportunities.run_opportunities`; every run rebuilds every table in full, and a failed run leaves the previous tables in place.
+- `02_schema.sql` creates the empty tables and the macro `opp_id(type, customer_key, category, as_of_date)`: the md5 of a JSON list of the four values, so the id is the same on every run, a NULL category differs from an empty one, and a separator inside a value cannot make two ids collide. `revint.opportunities.opp_id` gives the same id in Python.
+- `opp_engines`: the four engines (`dormancy`, `recovery`, `whitespace`, `crosssell`) and the `algo_version` each stores on every row (`<engine>-1`). A change to an engine's rule raises its version.
+- `opp_<engine>`: the opportunities one engine found. Identity columns as above (`opp_id` is the primary key), then `gap` and `reason_codes`; an engine adds its own columns.
+- `opp_evaluations`: one row per customer (and category) an engine looked at, with its outcome: `triggered` or the reason code it was suppressed (for example `insufficient_history`).
+- `90_run_summary.sql` runs after the engines and builds `opp_run_summary`: per engine `as_of_date`, `algo_version`, `n_evaluated`, `n_triggered`, `n_suppressed` and `suppressed_by_reason` (map of reason code to count). Counts only. It fails the stage when an evaluation names an unknown engine, a customer is evaluated twice, a trigger has no opportunity row (or the reverse), or a row carries another version.
 
 ### As-of inputs (story #106)
 The engines read only the as-of inputs, built by `revint.opportunities.build_asof_inputs` from `sql/30_opportunities/01_asof_inputs.sql`, never the all-data marts: `mart_customer_profile` and `mart_peer_category_share` are computed over every sale, so a run for an earlier as-of date would see the future through them (spec 04 P1). Each input repeats the logic of a mart, with one difference: only included sales lines dated on or before the as-of date count. A line with no date cannot be placed before the as-of date and is left out (the marts keep it with a NULL month).

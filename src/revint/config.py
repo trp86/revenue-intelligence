@@ -363,9 +363,9 @@ class RecoverySettings(_Section):
         default=20, ge=0, le=100, description="Smallest decline, in percent of the prior period."
     )
     min_prior_sales: float = Field(
-        default=0,
+        default=25000,
         ge=0,
-        description="Smallest net sales in the prior period (provisional; story E3-2 sets it).",
+        description="Smallest net sales in the prior period (provisional; story #105 profiled it).",
     )
     min_prior_orders: StrictInt = Field(
         default=3, ge=1, description="Fewest orders in the prior period for a customer to count."
@@ -475,9 +475,9 @@ class OpportunitiesSettings(_Section):
     """Settings that apply to every engine (spec 03 section 6)."""
 
     top_n_per_type: StrictInt | None = Field(
-        default=None,
+        default=250,
         ge=1,
-        description="Most opportunities kept per engine; unset keeps all (provisional, E3-2).",
+        description="Most opportunities kept per engine; null keeps all (provisional, #105).",
     )
 
 

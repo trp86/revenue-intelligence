@@ -219,7 +219,7 @@ product:
 recovery:
   window_months: 3                       # months ending at the as-of date, compared a year earlier
   min_decline_pct: 20                    # smallest decline in percent of the prior period
-  min_prior_sales: 0                     # provisional: no minimum until story E3-2 profiles it
+  min_prior_sales: 25000                 # provisional (story #105): near p25 of prior-window sales
   min_prior_orders: 3                    # fewest orders in the prior period
 
 dormancy:
@@ -255,7 +255,7 @@ value:
   high_factor: 0.75                      # range high = high_factor x gap
 
 opportunities:
-  top_n_per_type: null                   # provisional: keep all until story E3-2 profiles it
+  top_n_per_type: 250                    # provisional (story #105): keep the top 250 per engine
 
 asof:
   date: 2020-02-29                       # as-of date of the data

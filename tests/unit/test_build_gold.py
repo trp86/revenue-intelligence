@@ -179,37 +179,31 @@ def test_ac1_the_run_is_recorded_in_build_log(silver_only: Settings) -> None:
 
 
 def test_ac1_the_stage_runs_in_one_transaction(
-    silver_only: Settings, monkeypatch: pytest.MonkeyPatch
+    silver_only: Settings, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    broken = GOLD_DIR.parent / "99_broken_gold"
-    broken.mkdir(exist_ok=True)
-    try:
-        (broken / "01_ok.sql").write_text(
-            "create or replace table dim_branch as select 1 as x;", "utf-8"
-        )
-        (broken / "02_bad.sql").write_text("select error('boom');", "utf-8")
-        monkeypatch.setattr("revint.gold.GOLD_DIR", broken)
-        use(silver_only, monkeypatch)
-        before = query(silver_only, "select count(*) from information_schema.tables")
-        result = runner.invoke(app, ["build", "gold"])
-    finally:
-        shutil.rmtree(broken, ignore_errors=True)
+    broken = tmp_path / "broken_gold"
+    broken.mkdir()
+    (broken / "01_ok.sql").write_text(
+        "create or replace table dim_branch as select 1 as x;", "utf-8"
+    )
+    (broken / "02_bad.sql").write_text("select error('boom');", "utf-8")
+    monkeypatch.setattr("revint.gold.GOLD_DIR", broken)
+    use(silver_only, monkeypatch)
+    before = query(silver_only, "select count(*) from information_schema.tables")
+    result = runner.invoke(app, ["build", "gold"])
     assert result.exit_code == 4
     assert "02_bad.sql" in result.output
     assert query(silver_only, "select count(*) from information_schema.tables") == before
 
 
 def test_ac1_a_failed_gold_stage_is_recorded_as_failed_with_the_file(
-    silver_only: Settings, monkeypatch: pytest.MonkeyPatch
+    silver_only: Settings, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    broken = GOLD_DIR.parent / "99_broken_gold"
-    broken.mkdir(exist_ok=True)
-    try:
-        (broken / "01_bad.sql").write_text("select error('boom');", "utf-8")
-        monkeypatch.setattr("revint.gold.GOLD_DIR", broken)
-        execute_gold(silver_only)
-    finally:
-        shutil.rmtree(broken, ignore_errors=True)
+    broken = tmp_path / "broken_gold"
+    broken.mkdir()
+    (broken / "01_bad.sql").write_text("select error('boom');", "utf-8")
+    monkeypatch.setattr("revint.gold.GOLD_DIR", broken)
+    execute_gold(silver_only)
     last = read_build_log(silver_only)[-1]
     assert (last["stage"], last["status"], last["failed_file"]) == ("gold", "failed", "01_bad.sql")
 

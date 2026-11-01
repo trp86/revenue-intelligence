@@ -22,6 +22,7 @@ revint-gate = "revint.gate:main"
 [dependency-groups]
 dev = [
     "pytest",
+    "pytest-xdist>=3.8.0",
     "ruff",
     "sqlfluff",
     "xlsxwriter>=3.3.1",
@@ -36,7 +37,10 @@ packages = ["src/revint"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers"
+# -n auto runs the tests on one worker per CPU core (pytest-xdist); each test builds in its own
+# temporary folder, so workers share nothing. Use -n 0 to run in one process, for example to
+# debug a failure with a debugger or to read the output in order.
+addopts = "--strict-markers -n auto"
 markers = [
     "realdata: needs the real client data under data/; skipped when data/ is absent and never run in CI",
 ]

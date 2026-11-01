@@ -67,6 +67,14 @@ CI check. Until a runner exists (issue #27):
   passed, with the pass counts.
 - The reviewer can run the same command on the PR branch before
   merging.
+- The tests run in parallel, one worker per CPU core (pytest-xdist, `-n auto` in
+  `pyproject.toml`), so the command line is unchanged. Expect the whole gate to take
+  about 6 to 7 minutes on an 8-core machine with nothing else running, down from about
+  24 minutes in one process; fewer cores take longer, and a machine that is busy or
+  asleep takes longer still. Each test builds in its own temporary folder and shares
+  nothing with another. A test that writes into the repository (code, SQL, config, docs
+  or tests) fails the run and the files are named. To run in one process, for example
+  to use a debugger or read the output in order, use `uv run pytest -n 0 <path>`.
 - When a runner exists, issue #27 restores the `pull_request`
   trigger and this section is removed.
 

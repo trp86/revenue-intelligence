@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import subprocess
 import sys
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import date
@@ -72,6 +73,22 @@ def hold_open(path: Path) -> Iterator[None]:
         proc.wait()
         if proc.stdout is not None:
             proc.stdout.close()
+        _wait_until_released(path)
+
+
+def _wait_until_released(path: Path, seconds: float = 10.0) -> None:
+    """Windows can release a file lock a moment after the holding process exits, and under
+    parallel load (pytest-xdist) the delay is long enough for the next open to fail. Wait until
+    the file opens again, so the test after the `with` block sees a free file."""
+    deadline = time.monotonic() + seconds
+    while True:
+        try:
+            duckdb.connect(str(path), read_only=True).close()
+            return
+        except duckdb.IOException:
+            if time.monotonic() > deadline:
+                raise
+            time.sleep(0.05)
 
 
 # AC1: files run in filename order ---------------------------------------------

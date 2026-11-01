@@ -33,7 +33,7 @@ frontend/                 React app
 
 ## 4. Configuration (config/settings.yaml)
 - Loaded into a pydantic `Settings` model; unknown keys fail; every key has a documented default.
-- Sections: `paths`, `ingest`, `labels`, `net_sales`, `void`, `duplicates`, `marts`, `calendar`, `regions`, `product`, `peer_groups`, `recovery`, `dormancy`, `whitespace`, `crosssell`, `scoring`, `value`, `backtest`, `ai`, `assistant`, `explore`, `api`, `actions`, `recon`, `asof`.
+- Sections: `paths`, `ingest`, `labels`, `net_sales`, `void`, `duplicates`, `marts`, `calendar`, `regions`, `product`, `peer_groups`, `recovery`, `dormancy`, `whitespace`, `crosssell`, `scoring`, `value`, `opportunities`, `backtest`, `ai`, `assistant`, `explore`, `api`, `actions`, `recon`, `asof`.
 - `asof.date` default `2020-02-29`.
 - `paths` and `asof` are required; every other section may be left out of the file and then takes its documented defaults. Within a section an unknown key fails and an out-of-range value fails naming the key.
 - `duplicates.key_columns`, when unset, is derived as `ingest.expected_columns` minus `_source_row` (`Settings.duplicate_key_columns`).

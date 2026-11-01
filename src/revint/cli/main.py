@@ -7,6 +7,7 @@ work. Later epics replace the stubs one by one.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Annotated, NoReturn
 
 import typer
@@ -113,6 +114,22 @@ def report_dq() -> None:
     from revint.report import execute_report  # imported here to keep --help fast
 
     code = execute_report(settings)
+    if code:
+        raise typer.Exit(code=code)
+
+
+@report_app.command("dictionary")
+def report_dictionary(
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", help="Where to write it; default docs/data_dictionary.md."),
+    ] = None,
+) -> None:
+    """Write the data dictionary of the gold layer (docs/data_dictionary.md)."""
+    settings = _load_settings()
+    from revint.data_dictionary import execute_dictionary  # imported here to keep --help fast
+
+    code = execute_dictionary(settings, output)
     if code:
         raise typer.Exit(code=code)
 

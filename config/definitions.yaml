@@ -1,0 +1,447 @@
+# Plain-language definitions of the gold layer's metrics, dimensions, flags and keys (spec 02
+# section 7). The data dictionary (docs/data_dictionary.md) and, later, the API and the screens
+# read this file, so "every number can show its definition".
+#
+# An entry is: id (unique, lower case), kind (metric, dimension, flag or key), text (one plain
+# sentence for a sales manager), applies_to (the table.column names it defines; "*" matches any
+# run of characters and "{column}" a source column name, which "{column}" in text and source
+# is then replaced by), and optionally source (the source column), rule (the silver or gold rule
+# id) and flags (the flags that change the value). Every gold column needs exactly one entry; a
+# test fails and names a column that has none. Change a definition through a PR.
+
+definitions:
+  # ---- net sales: the one definition ---------------------------------------------------------
+  - id: net_sales
+    kind: metric
+    text: >-
+      Net sales of a sales line: the amount in the column chosen by net_sales.field (provisional,
+      to be confirmed by the client), defined only in the view v_net_sales and used by every fact,
+      mart and screen.
+    applies_to: [v_net_sales.net_sales, fact_sales.net_sales]
+    source: the column named by net_sales.field (Net_Amount_2 by default)
+    rule: N1, N2
+    flags: [included, is_duplicate]
+  - id: net_sales_field_used
+    kind: dimension
+    text: The name of the source column that net sales was taken from, so a screen can label it.
+    applies_to: [v_net_sales.net_sales_field_used]
+    source: net_sales.field
+    rule: N4
+  - id: included
+    kind: flag
+    text: >-
+      True unless the line carries a flag listed in net_sales.exclude_flags; a line that is not
+      included stays in the fact but adds nothing to any mart.
+    applies_to: [v_net_sales.included, fact_sales.included]
+    source: net_sales.exclude_flags
+    rule: N3
+  - id: sales_line_id
+    kind: key
+    text: >-
+      The sales line: the row number of the line in the source sheet, unique within the layer.
+    applies_to: [v_net_sales.sales_line_id, fact_sales.sales_line_id]
+    source: _source_row
+    rule: S10
+  - id: quantity
+    kind: metric
+    text: The quantity sold on the line, in pieces (a return has a negative quantity).
+    applies_to: [v_net_sales.quantity, fact_sales.quantity]
+    source: the column named by net_sales.quantity_field (Quantity(PCS))
+    flags: [f_negative_qty, f_zero_value_with_qty]
+  - id: amount_candidate
+    kind: metric
+    text: >-
+      The amount in the source column {column}, one of the candidate columns net sales can be
+      chosen from; kept so the choice can change without a rebuild of silver.
+    applies_to: ["v_net_sales.amount_{column}", "fact_sales.amount_{column}"]
+    source: "{column}"
+    rule: S11
+    flags: ["f_bad_{column}"]
+
+  # ---- keys ------------------------------------------------------------------------------------
+  - id: date_key
+    kind: key
+    text: The day as yyyymmdd, or -1 for a line with no usable date.
+    applies_to: [dim_date.date_key, fact_sales.date_key]
+    rule: G3
+  - id: customer_key
+    kind: key
+    text: >-
+      A number made from the customer code as written; near-duplicate codes get different keys,
+      and -1 stands for a line with no customer code.
+    applies_to:
+      - dim_customer.customer_key
+      - fact_sales.customer_key
+      - mart_customer_month.customer_key
+      - mart_customer_category_month.customer_key
+      - mart_customer_profile.customer_key
+    rule: G3, G4
+  - id: product_key
+    kind: key
+    text: A number made from the product code, or -1 for a line with no product code.
+    applies_to: [dim_product.product_key, fact_sales.product_key]
+    rule: G3, G4
+  - id: branch_key
+    kind: key
+    text: A number made from the normalised branch name, or -1 for a line with no branch.
+    applies_to: [dim_branch.branch_key, fact_sales.branch_key, mart_branch_month.branch_key]
+    rule: G3, G4
+
+  # ---- dim_date --------------------------------------------------------------------------------
+  - id: date
+    kind: dimension
+    text: The calendar day.
+    applies_to: [dim_date.date]
+    source: the column named by calendar.date_column
+  - id: week
+    kind: dimension
+    text: The ISO week number of the day (weeks start on Monday).
+    applies_to: [dim_date.week]
+  - id: iso_year
+    kind: dimension
+    text: The year the ISO week belongs to, which differs from the calendar year around New Year.
+    applies_to: [dim_date.iso_year]
+  - id: week_start
+    kind: dimension
+    text: The Monday that starts the week of the day.
+    applies_to: [dim_date.week_start]
+  - id: month
+    kind: dimension
+    text: The calendar month of the day, 1 to 12.
+    applies_to: [dim_date.month]
+  - id: quarter
+    kind: dimension
+    text: The calendar quarter of the day, 1 to 4.
+    applies_to: [dim_date.quarter]
+  - id: year
+    kind: dimension
+    text: The calendar year of the day.
+    applies_to: [dim_date.year]
+  - id: month_start
+    kind: dimension
+    text: The first day of the month, used as the month in every monthly mart.
+    applies_to:
+      - dim_date.month_start
+      - mart_customer_month.month_start
+      - mart_customer_category_month.month_start
+      - mart_branch_month.month_start
+  - id: fiscal_year
+    kind: dimension
+    text: >-
+      The fiscal year, named by the calendar year it starts in; equal to the calendar year unless
+      calendar.fiscal_year_start_month is changed.
+    applies_to: [dim_date.fiscal_year]
+    source: calendar.fiscal_year_start_month
+  - id: fiscal_quarter
+    kind: dimension
+    text: The quarter of the fiscal year, 1 to 4.
+    applies_to: [dim_date.fiscal_quarter]
+    source: calendar.fiscal_year_start_month
+  - id: f_after_asof
+    kind: flag
+    text: >-
+      True for a day after the as-of date of the data (asof.date); a sales line on such a day is
+      kept and carries the flag.
+    applies_to: [dim_date.f_after_asof, fact_sales.f_after_asof]
+    source: asof.date
+
+  # ---- dim_customer ----------------------------------------------------------------------------
+  - id: customer_code
+    kind: dimension
+    text: The customer code as written in the source; the code is the customer's identity.
+    applies_to: [dim_customer.customer_code]
+    source: the column named by customers.code_column
+    rule: S4
+  - id: customer_name
+    kind: dimension
+    text: The most frequent spelling of the customer's name, or Unknown when the source has none.
+    applies_to: [dim_customer.customer_name]
+    source: the column named by customers.name_column
+    rule: S4
+  - id: n_name_variants
+    kind: metric
+    text: How many different spellings of the name the customer code has in the source.
+    applies_to: [dim_customer.n_name_variants]
+    rule: S4
+  - id: n_branches
+    kind: metric
+    text: How many different branches the customer code has in the source.
+    applies_to: [dim_customer.n_branches]
+    rule: S4
+  - id: n_near_duplicate_codes
+    kind: metric
+    text: >-
+      How many other customer codes are the same once spaces at both ends are trimmed and the
+      case is ignored; such codes are counted, never merged.
+    applies_to: [dim_customer.n_near_duplicate_codes]
+    rule: S4
+  - id: f_multi_identity
+    kind: flag
+    text: >-
+      True when the customer code has several names, several branches or a near-duplicate code, so
+      the code may not be one customer.
+    applies_to: [dim_customer.f_multi_identity]
+    rule: S4
+  - id: customer_channel
+    kind: dimension
+    text: The channel of the customer's latest order, after the label maps; Unknown if none.
+    applies_to: [dim_customer.channel]
+    source: the column named by labels.channel_columns
+    rule: S3
+  - id: customer_branch
+    kind: dimension
+    text: The branch of the customer's latest order, after the label maps; Unknown if none.
+    applies_to: [dim_customer.branch]
+    source: the column named by labels.branch_columns
+    rule: S3
+  - id: first_order_date
+    kind: dimension
+    text: The date of the customer's first dated sales line.
+    applies_to: [dim_customer.first_order_date]
+  - id: last_order_date
+    kind: dimension
+    text: The date of the customer's last dated sales line (dim_customer) or last order (profile).
+    applies_to: [dim_customer.last_order_date, mart_customer_profile.last_order_date]
+  - id: order_lines
+    kind: metric
+    text: How many sales lines the customer or product has in the lines silver keeps.
+    applies_to: [dim_customer.order_lines, dim_product.order_lines]
+
+  # ---- dim_product -----------------------------------------------------------------------------
+  - id: product_code
+    kind: dimension
+    text: The product code as written in the source (trimmed).
+    applies_to: [dim_product.product_code]
+    source: the column named by product.code_column
+  - id: product_name
+    kind: dimension
+    text: The most frequent name of the product code, or Unknown when the source has none.
+    applies_to: [dim_product.product_name]
+    source: the column named by product.name_column
+  - id: brand
+    kind: dimension
+    text: The most frequent brand of the product code, or Unknown when the source has none.
+    applies_to: [dim_product.brand]
+    source: the column named by product.brand_column
+  - id: category
+    kind: dimension
+    text: >-
+      The product category, the level the opportunity engines compare customers at; Unknown when
+      the source has none.
+    applies_to:
+      - dim_product.category
+      - mart_customer_category_month.category
+      - mart_peer_category_share.category
+    source: the column named by product.category_column
+  - id: n_product_values
+    kind: metric
+    text: How many different names, brands or categories the product code has in the source.
+    applies_to: [dim_product.n_name_values, dim_product.n_brand_values, dim_product.n_category_values]
+  - id: f_value_conflict
+    kind: flag
+    text: >-
+      True when the product code has several values in its name, brand or category; the most
+      frequent one is used.
+    applies_to: [dim_product.f_value_conflict]
+  - id: f_no_category
+    kind: flag
+    text: True when the source has no category for the product, so its category shows Unknown.
+    applies_to: [dim_product.f_no_category]
+
+  # ---- dim_branch ------------------------------------------------------------------------------
+  - id: branch_name
+    kind: dimension
+    text: The branch name after the label map joins its spelling variants.
+    applies_to: [dim_branch.branch_name]
+    source: the column named by labels.branch_columns
+    rule: S3
+  - id: region
+    kind: dimension
+    text: >-
+      The branch's region: from regions.branch_to_region if it has an entry, otherwise the most
+      frequent value in the source region column, otherwise Unknown.
+    applies_to: [dim_branch.region]
+    source: regions.source_column
+  - id: region_source
+    kind: dimension
+    text: >-
+      Where the region came from: config, source or unknown.
+    applies_to: [dim_branch.region_source]
+  - id: f_region_conflict
+    kind: flag
+    text: >-
+      True when the source gives the branch several regions and the config does not settle it;
+      the most frequent one is used.
+    applies_to: [dim_branch.f_region_conflict]
+
+  # ---- marts -----------------------------------------------------------------------------------
+  - id: mart_net_sales
+    kind: metric
+    text: >-
+      Net sales of the group and month: the sum of net sales over its lines that are included;
+      0 in a month with no sales when marts.zero_fill is true.
+    applies_to:
+      - mart_customer_month.net_sales
+      - mart_customer_category_month.net_sales
+      - mart_branch_month.net_sales
+    flags: [included, f_zero_filled]
+  - id: n_lines
+    kind: metric
+    text: How many included sales lines make up the figure; 0 for a month filled with zero.
+    applies_to:
+      - mart_customer_month.n_lines
+      - mart_customer_category_month.n_lines
+      - mart_branch_month.n_lines
+      - mart_peer_category_share.n_lines
+  - id: f_zero_filled
+    kind: flag
+    text: >-
+      True for a month with no sales that was added with 0 so a series has no gaps
+      (marts.zero_fill); not a month with a purchase.
+    applies_to:
+      - mart_customer_month.f_zero_filled
+      - mart_customer_category_month.f_zero_filled
+      - mart_branch_month.f_zero_filled
+    source: marts.zero_fill
+  - id: f_unknown_category
+    kind: flag
+    text: True for the rows of the category Unknown, which are kept so the totals stay whole.
+    applies_to:
+      - mart_customer_category_month.f_unknown_category
+      - mart_peer_category_share.f_unknown_category
+  - id: n_orders
+    kind: metric
+    text: >-
+      How many orders the customer has; an order is one distinct customer and date, however many
+      lines it has.
+    applies_to: [mart_customer_profile.n_orders]
+  - id: interval_days
+    kind: metric
+    text: >-
+      The median or mean number of days between a customer's consecutive order dates; empty with
+      fewer than two orders.
+    applies_to:
+      - mart_customer_profile.median_interval_days
+      - mart_customer_profile.mean_interval_days
+  - id: peer_keys
+    kind: dimension
+    text: >-
+      The customer's peer group: one value per peer_groups.columns column (channel and branch by
+      default), from the latest order that has a value.
+    applies_to: [mart_customer_profile.peer_keys, mart_peer_category_share.peer_keys]
+    source: peer_groups.columns
+  - id: f_last_order_after_asof
+    kind: flag
+    text: True when the customer's last order is after the as-of date; the row is kept.
+    applies_to: [mart_customer_profile.f_last_order_after_asof]
+    source: asof.date
+  - id: peer_columns
+    kind: dimension
+    text: >-
+      The columns that define the peer group on the row: the group columns, or the fallback
+      columns when the group was too small.
+    applies_to: [mart_peer_category_share.peer_columns]
+    source: peer_groups.columns, peer_groups.fallback_columns
+  - id: f_fallback
+    kind: flag
+    text: >-
+      True when the customers belong to the wider fallback group because their own group had
+      fewer than peer_groups.min_size customers.
+    applies_to: [mart_peer_category_share.f_fallback]
+    source: peer_groups.min_size
+  - id: f_below_min_size
+    kind: flag
+    text: >-
+      True when the group is still smaller than peer_groups.min_size, so the comparison is weak.
+    applies_to: [mart_peer_category_share.f_below_min_size]
+    source: peer_groups.min_size
+  - id: n_peers
+    kind: metric
+    text: How many real customers are in the peer group.
+    applies_to: [mart_peer_category_share.n_peers]
+  - id: n_buying
+    kind: metric
+    text: >-
+      How many customers in the group bought the category: those with positive net sales in it
+      over all months.
+    applies_to: [mart_peer_category_share.n_buying]
+  - id: penetration
+    kind: metric
+    text: The share of the group's customers that bought the category (buying divided by peers).
+    applies_to: [mart_peer_category_share.penetration]
+    flags: [f_fallback, f_below_min_size]
+  - id: median_buyer_net_sales
+    kind: metric
+    text: The median net sales in the category over the customers that bought it; empty if none.
+    applies_to: [mart_peer_category_share.median_buyer_net_sales]
+  - id: total_net_sales
+    kind: metric
+    text: The net sales of all the group's customers in the category, returns included.
+    applies_to: [mart_peer_category_share.total_net_sales]
+
+  # ---- flags carried from silver ---------------------------------------------------------------
+  - id: void_flag
+    kind: flag
+    text: >-
+      1 when the line is void, 0 when it is not, empty when the Void value is not yet mapped
+      (void.value_map); a blank Void is treated as not void for now.
+    applies_to: [fact_sales.void_flag]
+    source: Void
+    rule: S6
+  - id: f_bad_value
+    kind: flag
+    text: True when the source cell for {column} is not blank but could not be read as that type.
+    applies_to: ["fact_sales.f_bad_{column}"]
+    source: "{column}"
+    rule: S2
+  - id: is_excluded
+    kind: flag
+    text: >-
+      True when silver marks the line as excluded (the stray row or an exact duplicate copy);
+      kept in the fact only when it is a copy and duplicates.exclude_from_net_sales is false.
+    applies_to: [fact_sales.is_excluded]
+    rule: S10
+  - id: f_stray_row
+    kind: flag
+    text: True for the one source row that has only Change to Ctn filled; gold never loads it.
+    applies_to: [fact_sales.f_stray_row]
+    rule: S9
+  - id: is_duplicate
+    kind: flag
+    text: >-
+      True for an extra copy of an exact duplicate line (the first occurrence is kept as it is);
+      loaded only when duplicates.exclude_from_net_sales is false.
+    applies_to: [fact_sales.is_duplicate]
+    rule: S5
+  - id: f_zero_value_with_qty
+    kind: flag
+    text: True when the line has a quantity above 0 but net sales of 0 (possible free goods).
+    applies_to: [fact_sales.f_zero_value_with_qty]
+    rule: S7
+  - id: f_negative_qty
+    kind: flag
+    text: True when the line has a negative quantity (a return).
+    applies_to: [fact_sales.f_negative_qty]
+    rule: S8
+  - id: f_negative_value
+    kind: flag
+    text: True when the line has negative net sales (a return).
+    applies_to: [fact_sales.f_negative_value]
+    rule: S8
+  - id: f_blank_void
+    kind: flag
+    text: True when the Void cell is blank, which is treated as not void for now.
+    applies_to: [fact_sales.f_blank_void]
+    source: Void
+    rule: S6
+  - id: f_unmapped_void
+    kind: flag
+    text: True when the Void value is not blank and is not in void.value_map.
+    applies_to: [fact_sales.f_unmapped_void]
+    source: Void
+    rule: S6
+  - id: f_unmapped_label
+    kind: flag
+    text: True when a channel or branch label has no entry in the label maps and is kept as it is.
+    applies_to: [fact_sales.f_unmapped_label]
+    rule: S3

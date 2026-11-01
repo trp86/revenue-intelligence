@@ -56,10 +56,10 @@ def test_ac2_empty_layout_directories_are_tracked_by_a_placeholder(rel: str) -> 
 
 
 def test_ac2_no_invented_config_files() -> None:
-    # settings.yaml arrived with story #16; definitions.yaml and explore.yaml
-    # belong to later epics.
+    # settings.yaml arrived with story #16 and definitions.yaml with story #86; explore.yaml
+    # belongs to a later epic.
     names = {p.name for p in (ROOT / "config").glob("*.yaml")}
-    assert names <= {"settings.yaml"}
+    assert names <= {"settings.yaml", "definitions.yaml"}
 
 
 def test_ac2_import_revint() -> None:

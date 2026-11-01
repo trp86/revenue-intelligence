@@ -99,6 +99,8 @@ column, rule ID, flags that affect it, example [x]. Generated, plus
 hand-written definitions in `config/definitions.yaml` shown in UI
 ("every number can show its definition").
 
+Implemented in story #86 (`revint.data_dictionary`). `config/definitions.yaml` holds one hand-written, plain-language definition per metric, dimension, flag and key: `id` (unique, lower case), `kind` (`metric`, `dimension`, `flag` or `key`), `text`, `applies_to` (the `table.column` names it defines; `*` matches any run and `{column}` stands for a source column name, replaced in `text`, `source` and `flags`), and optionally `source`, `rule` and `flags` (the flags that change the value). `uv run revint report dictionary [--output PATH]` writes `docs/data_dictionary.md` from the metadata of the gold tables in the warehouse (names, order, types) and these definitions: per table its grain and, per column, name, type, definition, source column, rule id and the flags that affect it. It covers the view, the four dimensions, the fact and the five marts (140 columns, 70 definitions). A gold column with no definition fails the command and a test, and is named (`table.column`). The file holds no data (no row, count, date or customer value) and no timestamp or path, so it is identical on a re-run and for any warehouse built from the same code and settings; it is committed, so a change to the gold layer shows as a change to this file. The example column of the outline is left out for that reason. Net sales is labelled with the configured `net_sales.field` and "provisional".
+
 ## 8. Configurable parameters
 | Key | Default |
 |---|---|

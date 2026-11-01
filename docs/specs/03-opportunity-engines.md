@@ -51,7 +51,9 @@ of type + customer + category + as_of), `type`, `customer_key`,
 ### 3.3 Whitespace (FR-O3)
 - Peer group defined in config (default: same channel + same
   branch; fall back to channel only if group size <
-  `whitespace.min_peer_size`).
+  `peer_groups.min_size`). The group and its minimum size are the
+  `peer_groups` settings from spec 02 (story #72); there is no separate
+  whitespace minimum (story #104).
 - Category is whitespace if peer penetration >= `whitespace.min_peer_penetration`
   AND the customer bought none in the last `whitespace.lookback_months`.
 - Gap = peer median category net sales per customer, over peers who
@@ -93,21 +95,25 @@ Ties broken by `value_high`, then `customer_key` (deterministic).
 |---|---|
 | `recovery.window_months` | 3 |
 | `recovery.min_decline_pct` | 20 |
-| `recovery.min_prior_sales` | [x] |
+| `recovery.min_prior_sales` | 0 (no minimum); provisional until story E3-2 profiles it |
 | `recovery.min_prior_orders` | 3 |
 | `dormancy.min_orders` | 4 |
 | `dormancy.interval_multiple` | 2.0 |
 | `dormancy.min_days` | 45 |
 | `dormancy.lookback_months` | 12 |
-| `whitespace.min_peer_size` | 10 |
 | `whitespace.min_peer_penetration` | 0.5 |
 | `whitespace.lookback_months` | 12 |
 | `crosssell.min_support` | 30 |
 | `crosssell.min_confidence` | 0.3 |
 | `crosssell.min_lift` | 1.2 |
-| `top_n_per_type` | [x] |
+| `crosssell.lookback_months` | 12 (story #104: the months in which a candidate bought A) |
+| `opportunities.top_n_per_type` | unset (keep all); provisional until story E3-2 profiles it |
+| `scoring.weight_value` / `weight_evidence` / `weight_urgency` / `weight_data_quality` | 0.40 / 0.30 / 0.20 / 0.10 (they must sum to 1) |
+| `scoring.priority_high` / `priority_medium` | 70 / 40 (high above medium) |
+| `scoring.confidence_high` / `confidence_medium` | 0.7 / 0.4 (high above medium) |
+| `value.low_factor` / `high_factor` | 0.25 / 0.75 (low below high) |
 
-All numeric defaults are proposals for review, not facts about the data.
+All numeric defaults are proposals for review, not facts about the data. They are validated and loaded by the `Settings` model (story #104): an unknown key or an out-of-range value fails naming the key, and every key is a SQL parameter (`$recovery_window_months` and so on).
 
 ## 7. Edge cases
 - New customers (< min history): no opportunity; counted in summary.

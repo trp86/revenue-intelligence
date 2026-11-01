@@ -350,6 +350,137 @@ class ProductSettings(_Section):
     )
 
 
+class RecoverySettings(_Section):
+    """Recovery engine (spec 03 section 3.1)."""
+
+    window_months: StrictInt = Field(
+        default=3,
+        ge=1,
+        le=12,
+        description="Months ending at the as-of date compared with a year earlier.",
+    )
+    min_decline_pct: float = Field(
+        default=20, ge=0, le=100, description="Smallest decline, in percent of the prior period."
+    )
+    min_prior_sales: float = Field(
+        default=0,
+        ge=0,
+        description="Smallest net sales in the prior period (provisional; story E3-2 sets it).",
+    )
+    min_prior_orders: StrictInt = Field(
+        default=3, ge=1, description="Fewest orders in the prior period for a customer to count."
+    )
+
+
+class DormancySettings(_Section):
+    """Dormancy engine (spec 03 section 3.2)."""
+
+    min_orders: StrictInt = Field(
+        default=4, ge=2, description="Fewest orders a customer needs before its interval is used."
+    )
+    interval_multiple: float = Field(
+        default=2.0, ge=1, description="Dormant past this many times the customer's own interval."
+    )
+    min_days: StrictInt = Field(
+        default=45, ge=0, description="Dormant only when also quiet for more than this many days."
+    )
+    lookback_months: StrictInt = Field(
+        default=12, ge=1, description="Months before going quiet in which the customer had sales."
+    )
+
+
+class WhitespaceSettings(_Section):
+    """Whitespace engine (spec 03 section 3.3). The peer group and its minimum size are
+    peer_groups.*; there is no whitespace.min_peer_size."""
+
+    min_peer_penetration: float = Field(
+        default=0.5, gt=0, le=1, description="Smallest share of peers that buy the category."
+    )
+    lookback_months: StrictInt = Field(
+        default=12, ge=1, description="Months in which the customer bought none of the category."
+    )
+
+
+class CrosssellSettings(_Section):
+    """Cross-sell engine (spec 03 section 3.4)."""
+
+    min_support: StrictInt = Field(
+        default=30, ge=1, description="Fewest customers who bought both categories of a pair."
+    )
+    min_confidence: float = Field(
+        default=0.3, ge=0, le=1, description="Smallest share of A buyers who also bought B."
+    )
+    min_lift: float = Field(
+        default=1.2, ge=0, description="Smallest lift of a pair (confidence over B's base rate)."
+    )
+    lookback_months: StrictInt = Field(
+        default=12, ge=1, description="Months in which the customer bought category A."
+    )
+
+
+class ScoringSettings(_Section):
+    """Opportunity score, priority and confidence (spec 03 section 4). The four weights sum to
+    1; the components are defined in story E3-10."""
+
+    weight_value: float = Field(default=0.40, ge=0, le=1, description="Weight of the value rank.")
+    weight_evidence: float = Field(
+        default=0.30, ge=0, le=1, description="Weight of the evidence strength."
+    )
+    weight_urgency: float = Field(default=0.20, ge=0, le=1, description="Weight of urgency.")
+    weight_data_quality: float = Field(
+        default=0.10, ge=0, le=1, description="Weight of the share of unflagged lines."
+    )
+    priority_high: float = Field(default=70, ge=0, le=100, description="Score for priority High.")
+    priority_medium: float = Field(
+        default=40, ge=0, le=100, description="Score for priority Medium."
+    )
+    confidence_high: float = Field(
+        default=0.7, ge=0, le=1, description="Evidence and data quality for confidence High."
+    )
+    confidence_medium: float = Field(
+        default=0.4, ge=0, le=1, description="Evidence and data quality for confidence Medium."
+    )
+
+    @model_validator(mode="after")
+    def _consistent(self) -> ScoringSettings:
+        total = (
+            self.weight_value
+            + self.weight_evidence
+            + self.weight_urgency
+            + self.weight_data_quality
+        )
+        if abs(total - 1) > 1e-9:
+            raise ValueError(f"scoring weights must sum to 1, not {total:g}")
+        if self.priority_high <= self.priority_medium:
+            raise ValueError("scoring.priority_high must be above scoring.priority_medium")
+        if self.confidence_high <= self.confidence_medium:
+            raise ValueError("scoring.confidence_high must be above scoring.confidence_medium")
+        return self
+
+
+class ValueSettings(_Section):
+    """Opportunity value range (spec 03 section 5): low and high are factors of the gap."""
+
+    low_factor: float = Field(default=0.25, ge=0, description="Low end of the range, x the gap.")
+    high_factor: float = Field(default=0.75, ge=0, description="High end of the range, x the gap.")
+
+    @model_validator(mode="after")
+    def _low_below_high(self) -> ValueSettings:
+        if self.low_factor >= self.high_factor:
+            raise ValueError("value.low_factor must be below value.high_factor")
+        return self
+
+
+class OpportunitiesSettings(_Section):
+    """Settings that apply to every engine (spec 03 section 6)."""
+
+    top_n_per_type: StrictInt | None = Field(
+        default=None,
+        ge=1,
+        description="Most opportunities kept per engine; unset keeps all (provisional, E3-2).",
+    )
+
+
 RULE_IDS = [f"S{i}" for i in range(1, 13)]
 
 Severity = Literal["info", "warning", "high"]
@@ -460,6 +591,13 @@ class Settings(_Section):
     regions: RegionsSettings = Field(default_factory=RegionsSettings)
     peer_groups: PeerGroupsSettings = Field(default_factory=PeerGroupsSettings)
     product: ProductSettings = Field(default_factory=ProductSettings)
+    recovery: RecoverySettings = Field(default_factory=RecoverySettings)
+    dormancy: DormancySettings = Field(default_factory=DormancySettings)
+    whitespace: WhitespaceSettings = Field(default_factory=WhitespaceSettings)
+    crosssell: CrosssellSettings = Field(default_factory=CrosssellSettings)
+    scoring: ScoringSettings = Field(default_factory=ScoringSettings)
+    value: ValueSettings = Field(default_factory=ValueSettings)
+    opportunities: OpportunitiesSettings = Field(default_factory=OpportunitiesSettings)
     asof: AsofSettings
 
     @model_validator(mode="after")

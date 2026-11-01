@@ -215,5 +215,47 @@ product:
   brand_column: Actual_Brands_1
   category_column: Internal_Category
 
+# Opportunity engines (spec 03 section 6). All numeric defaults are proposals for review.
+recovery:
+  window_months: 3                       # months ending at the as-of date, compared a year earlier
+  min_decline_pct: 20                    # smallest decline in percent of the prior period
+  min_prior_sales: 0                     # provisional: no minimum until story E3-2 profiles it
+  min_prior_orders: 3                    # fewest orders in the prior period
+
+dormancy:
+  min_orders: 4                          # fewest orders before the customer's own interval is used
+  interval_multiple: 2.0                 # dormant past this many times its own interval
+  min_days: 45                           # and quiet for more than this many days
+  lookback_months: 12                    # with sales in these months before going quiet
+
+# The peer group and its minimum size are peer_groups.* above (no whitespace.min_peer_size).
+whitespace:
+  min_peer_penetration: 0.5              # smallest share of peers that buy the category
+  lookback_months: 12                    # the customer bought none of it in these months
+
+crosssell:
+  min_support: 30                        # fewest customers who bought both categories
+  min_confidence: 0.3                    # smallest share of A buyers who also bought B
+  min_lift: 1.2                          # smallest lift of the pair
+  lookback_months: 12                    # months in which the customer bought A
+
+# Score = weighted sum of components (story E3-10); the weights sum to 1.
+scoring:
+  weight_value: 0.40
+  weight_evidence: 0.30
+  weight_urgency: 0.20
+  weight_data_quality: 0.10
+  priority_high: 70                      # score at or above: High
+  priority_medium: 40                    # score at or above: Medium, else Low
+  confidence_high: 0.7
+  confidence_medium: 0.4
+
+value:
+  low_factor: 0.25                       # range low = low_factor x gap
+  high_factor: 0.75                      # range high = high_factor x gap
+
+opportunities:
+  top_n_per_type: null                   # provisional: keep all until story E3-2 profiles it
+
 asof:
   date: 2020-02-29                       # as-of date of the data

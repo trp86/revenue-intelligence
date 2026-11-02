@@ -445,3 +445,115 @@ definitions:
     text: True when a channel or branch label has no entry in the label maps and is kept as it is.
     applies_to: [fact_sales.f_unmapped_label]
     rule: S3
+
+# Opportunity evidence facts (story #114). opp_evidence.definition_id names one of these ids. They
+# define the value of an opp_evidence row (its fact), not a gold column, so they are a list of their
+# own; the same fields as above, with applies_to naming opp_evidence.<fact>.
+evidence:
+  - id: ev_days_since_last_order
+    kind: metric
+    text: Days from the customer's last order to the as-of date.
+    applies_to: [opp_evidence.days_since_last_order]
+    rule: dormancy
+  - id: ev_median_interval_days
+    kind: metric
+    text: The customer's own usual gap between orders, the median of its intervals in days.
+    applies_to: [opp_evidence.median_interval_days]
+    rule: dormancy
+  - id: ev_n_orders
+    kind: metric
+    text: Orders (distinct order days) the customer placed up to the as-of date.
+    applies_to: [opp_evidence.n_orders]
+    rule: dormancy
+  - id: ev_last_order_date
+    kind: dimension
+    text: The date of the customer's last order on or before the as-of date.
+    applies_to: [opp_evidence.last_order_date]
+    rule: dormancy
+  - id: ev_lookback_net_sales
+    kind: metric
+    text: >-
+      Net sales of the customer in the dormancy.lookback_months months up to its last order; the
+      gap of a dormancy opportunity.
+    applies_to: [opp_evidence.lookback_net_sales]
+    rule: dormancy
+  - id: ev_prior_net_sales
+    kind: metric
+    text: Net sales of the customer in the same months one year before the current window.
+    applies_to: [opp_evidence.prior_net_sales]
+    rule: recovery
+  - id: ev_current_net_sales
+    kind: metric
+    text: Net sales of the customer in the recovery.window_months months up to the as-of date.
+    applies_to: [opp_evidence.current_net_sales]
+    rule: recovery
+  - id: ev_prior_orders
+    kind: metric
+    text: Orders (distinct order days) of the customer in the prior window.
+    applies_to: [opp_evidence.prior_orders]
+    rule: recovery
+  - id: ev_decline_pct
+    kind: metric
+    text: The fall in net sales from the prior to the current window, in percent of the prior.
+    applies_to: [opp_evidence.decline_pct]
+    rule: recovery
+  - id: ev_n_peers
+    kind: metric
+    text: Customers in the customer's peer group, not counting the customer itself.
+    applies_to: [opp_evidence.n_peers]
+    rule: whitespace
+  - id: ev_n_buying_peers
+    kind: metric
+    text: Of those peers, the customers with net sales above zero in the category.
+    applies_to: [opp_evidence.n_buying_peers]
+    rule: whitespace
+  - id: ev_peer_penetration
+    kind: metric
+    text: The share of the peers that buy the category (buying peers divided by peers).
+    applies_to: [opp_evidence.peer_penetration]
+    rule: whitespace
+  - id: ev_peer_median_net_sales
+    kind: metric
+    text: >-
+      The median net sales in the category per buying peer; the gap of a whitespace opportunity,
+      with no uplift.
+    applies_to: [opp_evidence.peer_median_net_sales]
+    rule: whitespace
+  - id: ev_support
+    kind: metric
+    text: Customers who bought both category A and category B.
+    applies_to: [opp_evidence.support]
+    rule: crosssell
+  - id: ev_confidence
+    kind: metric
+    text: The share of the buyers of A who also bought B.
+    applies_to: [opp_evidence.confidence]
+    rule: crosssell
+  - id: ev_lift
+    kind: metric
+    text: >-
+      How much more often buyers of A buy B than customers in general (confidence divided by
+      the share of all customers who bought B).
+    applies_to: [opp_evidence.lift]
+    rule: crosssell
+  - id: ev_median_b_net_sales
+    kind: metric
+    text: >-
+      The median net sales in B among customers who bought both A and B; the gap of a cross-sell
+      opportunity.
+    applies_to: [opp_evidence.median_b_net_sales]
+    rule: crosssell
+  - id: ev_value_low
+    kind: metric
+    text: >-
+      Estimate, not a measured outcome: the low end of the value range, value.low_factor times
+      the gap.
+    applies_to: [opp_evidence.value_low]
+    rule: value
+  - id: ev_value_high
+    kind: metric
+    text: >-
+      Estimate, not a measured outcome: the high end of the value range, value.high_factor times
+      the gap.
+    applies_to: [opp_evidence.value_high]
+    rule: value

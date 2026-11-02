@@ -420,7 +420,7 @@ class CrosssellSettings(_Section):
 
 class ScoringSettings(_Section):
     """Opportunity score, priority and confidence (spec 03 section 4). The four weights sum to
-    1; the components are defined in story E3-10."""
+    1; the components are defined in story #113."""
 
     weight_value: float = Field(default=0.40, ge=0, le=1, description="Weight of the value rank.")
     weight_evidence: float = Field(
@@ -439,6 +439,17 @@ class ScoringSettings(_Section):
     )
     confidence_medium: float = Field(
         default=0.4, ge=0, le=1, description="Evidence and data quality for confidence Medium."
+    )
+    urgency_horizon_days: StrictInt = Field(
+        default=365,
+        ge=1,
+        description="Dormancy urgency falls from 1 to 0 over these days quiet (provisional, #113).",
+    )
+    urgency_neutral: float = Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="Urgency of whitespace and cross-sell, which have no change event (#113).",
     )
 
     @model_validator(mode="after")

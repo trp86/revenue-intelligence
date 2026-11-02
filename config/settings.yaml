@@ -247,8 +247,10 @@ scoring:
   weight_data_quality: 0.10
   priority_high: 70                      # score at or above: High
   priority_medium: 40                    # score at or above: Medium, else Low
-  confidence_high: 0.7
-  confidence_medium: 0.4
+  confidence_high: 0.7                   # the lower of evidence and data quality: High
+  confidence_medium: 0.4                 # at or above: Medium, else Low
+  urgency_horizon_days: 365              # provisional (#113): dormancy urgency 0 after this
+  urgency_neutral: 0.5                   # provisional (#113): whitespace and cross-sell urgency
 
 value:
   low_factor: 0.25                       # range low = low_factor x gap

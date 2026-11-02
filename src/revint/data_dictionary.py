@@ -88,16 +88,30 @@ class Column:
 
 
 def load_definitions(path: Path = DEFINITIONS_FILE) -> list[Definition]:
-    """Read and check `config/definitions.yaml`; ids must be unique."""
+    """Read and check the gold definitions of `config/definitions.yaml`; ids must be unique."""
+    return _load(path, "definitions")
+
+
+def load_evidence_definitions(path: Path = DEFINITIONS_FILE) -> list[Definition]:
+    """Read and check the opportunity evidence facts (story #114), the `evidence` list."""
+    evidence = _load(path, "evidence")
+    gold = {item.id for item in load_definitions(path)}
+    clash = sorted(item.id for item in evidence if item.id in gold)
+    if clash:
+        raise DictionaryError(f"evidence ids also used by a gold definition: {', '.join(clash)}")
+    return evidence
+
+
+def _load(path: Path, key: str) -> list[Definition]:
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
         raise DictionaryError(f"definitions file not found: {path}") from exc
     except yaml.YAMLError as exc:
         raise DictionaryError(f"definitions file is not valid YAML ({path}): {exc}") from exc
-    entries = (data or {}).get("definitions") if isinstance(data, dict) else None
+    entries = (data or {}).get(key) if isinstance(data, dict) else None
     if not isinstance(entries, list):
-        raise DictionaryError(f"{path.name} must hold a 'definitions' list")
+        raise DictionaryError(f"{path.name} must hold a '{key}' list")
     parsed: list[Definition] = []
     for number, entry in enumerate(entries, start=1):
         try:

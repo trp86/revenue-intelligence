@@ -332,8 +332,9 @@ left join intervals on orders.customer_key = intervals.customer_key
 left join peer on orders.customer_key = peer.customer_key
 order by orders.customer_key;
 
--- As mart_peer_category_share: category penetration by peer group, with the same fallback.
-create or replace table asof_peer_category_share as
+-- The peer group of every known customer, with the same fallback as mart_peer_category_share
+-- (temp: the share below and the whitespace engine read it, so the rule is written once).
+create or replace temp table asof_peer_assigned as
 with setting as (
     select
         cast($peer_groups_min_size as bigint) as min_size,
@@ -396,6 +397,28 @@ assigned as (
     inner join sizes on peers.peer_keys = sizes.peer_keys
     inner join fallback_keys on peers.customer_key = fallback_keys.customer_key
     cross join plan
+)
+
+select
+    customer_key,
+    f_fallback,
+    peer_columns,
+    peer_keys
+from assigned;
+
+-- As mart_peer_category_share: category penetration by peer group, with the same fallback.
+create or replace table asof_peer_category_share as
+with plan as (
+    select cast($peer_groups_min_size as bigint) as min_size
+),
+
+assigned as (
+    select
+        customer_key,
+        f_fallback,
+        peer_columns,
+        peer_keys
+    from asof_peer_assigned
 ),
 
 groups as (

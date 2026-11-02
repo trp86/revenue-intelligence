@@ -23,6 +23,8 @@ recovery_window_months = 3
 recovery_min_decline_pct = 20
 recovery_min_prior_sales = 25000
 recovery_min_prior_orders = 3
+whitespace_min_peer_penetration = 0.5
+whitespace_lookback_months = 12
 
 # Code standards: lowercase keywords.
 [sqlfluff:rules:capitalisation.keywords]

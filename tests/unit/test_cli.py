@@ -40,8 +40,8 @@ LEAF_COMMANDS = [
 ]
 
 # These commands are real: build bronze (#33), build silver and build all (#45,
-# tests/unit/test_build_commands.py), build gold (#87), check (#43), report dq (#42) and
-# report dictionary (#86).
+# tests/unit/test_build_commands.py), build gold (#87), check (#43), report dq (#42),
+# report dictionary (#86) and opportunities build (#116, tests/unit/test_opportunities_build.py).
 # The rest stay stubs.
 REAL_COMMANDS = [
     ["build", "bronze"],
@@ -51,6 +51,8 @@ REAL_COMMANDS = [
     ["check"],
     ["report", "dq"],
     ["report", "dictionary"],
+    ["opportunities", "build"],
+    ["opportunities", "build", "--as-of", "2020-01-31"],
 ]
 STUB_COMMANDS = [args for args in LEAF_COMMANDS if args not in REAL_COMMANDS]
 

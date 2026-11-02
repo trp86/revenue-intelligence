@@ -28,6 +28,9 @@ of type + customer + category + as_of), `type`, `customer_key`,
 `value_low`, `value_high`, `value_level` (qualitative if no range),
 `value_method`, `rank`, `reason_codes`.
 
+### Command (story #116)
+`uv run revint opportunities build [--as-of YYYY-MM-DD]` runs the whole stage (`revint.opportunities.execute_opportunities`), prints the counts per engine and records the run in `build_log` as stage `opportunities`. Real file, as of 2020-02-29: 64,543 opportunities, 10 files and 72 statements.
+
 ### Opportunity schema and run summary (story #107)
 The opportunity stage is `sql/30_opportunities`, run in filename order in one transaction by `revint.opportunities.run_opportunities`; every run rebuilds every table in full, and a failed run leaves the previous tables in place.
 - `02_schema.sql` creates the empty tables and the macro `opp_id(type, customer_key, category, as_of_date)`: the md5 of a JSON list of the four values, so the id is the same on every run, a NULL category differs from an empty one, and a separator inside a value cannot make two ids collide. `revint.opportunities.opp_id` gives the same id in Python.

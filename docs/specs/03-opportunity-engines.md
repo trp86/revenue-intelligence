@@ -102,6 +102,14 @@ Priority from score cut-offs `scoring.priority_high` (default 70) and
 strength and data-quality share, cut-offs in config.
 Ties broken by `value_high`, then `customer_key` (deterministic).
 
+Built in `sql/30_opportunities/08_scoring.sql` (story #113), which fills `opp_opportunities` from the four engine tables and `opp_value`. Components, each 0 to 1 (approved on #113):
+- value: `percent_rank` of the gap within its engine (0 for an undefended gap);
+- evidence, capped at 1: dormancy days quiet / own median interval; recovery `decline_pct` / 100; whitespace the peer penetration; cross-sell the confidence;
+- urgency: dormancy 1 - min(1, days quiet / `scoring.urgency_horizon_days`, default 365); recovery 1 (the decline is in the current window); whitespace and cross-sell `scoring.urgency_neutral` (default 0.5, no change event). Both keys are provisional;
+- data quality: the share of the customer's sales lines up to the as-of date with none of `f_zero_value_with_qty`, `f_negative_qty`, `f_negative_value` or an `f_bad_` flag.
+
+`score` = 100 x the weighted sum, rounded to 2 decimals. Confidence uses the lower of evidence and data quality. It is capped at Medium (reason code `confidence_capped`) for a customer with `f_multi_identity` or a whitespace row whose peer group is still below the minimum size. `rank` 1 is best: by score, then `value_high`, then `customer_key`, then `opp_id`, so every rank is unique. Real file, as of 2020-02-29: 64,543 opportunities, score 21.95 to 96.45 (median 52.29); priority 10,871 High, 40,270 Medium, 13,402 Low; confidence 7,450 High, 40,171 Medium, 16,922 Low; 3,628 capped.
+
 ## 5. Value estimation
 | Rule | |
 |---|---|

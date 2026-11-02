@@ -31,6 +31,16 @@ crosssell_min_lift = 1.2
 crosssell_lookback_months = 12
 value_low_factor = 0.25
 value_high_factor = 0.75
+scoring_weight_value = 0.4
+scoring_weight_evidence = 0.3
+scoring_weight_urgency = 0.2
+scoring_weight_data_quality = 0.1
+scoring_priority_high = 70
+scoring_priority_medium = 40
+scoring_confidence_high = 0.7
+scoring_confidence_medium = 0.4
+scoring_urgency_horizon_days = 365
+scoring_urgency_neutral = 0.5
 
 # Code standards: lowercase keywords.
 [sqlfluff:rules:capitalisation.keywords]

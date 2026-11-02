@@ -19,6 +19,10 @@ dormancy_min_orders = 4
 dormancy_interval_multiple = 2.0
 dormancy_min_days = 45
 dormancy_lookback_months = 12
+recovery_window_months = 3
+recovery_min_decline_pct = 20
+recovery_min_prior_sales = 25000
+recovery_min_prior_orders = 3
 
 # Code standards: lowercase keywords.
 [sqlfluff:rules:capitalisation.keywords]

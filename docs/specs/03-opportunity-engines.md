@@ -54,6 +54,7 @@ Every input carries `as_of_date`. The date is `asof.date`; `with_asof(settings, 
 - Gap = prior - current (net sales). Uses `v_net_sales` marts only.
 - Exclude customers meeting the dormancy rule (avoid double count;
   dormancy owns them). Test for this.
+- Built in `sql/30_opportunities/04_recovery.sql` (story #109), after dormancy. The current window runs from the first day of the month `window_months - 1` months before the as-of month to the as-of date; the prior window is the same dates one year earlier. Decline % = (prior - current) / prior x 100. All three limits are "at least". A customer with no positive prior net sales is not an opportunity (`no_prior_sales`). Suppression reasons, first that applies: `dormant`, `no_prior_sales`, `below_min_prior_orders`, `below_min_prior_sales`, `below_min_decline`. A triggered row has `reason_codes` [`decline_at_least_min`, `prior_sales_at_least_min`, `prior_orders_at_least_min`], plus `negative_current_period` when current net sales are below zero, and adds `current_sales`, `prior_sales`, `prior_orders` and `decline_pct`. Real file, as of 2020-02-29: 12,239 evaluated, 359 triggered (equal to the #105 profile's "not dormant"), 0 in both recovery and dormancy; suppressed 2,425 `dormant`, 6,263 `no_prior_sales`, 2,743 `below_min_prior_orders`, 4 `below_min_prior_sales`, 445 `below_min_decline`.
 
 ### 3.2 Dormancy (FR-O2)
 - Customer's own interval = median days between order dates, with at

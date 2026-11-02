@@ -29,6 +29,8 @@ crosssell_min_support = 30
 crosssell_min_confidence = 0.3
 crosssell_min_lift = 1.2
 crosssell_lookback_months = 12
+value_low_factor = 0.25
+value_high_factor = 0.75
 
 # Code standards: lowercase keywords.
 [sqlfluff:rules:capitalisation.keywords]

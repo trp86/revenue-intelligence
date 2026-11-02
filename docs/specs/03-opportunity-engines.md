@@ -110,6 +110,8 @@ Ties broken by `value_high`, then `customer_key` (deterministic).
 | If gap cannot be defended (e.g. missing prior period) set `value_level` (High/Medium/Low) and leave range NULL | |
 | Value is labelled "Estimate" in the UI, never "Measured" | |
 
+Built in `sql/30_opportunities/07_value.sql` (story #112), after the engines, into `opp_value` (one row per opportunity of every engine: `opp_id`, `type`, `gap`, `f_defensible_gap`, `value_low`, `value_high`, `value_level`, `value_method`); E3-10 copies the value columns into `opp_opportunities`. A gap is defensible when it is not NULL and above zero. `value_level` is set on every row from the gap's `percent_rank` within its engine: at least 2/3 High, at least 1/3 Medium, else Low; an undefended gap is Low with a NULL range. `value_method` names the factors and what the gap measures. Real file, as of 2020-02-29: every one of the 64,543 gaps is defensible, so every row has a range; the levels split into thirds within each engine.
+
 ## 6. Configurable parameters (proposed defaults)
 | Key | Default |
 |---|---|

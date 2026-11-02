@@ -78,6 +78,20 @@ CI check. Until a runner exists (issue #27):
 - When a runner exists, issue #27 restores the `pull_request`
   trigger and this section is removed.
 
+## Faster loop for the POC deadline
+Agreed on 2026-11-02 for the stories left (E5, E6, E7; docs/decisions.md section 11), until
+the maintainer says otherwise:
+- On each story branch, run the story's own tests plus `uv run ruff check .` and
+  `uv run sqlfluff lint sql`. The evidence comment names the tests and the counts.
+- Run the full `uv run revint-gate` once a day, before the day's PRs are merged, and post the
+  result on one of them.
+- Where an acceptance criterion leaves a choice open, use the proposed default, mark it
+  provisional and list it in the PR for the maintainer, instead of stopping. A real business
+  question (one the data or the specs cannot answer) still stops the story.
+- Stories may be larger: about two or three per epic.
+All the rules above still apply: Ready only, one branch and one PR per story, never merge,
+never push to main, no customer-level data in issues, PRs or logs.
+
 ## Real-file checks
 Tests marked `realdata` need the client workbooks under `data/raw` and a
 built `data/bronze` (`uv run revint build bronze`). They are skipped when

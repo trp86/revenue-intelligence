@@ -16,6 +16,11 @@ app.duckdb via spec 09/05 services.
 ## 2. Endpoints
 All under `/api/v1`. JSON. Response models are pydantic.
 
+**POC scope (2026-11-02, docs/decisions.md section 11):** only `/health`, `/definitions`,
+`/overview`, `/opportunities`, `/opportunities/{opp_id}` and the two `/brief` endpoints are
+built. `/customers`, `/explore/*`, `/assistant/chat`, `/backtest/*`, `/actions` and
+`/data-quality` are out of scope for the POC (E4, E8 and E9 were dropped).
+
 | Method | Path | Purpose |
 |---|---|---|
 | GET | /health | Liveness + data build info (as-of, net sales field, build time) |

@@ -146,12 +146,14 @@ execution of actions, multi-tenant admin, SSO.
    pass.
 2. At least recovery, whitespace and one more engine produce ranked
    opportunities, each with evidence.
-3. Backtest result is available and explainable.
+3. Dropped for the POC (2026-11-02, docs/decisions.md section 11): backtest result is
+   available and explainable.
 4. Gemini output is schema-valid and uses only supplied evidence.
-5. A manager can go from Overview to an opportunity, read the
-   evidence and AI recommendation, and approve or assign it.
-6. The assistant answers the suggested questions correctly, with
-   evidence.
+5. A manager can go from Overview to an opportunity and read the
+   evidence and the AI recommendation. (Approve or assign was dropped
+   on 2026-11-02 with E9, docs/decisions.md section 11.)
+6. Dropped for the POC (2026-11-02, docs/decisions.md section 11): the
+   assistant answers the suggested questions correctly, with evidence.
 
 ## 9. Open questions (defaults used until answered)
 Net sales field; customer identity; permission for external AI; peer

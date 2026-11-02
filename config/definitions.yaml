@@ -446,6 +446,229 @@ definitions:
     applies_to: [fact_sales.f_unmapped_label]
     rule: S3
 
+  # ---- opportunity tables (spec 03, stories #107 to #116) ------------------------------------
+  - id: opp_id
+    kind: key
+    text: >-
+      The id of an opportunity: the md5 of its type, customer, category and as-of date, so the
+      same opportunity on the same as-of date always has the same id.
+    applies_to: ["opp_*.opp_id"]
+  - id: opp_type
+    kind: dimension
+    text: >-
+      The engine: dormancy, recovery, whitespace or crosssell (in opp_evidence_facts a star means
+      the fact applies to every engine).
+    applies_to: ["opp_*.type"]
+  - id: opp_customer_key
+    kind: key
+    text: The customer of the opportunity (dim_customer); the unknown customer is never one.
+    applies_to: ["opp_*.customer_key"]
+  - id: opp_category
+    kind: dimension
+    text: >-
+      The product category of the opportunity (the category to sell for whitespace, B for
+      cross-sell); empty for dormancy and recovery, which are about the whole customer.
+    applies_to: ["opp_*.category"]
+  - id: opp_as_of_date
+    kind: dimension
+    text: The as-of date of the run; only data on or before it was used.
+    applies_to: ["opp_*.as_of_date"]
+    source: asof.date
+  - id: opp_algo_version
+    kind: dimension
+    text: The version of the engine rule that made the row; it rises when the rule changes.
+    applies_to: ["opp_*.algo_version"]
+  - id: opp_gap
+    kind: metric
+    text: >-
+      The measured size of the opportunity in net sales, as the engine defines it (dormancy the
+      lookback sales, recovery prior minus current, whitespace the peer median, cross-sell the
+      median B sales of customers who bought both).
+    applies_to: ["opp_*.gap"]
+  - id: opp_reason_codes
+    kind: dimension
+    text: The tests the opportunity met, and marks such as peer_fallback or confidence_capped.
+    applies_to: ["opp_*.reason_codes"]
+  - id: opp_score
+    kind: metric
+    text: >-
+      Score from 0 to 100, the weighted sum of value rank, evidence strength, urgency and data
+      quality (the scoring weights in config).
+    applies_to: [opp_opportunities.score]
+    source: scoring weights
+  - id: opp_priority
+    kind: dimension
+    text: High, Medium or Low, from the score and scoring.priority_high and priority_medium.
+    applies_to: [opp_opportunities.priority]
+  - id: opp_confidence
+    kind: dimension
+    text: >-
+      High, Medium or Low, from the lower of evidence strength and data quality; capped at Medium
+      for a possible merged identity or a peer group still below the minimum size.
+    applies_to: [opp_opportunities.confidence]
+  - id: opp_value_low
+    kind: metric
+    text: >-
+      Estimate, not a measured outcome. value.low_factor times the gap; empty when the gap cannot
+      be defended.
+    applies_to: ["opp_*.value_low"]
+    source: value.low_factor
+  - id: opp_value_high
+    kind: metric
+    text: >-
+      Estimate, not a measured outcome. value.high_factor times the gap; empty when the gap
+      cannot be defended.
+    applies_to: ["opp_*.value_high"]
+    source: value.high_factor
+  - id: opp_value_level
+    kind: dimension
+    text: >-
+      High, Medium or Low, the third of the engine's gaps the gap falls in; Low when the gap
+      cannot be defended.
+    applies_to: ["opp_*.value_level"]
+  - id: opp_value_method
+    kind: dimension
+    text: How the value range or level was made, in words.
+    applies_to: ["opp_*.value_method"]
+  - id: opp_rank
+    kind: metric
+    text: >-
+      Position in the ranked list, 1 is best; by score, then value_high, then customer and id, so
+      two runs give the same order.
+    applies_to: [opp_opportunities.rank]
+  - id: opp_f_defensible_gap
+    kind: flag
+    text: True when the gap is known and above zero, so a value range is given.
+    applies_to: [opp_value.f_defensible_gap]
+  - id: opp_dormancy_last_order_date
+    kind: dimension
+    text: The customer's last order on or before the as-of date.
+    applies_to: [opp_dormancy.last_order_date]
+  - id: opp_dormancy_days
+    kind: metric
+    text: Days from the last order to the as-of date.
+    applies_to: [opp_dormancy.days_since_last_order]
+  - id: opp_dormancy_interval
+    kind: metric
+    text: The customer's own median gap between orders, in days.
+    applies_to: [opp_dormancy.median_interval_days]
+  - id: opp_dormancy_orders
+    kind: metric
+    text: Orders (distinct order days) up to the as-of date.
+    applies_to: [opp_dormancy.n_orders]
+  - id: opp_recovery_current
+    kind: metric
+    text: Net sales in the recovery.window_months months up to the as-of date.
+    applies_to: [opp_recovery.current_sales]
+  - id: opp_recovery_prior
+    kind: metric
+    text: Net sales in the same months one year earlier.
+    applies_to: [opp_recovery.prior_sales]
+  - id: opp_recovery_prior_orders
+    kind: metric
+    text: Orders in the prior window.
+    applies_to: [opp_recovery.prior_orders]
+  - id: opp_recovery_decline
+    kind: metric
+    text: The fall from the prior to the current window, in percent of the prior.
+    applies_to: [opp_recovery.decline_pct]
+  - id: opp_whitespace_penetration
+    kind: metric
+    text: The share of the customer's peers (not counting itself) that buy the category.
+    applies_to: [opp_whitespace.peer_penetration]
+  - id: opp_whitespace_peers
+    kind: metric
+    text: Customers in the peer group, not counting the customer itself.
+    applies_to: [opp_whitespace.n_peers]
+  - id: opp_whitespace_buyers
+    kind: metric
+    text: Peers with net sales above zero in the category.
+    applies_to: [opp_whitespace.n_buying_peers]
+  - id: opp_whitespace_fallback
+    kind: flag
+    text: True when the peer group fell back to the wider group (peer_groups.fallback_columns).
+    applies_to: [opp_whitespace.f_fallback]
+  - id: opp_whitespace_below_min
+    kind: flag
+    text: True when the peer group used is still below peer_groups.min_size.
+    applies_to: [opp_whitespace.f_below_min_size]
+  - id: opp_crosssell_category_a
+    kind: dimension
+    text: The category A the customers bought, which leads to category B.
+    applies_to: ["opp_crosssell*.category_a"]
+  - id: opp_crosssell_category_b
+    kind: dimension
+    text: The category B of a pair.
+    applies_to: [opp_crosssell_pairs.category_b]
+  - id: opp_crosssell_support
+    kind: metric
+    text: Customers who bought both A and B.
+    applies_to: ["opp_crosssell*.support"]
+  - id: opp_crosssell_confidence
+    kind: metric
+    text: The share of the buyers of A who also bought B.
+    applies_to: ["opp_crosssell*.confidence"]
+  - id: opp_crosssell_lift
+    kind: metric
+    text: Confidence divided by the share of all customers who bought B.
+    applies_to: ["opp_crosssell*.lift"]
+  - id: opp_crosssell_median_b
+    kind: metric
+    text: The median net sales in B among customers who bought both A and B.
+    applies_to: [opp_crosssell_pairs.median_b_net_sales]
+  - id: opp_crosssell_pair_outcome
+    kind: dimension
+    text: passed, or the first threshold the pair failed (support, confidence or lift).
+    applies_to: [opp_crosssell_pairs.outcome]
+  - id: opp_crosssell_pair_stage
+    kind: metric
+    text: How far the pair got through the thresholds, 1 (failed support) to 4 (passed).
+    applies_to: [opp_crosssell_pairs.stage]
+  - id: opp_evaluation_outcome
+    kind: dimension
+    text: triggered, or the reason code the customer (and category) was suppressed with.
+    applies_to: [opp_evaluations.outcome]
+  - id: opp_run_evaluated
+    kind: metric
+    text: Customers (or customer and category pairs) the engine evaluated in the run.
+    applies_to: [opp_run_summary.n_evaluated]
+  - id: opp_run_triggered
+    kind: metric
+    text: Of those, the ones that became an opportunity.
+    applies_to: [opp_run_summary.n_triggered]
+  - id: opp_run_suppressed
+    kind: metric
+    text: Of those, the ones suppressed.
+    applies_to: [opp_run_summary.n_suppressed]
+  - id: opp_run_by_reason
+    kind: metric
+    text: The suppressed count per reason code.
+    applies_to: [opp_run_summary.suppressed_by_reason]
+  - id: opp_evidence_fact
+    kind: dimension
+    text: The name of a measured fact (or estimate) behind an opportunity.
+    applies_to: ["opp_evidence*.fact"]
+  - id: opp_evidence_number
+    kind: metric
+    text: The value of a numeric fact; empty for a date.
+    applies_to: [opp_evidence.value_number]
+  - id: opp_evidence_date
+    kind: dimension
+    text: The value of a date fact; empty for a number.
+    applies_to: [opp_evidence.value_date]
+  - id: opp_evidence_unit
+    kind: dimension
+    text: The unit of the fact (days, orders, net sales, share, percent, ratio, customers, date).
+    applies_to: ["opp_evidence*.unit"]
+  - id: opp_evidence_kind
+    kind: dimension
+    text: Measured for a fact taken from the data, Estimate for the value range.
+    applies_to: ["opp_evidence*.kind"]
+  - id: opp_evidence_definition
+    kind: key
+    text: The id of the fact's definition in the evidence list of config/definitions.yaml.
+    applies_to: ["opp_evidence*.definition_id"]
+
 # Opportunity evidence facts (story #114). opp_evidence.definition_id names one of these ids. They
 # define the value of an opp_evidence row (its fact), not a gold column, so they are a list of their
 # own; the same fields as above, with applies_to naming opp_evidence.<fact>.

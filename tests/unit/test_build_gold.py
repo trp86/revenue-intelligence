@@ -404,8 +404,16 @@ def test_ac4_a_full_re_run_gives_identical_gold_content(built: Settings, tmp_pat
     assert gold_content(other) == gold_content(built)
 
 
+def gold_part(text: str) -> str:
+    """The gold sections of a dictionary: the committed file also documents the opportunity
+    tables (story #117), which a gold-only build does not have."""
+    body = text.split("\n## opp_", 1)[0].rstrip("\n")
+    return body.split("\n", 1)[1]  # the title names the opportunity tables when they are present
+
+
 def test_ac4_the_data_dictionary_matches_the_gold_layer_after_build_all(built: Settings) -> None:
-    assert build_dictionary(built) == DICTIONARY_FILE.read_text(encoding="utf-8")
+    committed = DICTIONARY_FILE.read_text(encoding="utf-8")
+    assert gold_part(build_dictionary(built)) == gold_part(committed)
 
 
 # Safety ------
@@ -547,7 +555,8 @@ def test_ac5_the_e2_success_measure_on_the_real_file(real) -> None:
         settings,
         "select count(*) from recon_results where status = 'fail'",
     ) == [(0,)]
-    assert build_dictionary(settings) == DICTIONARY_FILE.read_text(encoding="utf-8")
+    committed = DICTIONARY_FILE.read_text(encoding="utf-8")
+    assert gold_part(build_dictionary(settings)) == gold_part(committed)
 
 
 @pytest.mark.realdata

@@ -162,15 +162,16 @@ All numeric defaults are proposals for review, not facts about the data. They ar
 - Re-run with same as-of and config gives identical `opp_id`s and ranks.
 
 ## 8. Acceptance-level checks
-- [ ] Synthetic fixtures: one customer per engine triggers exactly
+Proven on one synthetic warehouse in `tests/unit/test_opportunity_acceptance.py` (story #115), through `run_opportunities`; the real-file run is story E3-14.
+- [x] Synthetic fixtures: one customer per engine triggers exactly
       once; a near-threshold customer does not
-- [ ] Dormancy uses own interval: two customers with equal days since
-      last order but different intervals get different outcomes
-- [ ] No customer appears in both recovery and dormancy for the same as-of
-- [ ] Changing a threshold in config changes results with no code edit
-- [ ] Every row has non-null `score`, `priority`, `confidence`, evidence rows and value or `value_level`
-- [ ] Deterministic ordering (run twice, identical)
-- [ ] No opportunity uses data after `as_of_date` (leakage test, shared with spec 04)
+- [x] Dormancy uses own interval: two customers with equal days since
+      last order but different intervals get different outcomes (`test_dormancy.py`, #108)
+- [x] No customer appears in both recovery and dormancy for the same as-of
+- [x] Changing a threshold in config changes results with no code edit
+- [x] Every row has non-null `score`, `priority`, `confidence`, evidence rows and value or `value_level`
+- [x] Deterministic ordering (run twice, identical)
+- [x] No opportunity uses data after `as_of_date` (leakage test, shared with spec 04): sales lines dated after the as-of date, 1000 times larger, change no output table
 
 ## 9. Dependencies
 Spec 02 (marts), spec 10 (config). Feeds 04, 05, 06.

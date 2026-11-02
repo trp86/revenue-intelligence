@@ -192,11 +192,14 @@ def test_ac1_ids_and_ranks_are_stable(built: Settings, tmp_path: Path) -> None:
 # AC2: data after the as-of date changes nothing ------
 
 
-def poison(settings: Settings) -> None:
+def poison(settings: Settings, offset: int = 100_000) -> None:
     """Copy every sales line to 15 June 2020, after the as-of date, with net sales 1000 times
-    larger: a day for it in dim_date, the lines in the view's table and in the fact."""
+    larger: a day for it in dim_date, the lines in the view's table and in the fact. The copies
+    get sales_line_id + `offset`, which must be above every real id."""
     con = duckdb.connect(str(settings.paths.warehouse))
     try:
+        ((top,),) = con.execute("select max(sales_line_id) from fact_sales").fetchall()
+        assert top < offset, "the poison offset must be above every sales line id"
         con.execute(
             "insert into dim_date select * replace (20200615 as date_key, "
             "date '2020-06-15' as date, date '2020-06-01' as month_start, 6 as month, "
@@ -204,14 +207,16 @@ def poison(settings: Settings) -> None:
         )
         con.execute(
             "insert into gold_net_sales_lines by name "
-            "select sales_line_id + 100000 as sales_line_id, net_sales * 1000 as net_sales, "
+            "select sales_line_id + $offset as sales_line_id, net_sales * 1000 as net_sales, "
             "net_sales_field_used, included, quantity, "
-            "columns('^amount_') from gold_net_sales_lines"
+            "columns('^amount_') from gold_net_sales_lines",
+            {"offset": offset},
         )
         con.execute(
             "insert into fact_sales by name select * replace ("
-            "sales_line_id + 100000 as sales_line_id, net_sales * 1000 as net_sales, "
-            "20200615 as date_key) from fact_sales"
+            "sales_line_id + $offset as sales_line_id, net_sales * 1000 as net_sales, "
+            "20200615 as date_key) from fact_sales",
+            {"offset": offset},
         )
     finally:
         con.close()

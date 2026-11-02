@@ -24,14 +24,17 @@ from revint.data_dictionary import (
     DEFINITIONS_FILE,
     DICTIONARY_FILE,
     GOLD_TABLES,
+    OPPORTUNITY_TABLES,
     DictionaryError,
     build_dictionary,
     gold_columns,
     load_definitions,
     missing_definitions,
+    present_tables,
     write_dictionary,
 )
 from revint.gold import run_gold
+from revint.opportunities import run_opportunities
 from revint.silver import run_silver
 
 runner = CliRunner()
@@ -69,6 +72,14 @@ def built(tmp_path_factory: pytest.TempPathFactory) -> Settings:
 
 @pytest.fixture
 def work(built: Settings, tmp_path: Path) -> Settings:
+    # gold, then the opportunity tables (story #117): the dictionary documents both
+    settings = gold(built, tmp_path)
+    run_opportunities(settings)
+    return settings
+
+
+@pytest.fixture
+def gold_only(built: Settings, tmp_path: Path) -> Settings:
     return gold(built, tmp_path)
 
 
@@ -162,8 +173,10 @@ def test_ac1_a_missing_file_is_refused_with_its_path(tmp_path: Path) -> None:
 def test_ac2_one_row_per_gold_column_with_every_field(work: Settings) -> None:
     text = build_dictionary(work)
     rows = [line for line in text.splitlines() if line.startswith("| `")]
-    expected = sum(len(gold_columns(work, t)) for t in GOLD_TABLES)
-    assert len(rows) == expected == 140
+    gold = sum(len(gold_columns(work, t)) for t in GOLD_TABLES)
+    expected = sum(len(gold_columns(work, t)) for t in present_tables(work))
+    assert gold == 140
+    assert len(rows) == expected == 247  # 140 gold and 107 opportunity columns (story #117)
     header = next(line for line in text.splitlines() if line.startswith("| Column"))
     cells = [c.strip().lower() for c in header.strip("|").split("|")]
     assert cells == ["column", "type", "definition", "source", "rule", "flags that affect it"]
@@ -275,15 +288,18 @@ def test_ac3_a_removed_definition_names_the_columns_that_lost_it(
 
 
 def test_ac3_the_definitions_cover_the_gold_tables_and_nothing_stale() -> None:
-    # every table.column a definition names must be a gold table
+    # every table.column a definition names must be a gold or an opportunity table
+    import fnmatch
+
+    tables = [*GOLD_TABLES, *OPPORTUNITY_TABLES]
     for entry in load_definitions():
         for target in entry.applies_to:
             table = target.split(".")[0]
-            assert table in GOLD_TABLES, (entry.id, target)
+            assert fnmatch.filter(tables, table), (entry.id, target)
 
 
 def test_ac3_no_definition_points_at_a_column_that_does_not_exist(work: Settings) -> None:
-    existing = {f"{t}.{c.name}" for t in GOLD_TABLES for c in gold_columns(work, t)}
+    existing = {f"{t}.{c.name}" for t in present_tables(work) for c in gold_columns(work, t)}
     patterns = [
         t for d in load_definitions() for t in d.applies_to if "{" not in t and "*" not in t
     ]
@@ -291,10 +307,12 @@ def test_ac3_no_definition_points_at_a_column_that_does_not_exist(work: Settings
     assert stale == []
 
 
-def test_ac3_a_gold_table_with_no_entries_at_all_is_reported_per_column(work: Settings) -> None:
-    empty = work.paths.warehouse.parent / "empty.yaml"
+def test_ac3_a_gold_table_with_no_entries_at_all_is_reported_per_column(
+    gold_only: Settings,
+) -> None:
+    empty = gold_only.paths.warehouse.parent / "empty.yaml"
     empty.write_text("definitions: []\n", encoding="utf-8")
-    missing = missing_definitions(work, empty)
+    missing = missing_definitions(gold_only, empty)
     assert len(missing) == 140
     assert "fact_sales.net_sales" in missing
 
@@ -397,7 +415,7 @@ def test_cli_report_dictionary_writes_the_file(
     result = runner.invoke(app, ["report", "dictionary", "--output", str(target)])
     assert result.exit_code == 0, result.output
     assert target.read_text(encoding="utf-8") == build_dictionary(work)
-    assert "140" in result.output
+    assert "247 columns in 23 tables" in result.output
 
 
 def test_cli_without_a_warehouse_says_to_build_gold(
@@ -452,6 +470,37 @@ def test_ac2_ac3_real_file_dictionary(tmp_path: Path) -> None:
         pytest.skip("bronze not built: run `uv run revint build bronze` first")
     run_silver(real)
     run_gold(real)
+    run_opportunities(real)
     assert missing_definitions(real) == []
     assert build_dictionary(real) == DICTIONARY_FILE.read_text(encoding="utf-8")
     assert sum(len(gold_columns(real, t)) for t in GOLD_TABLES) == 140
+    assert len(present_tables(real)) == len(GOLD_TABLES) + len(OPPORTUNITY_TABLES)
+
+
+# Story #117: the opportunity tables are in the dictionary ------
+
+
+def test_story_117_every_opportunity_column_has_a_definition(work: Settings) -> None:
+    assert set(OPPORTUNITY_TABLES) <= set(present_tables(work))
+    assert missing_definitions(work) == []
+
+
+def test_story_117_the_dictionary_has_a_section_per_opportunity_table(work: Settings) -> None:
+    text = build_dictionary(work)
+    for table in OPPORTUNITY_TABLES:
+        assert f"\n## {table}\n" in text, table
+
+
+def test_story_117_a_gold_only_warehouse_documents_gold_only(gold_only: Settings) -> None:
+    assert list(present_tables(gold_only)) == list(GOLD_TABLES)
+    assert "## opp_" not in build_dictionary(gold_only)
+
+
+def test_story_117_an_opportunity_column_with_no_entry_is_named(
+    work: Settings, tmp_path: Path
+) -> None:
+    data = yaml.safe_load(definitions_text())
+    data["definitions"] = [d for d in data["definitions"] if d["id"] != "opp_rank"]
+    trimmed = tmp_path / "defs.yaml"
+    trimmed.write_text(yaml.safe_dump(data), encoding="utf-8")
+    assert missing_definitions(work, trimmed) == ["opp_opportunities.rank"]

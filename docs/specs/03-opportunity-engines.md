@@ -176,6 +176,9 @@ Proven on one synthetic warehouse in `tests/unit/test_opportunity_acceptance.py`
 - [x] Deterministic ordering (run twice, identical)
 - [x] No opportunity uses data after `as_of_date` (leakage test, shared with spec 04): sales lines dated after the as-of date, 1000 times larger, change no output table
 
+### Real-file run (story #117)
+`tests/unit/test_opportunities_real_file.py` (marked realdata) proves the checks above on the real file, as of 2020-02-29, on a copy of the warehouse: recovery (359), dormancy (2,425), whitespace (15,293) and cross-sell (46,466) produce ranked rows, 64,543 in all, each with evidence and a value range; a rerun and a poison run (every line copied after the as-of date, 1000 times larger) give identical output; the run also works as of 2019-06-30; bronze is byte-identical afterwards. The opportunity tables are in the data dictionary (`docs/data_dictionary.md`, 247 columns in 23 tables when they are built).
+
 ## 9. Dependencies
 Spec 02 (marts), spec 10 (config). Feeds 04, 05, 06.
 

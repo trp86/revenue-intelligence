@@ -15,6 +15,10 @@ bronze_file = 'bronze.parquet'
 asof_date = '2020-02-29'
 excel_rows = 1
 silver_flag_columns = 'f_stray_row'
+dormancy_min_orders = 4
+dormancy_interval_multiple = 2.0
+dormancy_min_days = 45
+dormancy_lookback_months = 12
 
 # Code standards: lowercase keywords.
 [sqlfluff:rules:capitalisation.keywords]

@@ -63,6 +63,7 @@ Every input carries `as_of_date`. The date is `asof.date`; `with_asof(settings, 
   the `dormancy.lookback_months` before going quiet.
 - Not a fixed day count. Customers below `min_orders` are not
   scored (reason code `insufficient_history`).
+- Built in `sql/30_opportunities/03_dormancy.sql` (story #108). Every limit is strict, so a customer exactly at a limit does not trigger; `min_orders` is a floor. "Sales before going quiet" is positive net sales in the `lookback_months` months ending with the month of the last order, and the gap is those net sales (approved). The unknown customer (-1) is not evaluated. A customer that does not trigger is suppressed with the first test it fails: `insufficient_history`, `within_own_interval`, `within_min_days`, `no_sales_in_lookback`. A dormant row has `reason_codes` [`beyond_own_interval`, `beyond_min_days`, `sales_in_lookback`] and adds `last_order_date`, `days_since_last_order`, `median_interval_days` and `n_orders`. Real file, as of 2020-02-29: 12,239 evaluated, 2,425 dormant (equal to the #105 profile), suppressed 4,855 `insufficient_history`, 4,920 `within_own_interval` and 39 `within_min_days`.
 
 ### 3.3 Whitespace (FR-O3)
 - Peer group defined in config (default: same channel + same

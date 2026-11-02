@@ -62,11 +62,28 @@ def work(built: Settings, tmp_path: Path) -> Settings:
     return load_settings(env={"REVINT_PATHS_WAREHOUSE": str(tmp_path / "warehouse.duckdb")})
 
 
+SCHEMA_FILES = ("01_asof_inputs.sql", "02_schema.sql", "90_run_summary.sql")
+
+
+def schema_files() -> list[Path]:
+    """The stage without the engine files: these tests write their own engine rows."""
+    return [OPPORTUNITIES_DIR / name for name in SCHEMA_FILES]
+
+
+def run_schema(settings: Settings, tmp_path: Path) -> None:
+    """Run the stage with no engine, through the module."""
+    stage = tmp_path / "schema_only"
+    stage.mkdir(parents=True, exist_ok=True)
+    for path in schema_files():
+        shutil.copy(path, stage / path.name)
+    run_opportunities(settings, stage_dir=stage)
+
+
 def with_engine_rows(settings: Settings, tmp_path: Path, sql: str) -> None:
     """Run the real stage with `sql` inserted between the schema and the run summary."""
     stage = tmp_path / "stage"
     stage.mkdir(parents=True)
-    for path in OPPORTUNITIES_DIR.glob("*.sql"):
+    for path in schema_files():
         shutil.copy(path, stage / path.name)
     (stage / "50_test_engine_rows.sql").write_text(sql, encoding="utf-8")
     run_stage(stage, settings)
@@ -108,8 +125,10 @@ def columns_of(settings: Settings, table: str) -> list[str]:
 # AC1: opp_opportunities has the common columns ------
 
 
-def test_ac1_opp_opportunities_has_the_common_columns_in_order(work: Settings) -> None:
-    run_opportunities(work)
+def test_ac1_opp_opportunities_has_the_common_columns_in_order(
+    work: Settings, tmp_path: Path
+) -> None:
+    run_schema(work, tmp_path)
     assert columns_of(work, "opp_opportunities") == list(OPPORTUNITY_COLUMNS)
     assert OPPORTUNITY_COLUMNS == (
         "opp_id",
@@ -130,8 +149,8 @@ def test_ac1_opp_opportunities_has_the_common_columns_in_order(work: Settings) -
     )
 
 
-def test_ac1_the_column_types_fit_their_use(work: Settings) -> None:
-    run_opportunities(work)
+def test_ac1_the_column_types_fit_their_use(work: Settings, tmp_path: Path) -> None:
+    run_schema(work, tmp_path)
     types = dict(
         query(
             work,
@@ -151,8 +170,10 @@ def test_ac1_category_may_be_null(work: Settings, tmp_path: Path) -> None:
     assert query(work, "select category from opp_dormancy") == [(None,)]
 
 
-def test_ac1_each_engine_has_its_own_table_with_the_identity_columns(work: Settings) -> None:
-    run_opportunities(work)
+def test_ac1_each_engine_has_its_own_table_with_the_identity_columns(
+    work: Settings, tmp_path: Path
+) -> None:
+    run_schema(work, tmp_path)
     for engine in ENGINES:
         columns = columns_of(work, f"opp_{engine}")
         assert columns[:6] == [
@@ -166,8 +187,8 @@ def test_ac1_each_engine_has_its_own_table_with_the_identity_columns(work: Setti
         assert "gap" in columns and "reason_codes" in columns, engine
 
 
-def test_ac1_the_tables_start_empty(work: Settings) -> None:
-    run_opportunities(work)
+def test_ac1_the_tables_start_empty(work: Settings, tmp_path: Path) -> None:
+    run_schema(work, tmp_path)
     for table in ("opp_opportunities", "opp_evaluations", *(f"opp_{e}" for e in ENGINES)):
         assert query(work, f"select count(*) from {table}") == [(0,)], table
 
@@ -234,7 +255,7 @@ def with_engine_rows_via_api(settings: Settings, tmp_path: Path, sql: str) -> No
     """As with_engine_rows, but through the module, so stage errors become OpportunitiesError."""
     stage = tmp_path / "stage"
     stage.mkdir(parents=True)
-    for path in OPPORTUNITIES_DIR.glob("*.sql"):
+    for path in schema_files():
         shutil.copy(path, stage / path.name)
     (stage / "50_test_engine_rows.sql").write_text(sql, encoding="utf-8")
     run_opportunities(settings, stage_dir=stage)
@@ -243,8 +264,8 @@ def with_engine_rows_via_api(settings: Settings, tmp_path: Path, sql: str) -> No
 # AC3: opp_run_summary counts per engine, and suppressions by reason ------
 
 
-def test_ac3_the_summary_has_one_row_per_engine(work: Settings) -> None:
-    run_opportunities(work)
+def test_ac3_the_summary_has_one_row_per_engine(work: Settings, tmp_path: Path) -> None:
+    run_schema(work, tmp_path)
     rows = query(
         work,
         "select type, n_evaluated, n_triggered, n_suppressed from opp_run_summary order by 1",
@@ -279,7 +300,7 @@ def test_ac3_an_engine_with_no_suppression_has_an_empty_map(work: Settings, tmp_
 def test_ac3_the_summary_carries_the_as_of_date_and_the_algo_version(
     work: Settings, tmp_path: Path
 ) -> None:
-    run_opportunities(with_asof(work, date(2019, 6, 30)))
+    run_schema(with_asof(work, date(2019, 6, 30)), tmp_path)
     rows = query(work, "select type, as_of_date, algo_version from opp_run_summary order by 1")
     assert rows == [(e, date(2019, 6, 30), f"{e}-1") for e in sorted(ENGINES)]
 
@@ -312,8 +333,8 @@ def test_ac3_a_customer_is_evaluated_once_per_engine_and_category(
         with_engine_rows_via_api(work, tmp_path, sql)
 
 
-def test_ac3_the_stage_holds_counts_only(work: Settings) -> None:
-    run_opportunities(work)
+def test_ac3_the_stage_holds_counts_only(work: Settings, tmp_path: Path) -> None:
+    run_schema(work, tmp_path)
     assert columns_of(work, "opp_run_summary") == [
         "type",
         "as_of_date",
@@ -328,8 +349,8 @@ def test_ac3_the_stage_holds_counts_only(work: Settings) -> None:
 # AC4: algo_version is a constant per engine, stored on every row ------
 
 
-def test_ac4_each_engine_has_one_algo_version(work: Settings) -> None:
-    run_opportunities(work)
+def test_ac4_each_engine_has_one_algo_version(work: Settings, tmp_path: Path) -> None:
+    run_schema(work, tmp_path)
     assert query(work, "select type, algo_version from opp_engines order by 1") == [
         (e, f"{e}-1") for e in sorted(ENGINES)
     ]
@@ -367,15 +388,15 @@ def test_ac5_a_rerun_empties_the_tables_left_by_an_earlier_run(
 ) -> None:
     with_engine_rows(work, tmp_path, dormancy_row(1) + evaluation(1, "triggered"))
     assert query(work, "select count(*) from opp_dormancy") == [(1,)]
-    run_opportunities(work)
+    run_schema(work, tmp_path)
     for table in ("opp_dormancy", "opp_evaluations", "opp_opportunities"):
         assert query(work, f"select count(*) from {table}") == [(0,)], table
     assert query(work, "select sum(n_evaluated) from opp_run_summary") == [(0,)]
 
 
-def test_ac5_two_runs_give_one_summary_row_per_engine(work: Settings) -> None:
-    run_opportunities(work)
-    run_opportunities(work)
+def test_ac5_two_runs_give_one_summary_row_per_engine(work: Settings, tmp_path: Path) -> None:
+    run_schema(work, tmp_path)
+    run_schema(work, tmp_path)
     assert query(work, "select count(*) from opp_run_summary") == [(len(ENGINES),)]
 
 
@@ -401,8 +422,8 @@ def test_run_opportunities_needs_the_gold_layer(tmp_path: Path) -> None:
         run_opportunities(settings)
 
 
-def test_the_as_of_inputs_are_still_built(work: Settings) -> None:
-    run_opportunities(work)
+def test_the_as_of_inputs_are_still_built(work: Settings, tmp_path: Path) -> None:
+    run_schema(work, tmp_path)
     assert query(work, "select count(*) from asof_orders")[0][0] == 2
 
 

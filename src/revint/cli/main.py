@@ -145,8 +145,23 @@ def opportunities_build(
         str | None, typer.Option("--as-of", help="As-of date (YYYY-MM-DD); default from settings.")
     ] = None,
 ) -> None:
-    """Build the opportunity tables."""
-    _stub("opportunities build")
+    """Build the opportunity tables for the as-of date (asof.date, or --as-of for this run)."""
+    settings = _load_settings()
+    from datetime import date
+
+    from revint.opportunities import execute_opportunities, with_asof  # keeps --help fast
+
+    if as_of is not None:
+        try:
+            settings = with_asof(settings, date.fromisoformat(as_of))
+        except ValueError:
+            _fail(
+                f"revint opportunities build: --as-of must be a date as YYYY-MM-DD, not {as_of!r}",
+                EXIT_CONFIG_ERROR,
+            )
+    code = execute_opportunities(settings)
+    if code:
+        raise typer.Exit(code=code)
 
 
 @backtest_app.command("run")

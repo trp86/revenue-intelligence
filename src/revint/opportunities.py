@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import sys
 from datetime import date as Date
 from pathlib import Path
 
@@ -123,3 +124,62 @@ def build_asof_inputs(settings: Settings) -> StageResult:
     """Build the as-of inputs (story #106). They are the first file of the opportunity stage, so
     this runs the whole stage, which also rebuilds the schema and the run summary."""
     return run_opportunities(settings)
+
+
+def run_summary(settings: Settings) -> list[tuple[str, int, int, int]]:
+    """The run summary per engine: type, evaluated, triggered, suppressed (counts only)."""
+    con = duckdb.connect(str(settings.paths.warehouse), read_only=True)
+    try:
+        rows = con.execute(
+            "select type, n_evaluated, n_triggered, n_suppressed from opp_run_summary "
+            "order by type"
+        ).fetchall()
+    finally:
+        con.close()
+    return [(str(t), int(e), int(tr), int(s)) for t, e, tr, s in rows]
+
+
+def execute_opportunities(settings: Settings) -> int:
+    """Build the opportunity tables for `settings.asof.date` and record the run in `build_log`;
+    return an exit code (story #116).
+
+    Prints one line per engine with its counts and one with the total. Exit codes: 0 done, 4
+    the stage failed (gold is missing or a SQL file failed), 5 the warehouse is in use by another
+    process. Messages hold counts and names, never values.
+    """
+    from revint.build_log import BuildLogError, StageCounts, run_logged
+    from revint.pipeline import EXIT_STAGE_FAILED, EXIT_WAREHOUSE_LOCKED, WarehouseLockedError
+
+    def run() -> tuple[StageResult, list[tuple[str, int, int, int]]]:
+        stage = run_opportunities(settings)
+        return stage, run_summary(settings)
+
+    def counts(result: tuple[StageResult, list[tuple[str, int, int, int]]]) -> StageCounts:
+        stage, summary = result
+        return StageCounts(
+            files=len(stage.files),
+            statements=stage.statements,
+            rows_out=sum(row[2] for row in summary),
+        )
+
+    as_of = settings.asof.date.isoformat()
+    try:
+        stage, summary = run_logged(settings, "opportunities", run, counts)
+    except OpportunitiesError as exc:
+        locked = isinstance(exc.__cause__, WarehouseLockedError)
+        print(f"opportunities failed: {exc}; no changes were made", file=sys.stderr)
+        return EXIT_WAREHOUSE_LOCKED if locked else EXIT_STAGE_FAILED
+    except BuildLogError as exc:
+        print(f"opportunities were built but {exc}", file=sys.stderr)
+        return EXIT_STAGE_FAILED
+    for engine, evaluated, triggered, suppressed in summary:
+        print(
+            f"{engine}: {evaluated:,} evaluated, {triggered:,} triggered, "
+            f"{suppressed:,} suppressed"
+        )
+    total = sum(row[2] for row in summary)
+    print(
+        f"opportunities as of {as_of}: {total:,} opportunities, "
+        f"{len(stage.files)} files, {stage.statements} statements"
+    )
+    return 0

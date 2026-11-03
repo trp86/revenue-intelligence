@@ -7,3 +7,6 @@ __pycache__/
 # Frontend build output (story #135)
 frontend/dist/
 frontend/*.tsbuildinfo
+frontend/e2e/.data/
+frontend/test-results/
+frontend/playwright-report/

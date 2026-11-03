@@ -492,6 +492,30 @@ class OpportunitiesSettings(_Section):
     )
 
 
+class ApiSettings(_Section):
+    """The API (spec 06, story #134). Not a SQL parameter: no SQL file reads it."""
+
+    host: str = Field(default="127.0.0.1", description="Address the API binds to (localhost).")
+    port: StrictInt = Field(default=8000, ge=1, le=65535, description="Port of the API.")
+    page_size_default: StrictInt = Field(
+        default=25, ge=1, description="Rows per page when a request gives no page_size."
+    )
+    page_size_max: StrictInt = Field(default=200, ge=1, description="Most rows per page.")
+    top_n_overview: StrictInt = Field(
+        default=10, ge=1, description="Opportunities listed on the overview."
+    )
+    cors_origins: list[str] = Field(
+        default_factory=lambda: ["http://localhost:5173"],
+        description="Origins the browser may call the API from (the Vite dev server).",
+    )
+
+    @model_validator(mode="after")
+    def _page_sizes(self) -> ApiSettings:
+        if self.page_size_default > self.page_size_max:
+            raise ValueError("api.page_size_default must not be above api.page_size_max")
+        return self
+
+
 RULE_IDS = [f"S{i}" for i in range(1, 13)]
 
 Severity = Literal["info", "warning", "high"]
@@ -609,6 +633,7 @@ class Settings(_Section):
     scoring: ScoringSettings = Field(default_factory=ScoringSettings)
     value: ValueSettings = Field(default_factory=ValueSettings)
     opportunities: OpportunitiesSettings = Field(default_factory=OpportunitiesSettings)
+    api: ApiSettings = Field(default_factory=ApiSettings)
     asof: AsofSettings
 
     @model_validator(mode="after")

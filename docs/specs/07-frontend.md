@@ -52,6 +52,18 @@ and the net sales label from `/health`). Light theme only and en-US numbers with
 symbol, labelled net sales (provisional). Install scripts are not needed: esbuild ships its binary
 as a package.
 
+### Built in story #136 (screens)
+`src/screens/Overview.tsx` (KPIs, counts by type and priority, the top 10 with links),
+`Opportunities.tsx` (the ranked table; type, priority, confidence, branch and sort held in the URL;
+25 a page) and `Detail.tsx` (Measured fact, Estimate and AI suggestion blocks, each with a heading,
+an icon and its token colour; reasons and data-quality notes; a multiple-spellings notice). Priority
+is text and an icon, never colour alone. Tests: `src/test/screens.test.tsx` (each screen, its
+loading, empty and error states, and an axe check per screen; contrast is left to the browser run)
+and the Playwright walkthrough `e2e/walkthrough.spec.ts` (`npm run e2e`): it builds a synthetic
+warehouse with `e2e/make_warehouse.py`, starts `revint serve` and Vite, goes Overview -> a type ->
+an opportunity -> its evidence, opens a definition from the keyboard, and runs axe (contrast
+included) on all three screens. Until story #138 the AI block says the brief is not available.
+
 ## 4. Design tokens
 - All colour, spacing, radius, type, elevation as tokens (CSS variables
   mapped in Tailwind config). No hard-coded colours in components;

@@ -1,0 +1,39 @@
+/* Design tokens (spec 07 section 4, story #135). The ONLY file with colour values: a test
+ * fails on a hex, rgb or hsl colour anywhere else. Light theme only (provisional).
+ * Measured, Estimate and AI blocks differ in hue AND carry a text label and an icon, so
+ * colour is never the only signal; contrast of text on bg/surface is at least 4.5:1. */
+:root {
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-border: #d4d8de;
+  --color-text: #1b2430;
+  --color-text-muted: #525c6b;
+  --color-primary: #1f4f8f;
+  --color-on-primary: #ffffff;
+  --color-focus: #b45309;
+
+  --color-measured: #14532d;
+  --color-measured-bg: #ecf7ef;
+  --color-estimate: #7c4a03;
+  --color-estimate-bg: #fdf5e6;
+  --color-ai: #4c1d95;
+  --color-ai-bg: #f3effc;
+
+  --color-success: #15803d;
+  --color-warn: #a16207;
+  --color-danger: #b91c1c;
+  --color-priority-high: #b91c1c;
+  --color-priority-medium: #a16207;
+  --color-priority-low: #475569;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", monospace;
+}

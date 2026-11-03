@@ -39,6 +39,19 @@ and Definitions are out of scope for the POC (E4, E8 and E9 were dropped).
 Persistent shell: sidebar nav, header with as-of date and
 "Net sales: <field> (provisional)" badge.
 
+### Built in story #135 (foundation)
+`frontend/`: Vite 5 + React 18 + TypeScript + Tailwind 3, TanStack Query and React Router. Commands
+(in `frontend/`): `npm install`, `npm run dev` (http://localhost:5173, the API at
+`VITE_API_BASE`, default `http://localhost:8000/api/v1`), `npm test` (Vitest and Testing
+Library), `npm run lint` (ESLint and the type check) and `npm run build`. `src/tokens/tokens.css` is
+the only file with colour values; `src/api/client.ts` is the only module that calls the network
+(ESLint forbids `fetch` elsewhere, and a test checks both). Shared components: `AsyncBoundary`
+(loading, empty, error with retry, partial), `Metric` (one formatter in `src/format.ts`, its unit,
+and a definition button that works by mouse and keyboard) and `AppShell` (navigation, as-of date
+and the net sales label from `/health`). Light theme only and en-US numbers with no currency
+symbol, labelled net sales (provisional). Install scripts are not needed: esbuild ships its binary
+as a package.
+
 ## 4. Design tokens
 - All colour, spacing, radius, type, elevation as tokens (CSS variables
   mapped in Tailwind config). No hard-coded colours in components;

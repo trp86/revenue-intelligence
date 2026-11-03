@@ -4,3 +4,6 @@ reports/
 .venv/
 node_modules/
 __pycache__/
+# Frontend build output (story #135)
+frontend/dist/
+frontend/*.tsbuildinfo

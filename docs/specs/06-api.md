@@ -54,6 +54,14 @@ A bad parameter is 400, an unknown id 404, and a warehouse or opportunity tables
 503, all with `{error: {code, message}}`. The customer code and name are returned to the app user
 (provisional); masking applies only to Gemini.
 
+### Brief endpoints (story #138)
+`GET /opportunities/{opp_id}/brief` returns the latest valid brief with its provenance (model,
+prompt version, time, validation and review status), 404 `no_brief` when there is none and 404
+`not_found` for an unknown opportunity. `POST` generates it, or returns the cached one
+(`provenance.cached`). AI turned off gives 503 `ai_disabled`; Gemini unreachable, the daily limit,
+or an answer that fails the guardrails gives 503 `ai_unavailable`. A failed answer is never served.
+`revint.api.briefs` is the service; the router never calls Gemini.
+
 ## 3. Contracts and conventions
 - Every numeric metric in a response is an object
   `{value, unit, definition_id}` so the UI can show its definition.

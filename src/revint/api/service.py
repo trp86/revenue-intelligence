@@ -40,6 +40,10 @@ class NotFoundError(Exception):
     """No row with that id."""
 
 
+class NoBriefError(NotFoundError):
+    """The opportunity exists but has no valid AI brief yet."""
+
+
 @dataclass(frozen=True)
 class Filters:
     type: str | None = None

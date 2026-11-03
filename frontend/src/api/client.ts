@@ -1,6 +1,7 @@
 // The only module that calls the network (spec 07 section 11, story #135). Screens use the
 // typed functions below through TanStack Query; they never call fetch, DuckDB or Gemini.
 import type {
+  BriefResponse,
   Definition,
   Health,
   OpportunitiesPage,
@@ -22,14 +23,18 @@ export class ApiError extends Error {
   }
 }
 
-async function get<T>(path: string, params?: Record<string, string | number | undefined>) {
+async function get<T>(
+  path: string,
+  params?: Record<string, string | number | undefined>,
+  method: "GET" | "POST" = "GET",
+) {
   const url = new URL(API_BASE + path);
   for (const [key, value] of Object.entries(params ?? {})) {
     if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
   }
   let response: Response;
   try {
-    response = await fetch(url, { headers: { Accept: "application/json" } });
+    response = await fetch(url, { method, headers: { Accept: "application/json" } });
   } catch {
     throw new ApiError(0, "network", "The API cannot be reached. Is `revint serve` running?");
   }
@@ -48,4 +53,7 @@ export const api = {
   opportunities: (filters: OpportunityFilters) =>
     get<OpportunitiesPage>("/opportunities", { ...filters }),
   opportunity: (id: string) => get<OpportunityDetail>(`/opportunities/${encodeURIComponent(id)}`),
+  brief: (id: string) => get<BriefResponse>(`/opportunities/${encodeURIComponent(id)}/brief`),
+  generateBrief: (id: string) =>
+    get<BriefResponse>(`/opportunities/${encodeURIComponent(id)}/brief`, undefined, "POST"),
 };

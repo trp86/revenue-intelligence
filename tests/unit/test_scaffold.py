@@ -71,8 +71,10 @@ def test_ac2_subpackage_importable(name: str) -> None:
     assert importlib.import_module(f"revint.{name}").__name__ == f"revint.{name}"
 
 
-def test_ac2_frontend_not_created() -> None:
-    assert not (ROOT / "frontend").exists()
+def test_ac2_frontend_lives_in_its_own_folder() -> None:
+    # story #15 left frontend/ to E7; story #135 created it, as CLAUDE.md's commands expect
+    assert (ROOT / "frontend" / "package.json").is_file()
+    assert not (ROOT / "src" / "revint" / "frontend").exists()
 
 
 def test_ac3_env_example_lists_gemini_key_without_value() -> None:

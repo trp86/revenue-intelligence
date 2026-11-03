@@ -91,7 +91,8 @@ describe("AC3 Detail", () => {
     expect(estimate).toHaveTextContent("1,000");
     expect(estimate).toHaveTextContent("Estimate: 0.25 to 0.75 x the gap.");
     const ai = screen.getByRole("region", { name: /AI suggestion/ });
-    expect(ai).toHaveTextContent("not available yet");
+    // story #138: the block loads the brief; with none it offers to generate one
+    expect(await within(ai).findByRole("button", { name: "Generate brief" })).toBeInTheDocument();
   });
 
   it("shows the multiple-spellings notice and the reasons", async () => {

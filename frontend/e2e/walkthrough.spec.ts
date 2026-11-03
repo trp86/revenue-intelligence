@@ -27,7 +27,11 @@ test("Overview to an opportunity and its evidence", async ({ page }) => {
   const measured = page.getByRole("region", { name: /Measured fact/ });
   await expect(measured.getByText("Days since the last order")).toBeVisible();
   await expect(page.getByRole("region", { name: /Estimate/ })).toContainText("Estimate:");
-  await expect(page.getByRole("region", { name: /AI suggestion/ })).toContainText("not available");
+  // story #138: no brief yet, so generate one (a fake Gemini answers) and read it
+  const ai = page.getByRole("region", { name: /AI suggestion/ });
+  await ai.getByRole("button", { name: "Generate brief" }).click();
+  await expect(ai.getByText("Win back this customer")).toBeVisible();
+  await expect(ai.getByText(/AI suggestion, not a measured fact/)).toBeVisible();
   await noViolations(page);
 
   // a number's definition opens from the keyboard

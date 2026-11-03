@@ -15,8 +15,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from revint.api import service
+from revint.api import briefs, service
 from revint.api.models import (
+    BriefResponse,
     DefinitionsResponse,
     ErrorResponse,
     HealthResponse,
@@ -58,8 +59,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return _error(503, "not_ready", str(exc))
 
     @app.exception_handler(service.NotFoundError)
-    async def _not_found(_request: Request, _exc: service.NotFoundError) -> JSONResponse:
+    async def _not_found(_request: Request, exc: service.NotFoundError) -> JSONResponse:
+        if isinstance(exc, service.NoBriefError):
+            return _error(404, "no_brief", "this opportunity has no AI brief yet")
         return _error(404, "not_found", "no opportunity with that id")
+
+    @app.exception_handler(briefs.AiDisabledError)
+    async def _ai_disabled(_request: Request, _exc: briefs.AiDisabledError) -> JSONResponse:
+        return _error(503, "ai_disabled", "AI briefs are turned off; the evidence is complete")
+
+    @app.exception_handler(briefs.AiUnavailableError)
+    async def _ai_unavailable(_request: Request, exc: briefs.AiUnavailableError) -> JSONResponse:
+        return _error(503, "ai_unavailable", f"the AI brief is not available now ({exc})")
+
+    @app.exception_handler(briefs.AiFailedError)
+    async def _ai_failed(_request: Request, exc: briefs.AiFailedError) -> JSONResponse:
+        return _error(503, "ai_unavailable", str(exc))
 
     @app.exception_handler(RequestValidationError)
     async def _invalid(_request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -105,6 +120,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @router.get("/opportunities/{opp_id}", response_model=OpportunityDetail, responses=_ERRORS)
     def opportunity(opp_id: str) -> dict[str, Any]:
         return service.opportunity(settings, opp_id)
+
+    @router.get("/opportunities/{opp_id}/brief", response_model=BriefResponse, responses=_ERRORS)
+    def brief(opp_id: str) -> dict[str, Any]:
+        return briefs.latest_brief(settings, opp_id)
+
+    @router.post("/opportunities/{opp_id}/brief", response_model=BriefResponse, responses=_ERRORS)
+    def generate_brief(opp_id: str) -> dict[str, Any]:
+        return briefs.generate_brief(settings, opp_id)
 
     app.include_router(router)
     return app

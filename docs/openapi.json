@@ -1,6 +1,155 @@
 {
   "components": {
     "schemas": {
+      "Brief": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/BriefAction"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "confidence_label": {
+            "enum": [
+              "High",
+              "Medium",
+              "Low"
+            ],
+            "title": "Confidence Label",
+            "type": "string"
+          },
+          "evidence_ids_used": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids Used",
+            "type": "array"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "headline": {
+            "title": "Headline",
+            "type": "string"
+          },
+          "recommendation": {
+            "title": "Recommendation",
+            "type": "string"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Risks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "headline",
+          "explanation",
+          "recommendation",
+          "actions",
+          "risks",
+          "confidence_label",
+          "evidence_ids_used"
+        ],
+        "title": "Brief",
+        "type": "object"
+      },
+      "BriefAction": {
+        "properties": {
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "suggested_owner_role": {
+            "title": "Suggested Owner Role",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "suggested_owner_role",
+          "evidence_ids"
+        ],
+        "title": "BriefAction",
+        "type": "object"
+      },
+      "BriefProvenance": {
+        "properties": {
+          "cached": {
+            "title": "Cached",
+            "type": "boolean"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "prompt_version": {
+            "title": "Prompt Version",
+            "type": "string"
+          },
+          "review_status": {
+            "title": "Review Status",
+            "type": "string"
+          },
+          "validation_status": {
+            "title": "Validation Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "prompt_version",
+          "generated_at",
+          "validation_status",
+          "review_status",
+          "cached"
+        ],
+        "title": "BriefProvenance",
+        "type": "object"
+      },
+      "BriefResponse": {
+        "properties": {
+          "brief": {
+            "$ref": "#/components/schemas/Brief"
+          },
+          "kind": {
+            "const": "ai",
+            "title": "Kind",
+            "type": "string"
+          },
+          "opp_id": {
+            "title": "Opp Id",
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/BriefProvenance"
+          }
+        },
+        "required": [
+          "kind",
+          "opp_id",
+          "brief",
+          "provenance"
+        ],
+        "title": "BriefResponse",
+        "type": "object"
+      },
       "Customer": {
         "properties": {
           "code": {
@@ -1058,6 +1207,142 @@
           }
         },
         "summary": "Opportunity"
+      }
+    },
+    "/api/v1/opportunities/{opp_id}/brief": {
+      "get": {
+        "operationId": "brief_api_v1_opportunities__opp_id__brief_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "opp_id",
+            "required": true,
+            "schema": {
+              "title": "Opp Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BriefResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Brief"
+      },
+      "post": {
+        "operationId": "generate_brief_api_v1_opportunities__opp_id__brief_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "opp_id",
+            "required": true,
+            "schema": {
+              "title": "Opp Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BriefResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Generate Brief"
       }
     },
     "/api/v1/overview": {

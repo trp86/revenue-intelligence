@@ -120,6 +120,38 @@ class Estimate(BaseModel):
     method: str | None
 
 
+class BriefAction(BaseModel):
+    text: str
+    suggested_owner_role: str
+    evidence_ids: list[str]
+
+
+class Brief(BaseModel):
+    headline: str
+    explanation: str
+    recommendation: str
+    actions: list[BriefAction]
+    risks: list[str]
+    confidence_label: Literal["High", "Medium", "Low"]
+    evidence_ids_used: list[str]
+
+
+class BriefProvenance(BaseModel):
+    model: str
+    prompt_version: str
+    generated_at: datetime
+    validation_status: str
+    review_status: str
+    cached: bool
+
+
+class BriefResponse(BaseModel):
+    kind: Literal["ai"]
+    opp_id: str
+    brief: Brief
+    provenance: BriefProvenance
+
+
 class OpportunityDetail(OpportunityItem):
     measured: list[Fact]
     estimate: Estimate

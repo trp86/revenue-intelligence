@@ -64,6 +64,14 @@ warehouse with `e2e/make_warehouse.py`, starts `revint serve` and Vite, goes Ove
 an opportunity -> its evidence, opens a definition from the keyboard, and runs axe (contrast
 included) on all three screens. Until story #138 the AI block says the brief is not available.
 
+### Built in story #138 (AI brief)
+`src/components/AiBrief.tsx` fills the AI suggestion block of the Detail screen: the headline,
+explanation, recommendation, actions and risks, with "AI suggestion, not a measured fact", the
+model, prompt version, time and review status. With no brief it offers "Generate brief" (loading
+and error states); when AI is off or failing it says so and the measured facts and estimate stay.
+The walkthrough generates and reads a brief through `e2e/serve_fake_ai.py` (a fake Gemini, its
+own ports 8765 and 5174), so it never calls Gemini.
+
 ## 4. Design tokens
 - All colour, spacing, radius, type, elevation as tokens (CSS variables
   mapped in Tailwind config). No hard-coded colours in components;

@@ -93,6 +93,28 @@ export interface OpportunityDetail extends OpportunityItem {
   data_quality_notes: string[];
 }
 
+export interface BriefResponse {
+  kind: "ai";
+  opp_id: string;
+  brief: {
+    headline: string;
+    explanation: string;
+    recommendation: string;
+    actions: { text: string; suggested_owner_role: string; evidence_ids: string[] }[];
+    risks: string[];
+    confidence_label: Level;
+    evidence_ids_used: string[];
+  };
+  provenance: {
+    model: string;
+    prompt_version: string;
+    generated_at: string;
+    validation_status: string;
+    review_status: string;
+    cached: boolean;
+  };
+}
+
 export interface OpportunityFilters {
   type?: OppType;
   priority?: Level;

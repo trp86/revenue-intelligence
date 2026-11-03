@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
-import { AsyncBoundary, Partial } from "../components/AsyncBoundary";
+import { AiBriefBlock } from "../components/AiBrief";
+import { AsyncBoundary } from "../components/AsyncBoundary";
 import { ConfidenceBadge, customerLabel, PriorityBadge, TYPE_LABEL } from "../components/labels";
 import { Metric } from "../components/Metric";
 
@@ -98,8 +99,7 @@ export function Detail() {
               <h2 id="ai-title" className="mb-2 font-semibold text-ai">
                 <span aria-hidden="true">✦ </span>AI suggestion
               </h2>
-              <Partial title="AI brief">not available yet. The measured facts and the estimate above
-                are complete.</Partial>
+              <AiBriefBlock oppId={o.opp_id} />
             </section>
 
             {(o.data_quality_notes.length > 0 || o.reason_codes.length > 0) && (

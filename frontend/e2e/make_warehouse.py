@@ -7,6 +7,7 @@ data only) into <folder>/warehouse.duckdb, so the API serves it without touching
 
 from __future__ import annotations
 
+import shutil
 import sys
 from pathlib import Path
 
@@ -24,7 +25,12 @@ from revint.opportunities import run_opportunities  # noqa: E402
 
 def main(folder: str) -> int:
     root = Path(folder).resolve()
-    root.mkdir(parents=True, exist_ok=True)
+    # start empty every run: a brief or build left by an earlier run would change what the
+    # walkthrough sees (only this git-ignored test folder is removed)
+    if root.exists():
+        assert root.name == ".data" and root.parent.name == "e2e", root
+        shutil.rmtree(root)
+    root.mkdir(parents=True)
     settings = load_settings(
         env={
             "REVINT_PATHS_WAREHOUSE": str(root / "warehouse.duckdb"),

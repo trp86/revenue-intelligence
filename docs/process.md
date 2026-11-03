@@ -78,6 +78,11 @@ CI check. Until a runner exists (issue #27):
 - When a runner exists, issue #27 restores the `pull_request`
   trigger and this section is removed.
 
+## Live Gemini check
+Tests marked `live` call the real Gemini API. They run only with `REVINT_LIVE=1` and a
+`GEMINI_API_KEY` (in the git-ignored `.env`): `REVINT_LIVE=1 uv run pytest -m live -n 0`. They are
+skipped otherwise, so the gate never calls Gemini, and they assert the status only.
+
 ## Real-file checks
 Tests marked `realdata` need the client workbooks under `data/raw` and a
 built `data/bronze` (`uv run revint build bronze`). They are skipped when

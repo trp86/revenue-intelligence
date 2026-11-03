@@ -19,6 +19,20 @@ src/revint/ai/prompts/, src/revint/ai/client.py.
 | Env | `GEMINI_API_KEY` in .env (server-side only) |
 | CLI | `revint ai generate --opp <id>` / `--top <n>` |
 
+### Built in story #137
+`src/revint/ai`: `evidence.py` builds the package (masked `Customer C-0001` labels, the masking map in
+`app_entity_masks` in app.duckdb, at most `ai.max_facts` facts, sha256 `evidence_hash`); `schema.py`
+is `AiBrief`; `prompts.py` reads `prompts/<name>.v<N>.md` (the newest version) and
+`prompt_version` is `system.vN+<type>.vN@<hash>`; `guardrails.py` is G2, G3, G5 and G6; `client.py`
+calls Gemini (`google-genai`, JSON response schema), with the key from `GEMINI_API_KEY` (environment
+or `.env`), never logged or stored; `store.py` writes `app_ai_outputs` in app.duckdb; `briefs.py`
+ties them together (cache, `ai.max_retries` retries then `failed`, `ai.daily_call_limit`).
+Commands: `revint app init`; `revint ai generate [--opp <id> | --top <n>]` (default the
+`ai.precompute_top_n` best-ranked), printing counts only, exit 8 when a brief fails or Gemini is
+unavailable. Settings: the `ai` section (model `gemini-2.5-flash`, provisional). Tests use a fake
+client; one test marked `live` calls Gemini only with `REVINT_LIVE=1`. Category names are product
+data and are sent; customer codes and names never are.
+
 ## 3. Evidence package (FR-A1)
 Built only by `evidence.py` from `opp_evidence`. Pydantic model
 `EvidencePackage`, serialised JSON, hashed (`evidence_hash`).

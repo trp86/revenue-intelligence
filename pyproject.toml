@@ -43,6 +43,7 @@ testpaths = ["tests"]
 addopts = "--strict-markers -n auto"
 markers = [
     "realdata: needs the real client data under data/; skipped when data/ is absent and never run in CI",
+    "live: calls the real Gemini API; runs only with REVINT_LIVE=1 and a GEMINI_API_KEY",
 ]
 
 [tool.ruff]

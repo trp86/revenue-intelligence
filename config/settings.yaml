@@ -259,5 +259,15 @@ value:
 opportunities:
   top_n_per_type: 250                    # provisional (story #105): keep the top 250 per engine
 
+# The API (spec 06, story #134); not a SQL parameter.
+api:
+  host: 127.0.0.1                        # localhost only
+  port: 8000
+  page_size_default: 25
+  page_size_max: 200
+  top_n_overview: 10
+  cors_origins:
+    - http://localhost:5173              # the Vite dev server
+
 asof:
   date: 2020-02-29                       # as-of date of the data

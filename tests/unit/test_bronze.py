@@ -541,15 +541,15 @@ def test_ac7_build_bronze_with_an_open_workbook_exits_non_zero(
     assert not settings.paths.bronze.exists()
 
 
-@pytest.mark.parametrize("command", ["serve"])
+@pytest.mark.parametrize("command", [["backtest", "run"]])  # serve is real since #134
 def test_ac7_the_other_commands_stay_stubs(
-    settings_for: SheetFactory, monkeypatch: pytest.MonkeyPatch, command: str
+    settings_for: SheetFactory, monkeypatch: pytest.MonkeyPatch, command: list[str]
 ) -> None:
     settings = settings_for(LAYOUT)
     monkeypatch.setattr(
         config, "DEFAULT_SETTINGS_FILE", settings.paths.raw.parents[1] / "config" / "settings.yaml"
     )
-    result = runner.invoke(app, [command])
+    result = runner.invoke(app, command)
     assert result.exit_code == 3
     assert "not implemented" in result.output.lower()
     assert not settings.paths.bronze.exists(), "a stub must not build anything"

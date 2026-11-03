@@ -384,7 +384,7 @@ def test_ac3_the_log_keeps_earlier_runs_when_stages_are_rebuilt(work: Settings) 
 def test_ac3_a_stub_command_writes_no_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     settings = settings_in(tmp_path)
     use(settings, monkeypatch)
-    runner.invoke(app, ["serve"])
+    runner.invoke(app, ["backtest", "run"])  # a stub; serve starts the API since #134
     assert not settings.paths.warehouse.exists()
 
 

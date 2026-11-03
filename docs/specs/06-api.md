@@ -36,6 +36,19 @@ All under `/api/v1`. JSON. Response models are pydantic.
 | GET | /actions | List by status/owner |
 | GET | /data-quality | Rule results and reconciliation (counts only) |
 
+### Built in story #134
+`uv run revint serve` starts the API (FastAPI and uvicorn) on `api.host`:`api.port`, 127.0.0.1:8000 by
+default. `revint.api.app` holds the thin routers; `revint.api.service` is the only module that opens
+DuckDB, and it opens the warehouse read-only for each request. The response models are in
+`revint.api.models`, and the committed schema is `docs/openapi.json`
+(`uv run python -m revint.api.openapi`; a test fails on drift). Settings: `api.page_size_default` 25,
+`api.page_size_max` 200, `api.top_n_overview` 10, `api.cors_origins` (the Vite dev origin). Filters on
+`/opportunities`: `type`, `priority`, `confidence` (allow-listed), `branch` and `channel` (the
+normalised labels of `dim_customer`, bound as parameters); `sort` is `rank`, `score` or `value_high`.
+A bad parameter is 400, an unknown id 404, and a warehouse or opportunity tables that are not built
+503, all with `{error: {code, message}}`. The customer code and name are returned to the app user
+(provisional); masking applies only to Gemini.
+
 ## 3. Contracts and conventions
 - Every numeric metric in a response is an object
   `{value, unit, definition_id}` so the UI can show its definition.

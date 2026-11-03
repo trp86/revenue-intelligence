@@ -190,5 +190,11 @@ def app_init() -> None:
 
 @app.command("serve")
 def serve() -> None:
-    """Start the API."""
-    _stub("serve")
+    """Start the API on api.host and api.port (localhost by default)."""
+    settings = _load_settings()
+    import uvicorn  # imported here to keep --help fast
+
+    from revint.api.app import create_app
+
+    typer.echo(f"serving the API on http://{settings.api.host}:{settings.api.port}/api/v1")
+    uvicorn.run(create_app(settings), host=settings.api.host, port=settings.api.port)

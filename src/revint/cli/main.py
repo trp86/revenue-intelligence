@@ -177,15 +177,34 @@ def backtest_report() -> None:
 
 
 @ai_app.command("generate")
-def ai_generate() -> None:
-    """Generate AI briefs."""
-    _stub("ai generate")
+def ai_generate(
+    opp: Annotated[str | None, typer.Option("--opp", help="One opportunity id.")] = None,
+    top: Annotated[
+        int | None, typer.Option("--top", min=1, help="The n best-ranked opportunities.")
+    ] = None,
+) -> None:
+    """Generate AI briefs (default: the ai.precompute_top_n best-ranked); prints counts only."""
+    settings = _load_settings()
+    if opp is not None and top is not None:
+        _fail("revint ai generate: use --opp or --top, not both", EXIT_CONFIG_ERROR)
+    from revint.ai.briefs import execute_generate  # imported here to keep --help fast
+
+    code = execute_generate(settings, opp, top)
+    if code:
+        raise typer.Exit(code=code)
 
 
 @app_state_app.command("init")
 def app_init() -> None:
-    """Create the app state database."""
-    _stub("app init")
+    """Create the app state database (data/app.duckdb) and its tables."""
+    settings = _load_settings()
+    from revint.ai import store  # imported here to keep --help fast
+
+    try:
+        store.init(settings)
+    except store.StoreError as exc:
+        _fail(f"app init failed: {exc}", 4)
+    typer.echo(f"app init: {settings.paths.app_db} ready")
 
 
 @app.command("serve")

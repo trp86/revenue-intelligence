@@ -516,6 +516,32 @@ class ApiSettings(_Section):
         return self
 
 
+class AiSettings(_Section):
+    """The AI briefs (spec 05, story #137). Not a SQL parameter: no SQL file reads it."""
+
+    enabled: bool = Field(default=True, description="False turns every Gemini call off.")
+    model: str = Field(
+        default="gemini-2.5-flash",
+        min_length=1,
+        description="The Gemini model (provisional: confirm it is available to the key).",
+    )
+    temperature: float = Field(default=0.2, ge=0, le=2, description="Sampling temperature.")
+    max_facts: StrictInt = Field(default=15, ge=1, description="Most facts in one package.")
+    max_retries: StrictInt = Field(
+        default=2, ge=0, le=5, description="Retries after an invalid answer, then failed."
+    )
+    mask_identifiers: bool = Field(
+        default=True, description="Send a masked customer label, never a code or name."
+    )
+    precompute_top_n: StrictInt = Field(
+        default=20, ge=0, description="Briefs `revint ai generate` makes by default (by rank)."
+    )
+    daily_call_limit: StrictInt = Field(
+        default=200, ge=0, description="Most Gemini calls in one UTC day."
+    )
+    timeout_s: StrictInt = Field(default=60, ge=1, description="Timeout of one Gemini call.")
+
+
 RULE_IDS = [f"S{i}" for i in range(1, 13)]
 
 Severity = Literal["info", "warning", "high"]
@@ -634,6 +660,7 @@ class Settings(_Section):
     value: ValueSettings = Field(default_factory=ValueSettings)
     opportunities: OpportunitiesSettings = Field(default_factory=OpportunitiesSettings)
     api: ApiSettings = Field(default_factory=ApiSettings)
+    ai: AiSettings = Field(default_factory=AiSettings)
     asof: AsofSettings
 
     @model_validator(mode="after")

@@ -92,6 +92,11 @@ the maintainer says otherwise:
 All the rules above still apply: Ready only, one branch and one PR per story, never merge,
 never push to main, no customer-level data in issues, PRs or logs.
 
+## Live Gemini check
+Tests marked `live` call the real Gemini API. They run only with `REVINT_LIVE=1` and a
+`GEMINI_API_KEY` (in the git-ignored `.env`): `REVINT_LIVE=1 uv run pytest -m live -n 0`. They are
+skipped otherwise, so the gate never calls Gemini, and they assert the status only.
+
 ## Real-file checks
 Tests marked `realdata` need the client workbooks under `data/raw` and a
 built `data/bronze` (`uv run revint build bronze`). They are skipped when

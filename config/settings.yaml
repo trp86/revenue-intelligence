@@ -269,5 +269,17 @@ api:
   cors_origins:
     - http://localhost:5173              # the Vite dev server
 
+# AI briefs (spec 05, story #137); not a SQL parameter. The key is GEMINI_API_KEY in .env.
+ai:
+  enabled: true
+  model: gemini-2.5-flash                # provisional: confirm it is available to the key
+  temperature: 0.2
+  max_facts: 15
+  max_retries: 2
+  mask_identifiers: true                 # Gemini never sees a customer code or name
+  precompute_top_n: 20                   # briefs `revint ai generate` makes by default
+  daily_call_limit: 200
+  timeout_s: 60
+
 asof:
   date: 2020-02-29                       # as-of date of the data

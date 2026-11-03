@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "./components/AppShell";
 import { DefinitionsProvider } from "./components/Definitions";
+import { Toaster } from "./components/ui/toaster";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { Detail } from "./screens/Detail";
 import { Opportunities } from "./screens/Opportunities";
 import { Overview } from "./screens/Overview";
@@ -29,13 +31,16 @@ export function AppRoutes() {
 export default function App() {
   return (
     <QueryClientProvider client={makeQueryClient()}>
-      <DefinitionsProvider>
-        <BrowserRouter>
-          <AppShell>
-            <AppRoutes />
-          </AppShell>
-        </BrowserRouter>
-      </DefinitionsProvider>
+      <TooltipProvider delayDuration={300}>
+        <DefinitionsProvider>
+          <BrowserRouter>
+            <AppShell>
+              <AppRoutes />
+            </AppShell>
+          </BrowserRouter>
+        </DefinitionsProvider>
+        <Toaster />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

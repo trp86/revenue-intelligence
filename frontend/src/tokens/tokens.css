@@ -1,39 +1,89 @@
-/* Design tokens (spec 07 section 4, story #135). The ONLY file with colour values: a test
- * fails on a hex, rgb or hsl colour anywhere else. Light theme only (provisional).
- * Measured, Estimate and AI blocks differ in hue AND carry a text label and an icon, so
- * colour is never the only signal; contrast of text on bg/surface is at least 4.5:1. */
+/* Design tokens (story #146; design system on epic #145, reviewed with UI UX Pro Max).
+ * The ONLY file with colour values: src/test/tokens.test.ts fails on a hex, rgb or hsl colour
+ * anywhere else, and src/test/contrast.test.ts checks the text pairs below against WCAG AA.
+ * Light theme only. Roles: teal = opportunity (and the value estimate), blue = measured
+ * evidence, purple = AI suggestion, amber = attention, red = risk. Colour is never the only
+ * signal: every badge and block also has text and an icon. */
 :root {
-  --color-bg: #f6f7f9;
+  /* surfaces and text */
+  --color-bg: #f4f6f9;
   --color-surface: #ffffff;
-  --color-border: #d4d8de;
-  --color-text: #1b2430;
-  --color-text-muted: #525c6b;
-  --color-primary: #1f4f8f;
+  --color-surface-muted: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-border-strong: #64748b;
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+
+  /* sidebar (navy) */
+  --color-sidebar-bg: #0f1b33;
+  --color-sidebar-text: #cbd5e1;
+  --color-sidebar-muted: #94a3b8;
+  --color-sidebar-active: #ffffff;
+  --color-sidebar-active-bg: #1e2d4d;
+
+  /* opportunity (primary action colour) */
+  --color-opportunity: #0f766e;
+  --color-opportunity-bg: #e6f4f1;
+  --color-primary: #0f766e;
   --color-on-primary: #ffffff;
-  --color-focus: #b45309;
 
-  --color-measured: #14532d;
-  --color-measured-bg: #ecf7ef;
-  --color-estimate: #7c4a03;
-  --color-estimate-bg: #fdf5e6;
-  --color-ai: #4c1d95;
-  --color-ai-bg: #f3effc;
+  /* evidence, estimate, AI */
+  --color-measured: #1d4ed8;
+  --color-measured-bg: #eff6ff;
+  --color-estimate: #0f766e;
+  --color-estimate-bg: #e6f4f1;
+  --color-ai: #6d28d9;
+  --color-ai-bg: #f5f3ff;
 
+  /* status */
   --color-success: #15803d;
-  --color-warn: #a16207;
+  --color-success-bg: #f0fdf4;
+  --color-warn: #b45309;
+  --color-warn-bg: #fffbeb;
   --color-danger: #b91c1c;
+  --color-danger-bg: #fef2f2;
   --color-priority-high: #b91c1c;
-  --color-priority-medium: #a16207;
+  --color-priority-medium: #b45309;
   --color-priority-low: #475569;
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
+  /* focus */
+  --color-focus: #2563eb;
+  --color-focus-on-dark: #60a5fa;
+
+  /* charts: one per engine, each at least 3:1 on white; never the only signal */
+  --color-chart-1: #0f766e;
+  --color-chart-2: #2563eb;
+  --color-chart-3: #d97706;
+  --color-chart-4: #64748b;
+  --color-chart-grid: #e2e8f0;
+
+  /* scrim behind dialogs and the sheet */
+  --color-scrim: #0f172a99;
+
+  /* shape, depth, layers, motion */
+  --radius-sm: 8px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px 0 #0f172a14;
+  --shadow-md: 0 4px 12px -2px #0f172a1f;
+  --z-sticky: 10;
+  --z-topbar: 20;
+  --z-sheet: 40;
+  --z-dialog: 50;
+  --z-toast: 100;
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+
+  /* spacing scale (dense dashboard) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
   --space-6: 24px;
-  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --space-8: 32px;
+
+  /* type */
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-heading: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", monospace;
 }

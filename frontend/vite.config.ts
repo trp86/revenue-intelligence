@@ -4,7 +4,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
-  server: { port: 5173, strictPort: true },
+  // e2e/.data holds the walkthrough's DuckDB files; watching them fails while the API has them open
+  server: { port: 5173, strictPort: true, watch: { ignored: ["**/e2e/.data/**", "**/test-results/**"] } },
   test: {
     environment: "jsdom",
     globals: true,

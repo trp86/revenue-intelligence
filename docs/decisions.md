@@ -105,3 +105,21 @@ E3 Opportunity engines, E4 Backtest, E5 AI layer, E6 API,
 E7 Frontend foundation and core screens, E8 Explore and Assistant,
 E9 Action tracking and demo hardening.
 Plan stories for E0 and E1 first.
+E4, E8 and E9 are dropped from the POC (section 11).
+
+## 11. Scope cut for the POC (2026-11-02)
+Decided by the maintainer on 2026-11-02 (story #133). Reason: the whole POC must be finished
+in 3 days.
+- Kept: E5 AI layer, E6 API, E7 Frontend (Overview, Opportunities, Opportunity Detail).
+  E0 to E3 are done.
+- Dropped: E4 Backtest (Proof), E8 Explore and Assistant, E9 Action tracking. Their epics
+  (#9, #13, #14) are closed as not planned.
+- What goes with them: the Proof, Customer 360, Explore, Assistant and Action tracker
+  screens; Approve, Assign and Defer on the Detail screen; the API endpoints for customers,
+  explore, assistant, backtest, actions and data quality.
+- Success criteria 3 (backtest) and 6 (assistant) are dropped; criterion 5 no longer
+  includes approving or assigning (docs/requirements.md section 8).
+- The process is shortened for the remaining stories (docs/process.md, "Faster loop for the
+  POC deadline").
+The dropped work can come back later as new stories; the engines already take any as-of
+date, so a backtest needs no engine change.

@@ -42,7 +42,8 @@ LEAF_COMMANDS = [
 # These commands are real: build bronze (#33), build silver and build all (#45,
 # tests/unit/test_build_commands.py), build gold (#87), check (#43), report dq (#42),
 # report dictionary (#86), opportunities build (#116, tests/unit/test_opportunities_build.py),
-# ai generate and app init (#137, tests/unit/test_ai.py).
+# serve (#134, tests/unit/test_api.py), ai generate and app init (#137,
+# tests/unit/test_ai.py).
 # The rest stay stubs.
 REAL_COMMANDS = [
     ["build", "bronze"],
@@ -54,6 +55,7 @@ REAL_COMMANDS = [
     ["report", "dictionary"],
     ["opportunities", "build"],
     ["opportunities", "build", "--as-of", "2020-01-31"],
+    ["serve"],
     ["ai", "generate"],
     ["app", "init"],
 ]
@@ -195,14 +197,23 @@ def test_ac2_stub_creates_no_files_or_databases(project: Path, args: list[str]) 
     assert not list(project.rglob("*.parquet"))
 
 
-def test_ac2_serve_is_a_stub_not_a_server(project: Path) -> None:
+def test_serve_starts_the_api_on_the_configured_address(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # story #134: serve is real; uvicorn is replaced so the test does not start a server
+    import uvicorn
+
+    calls: list[dict] = []
+    monkeypatch.setattr(uvicorn, "run", lambda app, **kw: calls.append(kw))
     result = runner.invoke(app, ["serve"])
-    assert result.exit_code == 3
-    assert "not implemented" in result.output.lower()
+    assert result.exit_code == 0, result.output
+    assert calls == [{"host": "127.0.0.1", "port": 8000}]
+    assert "http://127.0.0.1:8000/api/v1" in result.output
 
 
-def test_ac2_real_script_serve_exits_non_zero() -> None:
-    result = run_script("serve")
+def test_ac2_real_script_stub_exits_non_zero() -> None:
+    # serve was the stub checked here until story #134 made it start the API
+    result = run_script("backtest", "run")
     assert result.returncode == 3
     assert "not implemented" in result.stderr.lower()
 
@@ -252,7 +263,7 @@ def test_ac3_settings_are_loaded_once_per_invocation(
         return real_load(path, **kwargs)
 
     monkeypatch.setattr(config, "load_settings", counting_load)
-    runner.invoke(app, ["serve"])
+    runner.invoke(app, ["backtest", "run"])  # a stub; serve would start a server (#134)
     assert len(calls) == 1
 
 

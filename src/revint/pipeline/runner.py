@@ -30,7 +30,7 @@ EXIT_WAREHOUSE_LOCKED = 5
 
 # Sections and fields that are not SQL parameters: file locations, and maps
 # (they are looked up in Python, not in SQL).
-_EXCLUDED_SECTIONS = frozenset({"paths", "ai"})
+_EXCLUDED_SECTIONS = frozenset({"paths", "api", "ai"})
 
 # Substrings DuckDB uses when another process holds the database file.
 _LOCK_MARKERS = (

@@ -19,6 +19,11 @@ ui-ux-pro-max skill. Calls the API only.
 | Code | src/api (client), src/tokens, src/components, src/screens |
 
 ## 3. Navigation and screens
+
+**POC scope (2026-11-02, docs/decisions.md section 11):** only Overview, Opportunities and
+Opportunity Detail are built; Detail shows the Measured, Estimate and AI blocks without
+Approve, Assign or Defer. Customer 360, Explore, Assistant, Proof, the Action tracker and Data
+and Definitions are out of scope for the POC (E4, E8 and E9 were dropped).
 | Route | Screen | Purpose (the decision it supports) |
 |---|---|---|
 | / | Overview | Where do I focus this week? KPIs, opportunities by type, top N, data as-of and net sales label |

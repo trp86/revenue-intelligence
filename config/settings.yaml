@@ -259,6 +259,16 @@ value:
 opportunities:
   top_n_per_type: 250                    # provisional (story #105): keep the top 250 per engine
 
+# The API (spec 06, story #134); not a SQL parameter.
+api:
+  host: 127.0.0.1                        # localhost only
+  port: 8000
+  page_size_default: 25
+  page_size_max: 200
+  top_n_overview: 10
+  cors_origins:
+    - http://localhost:5173              # the Vite dev server
+
 # AI briefs (spec 05, story #137); not a SQL parameter. The key is GEMINI_API_KEY in .env.
 ai:
   enabled: true

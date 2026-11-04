@@ -10,14 +10,20 @@ async function noViolations(page: Page) {
 }
 
 test("Overview to an opportunity and its evidence", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(page.getByText("Data as of")).toBeVisible();
   await expect(page.getByText(/Net sales: Net_Amount_2 \(provisional\)/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Opportunities by type" })).toBeVisible();
+  // story #148: the Overview charts; the chart's table view links each type to the Explorer
+  const byType = page.getByRole("region", { name: "Opportunities by type and priority" });
+  await expect(byType.getByRole("img", { name: /has the most opportunities/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Value by type (high estimate)" })).toBeVisible();
+  await noViolations(page);
+  await byType.getByRole("button", { name: "Show as table" }).click();
   await noViolations(page);
 
-  await page.getByRole("link", { name: "Dormant customer", exact: true }).click();
+  await byType.getByRole("link", { name: "Dormant customer", exact: true }).click();
   await expect(page).toHaveURL(/\/opportunities\?type=dormancy$/);
   await expect(page.getByText(/2 opportunities · page 1 of 1/)).toBeVisible();
   await noViolations(page);

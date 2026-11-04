@@ -1,4 +1,5 @@
-// Story #136: Overview, Opportunities and Opportunity Detail (spec 07 section 3).
+// Story #136: Opportunities and Opportunity Detail (spec 07 section 3). The Overview tests
+// are in overview.test.tsx since story #148.
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
@@ -7,8 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import { Detail } from "../screens/Detail";
 import { Opportunities } from "../screens/Opportunities";
-import { Overview } from "../screens/Overview";
-import { DEFINITIONS, DETAIL, item, OVERVIEW } from "./fixtures";
+import { DEFINITIONS, DETAIL, item } from "./fixtures";
 import { mockApi, renderWithProviders } from "./render";
 
 const PAGE = { total: 5, page: 1, page_size: 25, items: [1, 2, 3, 4, 5].map((r) => item(r)) };
@@ -36,23 +36,6 @@ async function noAxeViolations(container: HTMLElement) {
   expect(result.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
 }
 
-describe("AC1 Overview", () => {
-  it("shows the KPIs, counts by type and priority, and the top with links", async () => {
-    mockApi({ "/overview": OVERVIEW, "/definitions": DEFINITIONS });
-    renderWithProviders(routed(<Overview />, "/"));
-    expect(await screen.findByText("Opportunities by type")).toBeInTheDocument();
-    expect(screen.getByText("Value, high estimate", { selector: "dt" })).toBeInTheDocument();
-    expect(screen.getByText("45,000")).toBeInTheDocument();
-    const rows = within(screen.getByRole("table")).getAllByRole("row");
-    expect(rows).toHaveLength(3); // header and two types
-    expect(within(rows[1]).getByRole("link", { name: "Dormant customer" }))
-      .toHaveAttribute("href", "/opportunities?type=dormancy");
-    const top = screen.getByRole("list");
-    expect(within(top).getAllByRole("link")).toHaveLength(5);
-    expect(within(top).getAllByRole("link")[0]).toHaveAttribute("href", "/opportunities/opp-1");
-  });
-});
-
 describe("AC2 Opportunities", () => {
   it("shows the ranked table with priority as text and icon", async () => {
     mockApi({ "/opportunities": PAGE, "/definitions": DEFINITIONS });
@@ -62,7 +45,7 @@ describe("AC2 Opportunities", () => {
     expect(rows.map((r) => within(r).getAllByRole("cell")[0].textContent)).toEqual(
       ["1", "2", "3", "4", "5"]);
     const priority = within(rows[0]).getByText("High");
-    expect(priority.parentElement?.textContent).toContain("▲"); // an icon, not only colour
+    expect(priority.querySelector("svg")).not.toBeNull(); // an icon, not only colour
   });
 
   it("keeps filters and sort in the URL and sends them to the API", async () => {
@@ -104,22 +87,6 @@ describe("AC3 Detail", () => {
 });
 
 describe("AC4 loading, empty and error states", () => {
-  it("Overview: loading then error with retry", async () => {
-    mockApi({ "/overview": { status: 503, body: { error: { code: "not_ready",
-      message: "Run `revint opportunities build`." } } }, "/definitions": DEFINITIONS });
-    renderWithProviders(routed(<Overview />, "/"));
-    expect(screen.getByRole("status")).toHaveTextContent("Loading the overview");
-    expect(await screen.findByRole("alert")).toHaveTextContent("revint opportunities build");
-    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
-  });
-
-  it("Overview: empty", async () => {
-    mockApi({ "/overview": { ...OVERVIEW, kpis: { ...OVERVIEW.kpis, opportunities:
-      { value: 0, unit: "opportunities", definition_id: "opp_id" } } }, "/definitions": DEFINITIONS });
-    renderWithProviders(routed(<Overview />, "/"));
-    expect(await screen.findByText(/No opportunities for this as-of date/)).toBeInTheDocument();
-  });
-
   it("Opportunities: empty says what to do, and error", async () => {
     mockApi({ "/opportunities": { total: 0, page: 1, page_size: 25, items: [] },
       "/definitions": DEFINITIONS });
@@ -135,13 +102,6 @@ describe("AC4 loading, empty and error states", () => {
 });
 
 describe("AC6 accessibility (axe)", () => {
-  it("Overview has no violations", async () => {
-    mockApi({ "/overview": OVERVIEW, "/definitions": DEFINITIONS });
-    const { container } = renderWithProviders(routed(<Overview />, "/"));
-    await screen.findByText("Opportunities by type");
-    await noAxeViolations(container);
-  });
-
   it("Opportunities has no violations", async () => {
     mockApi({ "/opportunities": PAGE, "/definitions": DEFINITIONS });
     const { container } = renderWithProviders(routed(<Opportunities />, "/opportunities"),

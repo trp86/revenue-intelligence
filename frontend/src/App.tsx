@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
-import { AppShell } from "./components/AppShell";
 import { DefinitionsProvider } from "./components/Definitions";
+import { AppLayout } from "./components/layout/AppLayout";
 import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { Detail } from "./screens/Detail";
@@ -14,7 +14,7 @@ export function makeQueryClient() {
 }
 
 function NotFound() {
-  return <h1 className="text-2xl font-semibold">Page not found</h1>;
+  return <h1 className="font-heading text-2xl font-bold">Page not found</h1>;
 }
 
 export function AppRoutes() {
@@ -34,9 +34,9 @@ export default function App() {
       <TooltipProvider delayDuration={300}>
         <DefinitionsProvider>
           <BrowserRouter>
-            <AppShell>
+            <AppLayout>
               <AppRoutes />
-            </AppShell>
+            </AppLayout>
           </BrowserRouter>
         </DefinitionsProvider>
         <Toaster />

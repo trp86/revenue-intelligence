@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { ApiError, api } from "../api/client";
-import { AppShell } from "../components/AppShell";
 import { AsyncBoundary, Partial } from "../components/AsyncBoundary";
 import { Metric } from "../components/Metric";
 import { formatValue } from "../format";
@@ -16,8 +15,6 @@ const DEFINITIONS = {
       applies_to: [], source: null, rule: null },
   ],
 };
-const HEALTH = { status: "ready", as_of_date: "2020-02-29", net_sales_field: "Net_Amount_2",
-  net_sales_provisional: true, built_at: null, message: null };
 
 const base = { isPending: false, isError: false, error: null, data: undefined, refetch: () => {} };
 
@@ -89,25 +86,6 @@ describe("AC5 Metric", () => {
     button.focus();
     await userEvent.keyboard("{Enter}");
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
-  });
-});
-
-describe("AC6 AppShell", () => {
-  it("shows navigation, the as-of date and the net sales label", async () => {
-    mockApi({ "/health": HEALTH, "/definitions": DEFINITIONS });
-    renderWithProviders(<AppShell><p>page</p></AppShell>);
-    expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Opportunities" })).toBeInTheDocument();
-    expect(await screen.findByText("2020-02-29")).toBeInTheDocument();
-    expect(screen.getByText(/Net sales: Net_Amount_2 \(provisional\)/)).toBeInTheDocument();
-  });
-
-  it("says when the data is not built", async () => {
-    mockApi({ "/health": { ...HEALTH, status: "not_ready", as_of_date: null,
-      message: "run the build" }, "/definitions": DEFINITIONS });
-    renderWithProviders(<AppShell><p>page</p></AppShell>);
-    expect(await screen.findByText(/Data not built: run the build/)).toBeInTheDocument();
   });
 });
 

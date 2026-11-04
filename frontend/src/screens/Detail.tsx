@@ -7,6 +7,7 @@ import { api } from "../api/client";
 import { AiBriefBlock } from "../components/AiBrief";
 import { AsyncBoundary } from "../components/AsyncBoundary";
 import { ConfidenceBadge, customerLabel, PriorityBadge, TYPE_LABEL } from "../components/labels";
+import { useCrumbTitle } from "../components/layout/crumbs";
 import { Metric } from "../components/Metric";
 
 const FACT_LABELS: Record<string, string> = {
@@ -32,6 +33,7 @@ const FACT_LABELS: Record<string, string> = {
 export function Detail() {
   const { id = "" } = useParams();
   const query = useQuery({ queryKey: ["opportunity", id], queryFn: () => api.opportunity(id) });
+  useCrumbTitle(query.data ? `${TYPE_LABEL[query.data.type]}: ${customerLabel(query.data.customer)}` : null);
   return (
     <section aria-labelledby="detail-title" className="space-y-4">
       <Link to="/opportunities" className="text-sm text-primary underline">← All opportunities</Link>

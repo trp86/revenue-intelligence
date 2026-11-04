@@ -72,6 +72,15 @@ and error states); when AI is off or failing it says so and the measured facts a
 The walkthrough generates and reads a brief through `e2e/serve_fake_ai.py` (a fake Gemini, its
 own ports 8765 and 5174), so it never calls Gemini.
 
+### Layout (story #147, epic #145)
+`src/components/layout/`: `AppLayout` (skip link, sidebar, top bar, `<main id="main">`, which takes focus on every
+route change), `Sidebar` (navy, 768 px and wider: the app name, Overview and Opportunity Explorer, which is marked
+"Main workspace"; the active item has a bar, bold text and `aria-current`), a `Sheet` with the same navigation
+below 768 px (opened by "Open menu", closed by Escape or by choosing a screen), `TopBar` (breadcrumbs, the as-of
+date, the provisional net sales badge, and the not-reachable and not-built banners), `PageHeader` (title, subtitle,
+actions) and `crumbs.tsx` (the trail per route; a page sets its last crumb with `useCrumbTitle`, as the Detail page
+does with "<Type>: <Customer>").
+
 ## 4. Design tokens
 - All colour, spacing, radius, type, elevation as tokens (CSS variables
   mapped in Tailwind config). No hard-coded colours in components;

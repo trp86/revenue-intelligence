@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { useCrumbTitle } from "../components/layout/crumbs";
 import { AppLayout } from "../components/layout/AppLayout";
 import { PageHeader } from "../components/layout/PageHeader";
+import { Metric } from "../components/Metric";
 import { mockApi, renderWithProviders } from "./render";
 
 const HEALTH = { status: "ready", as_of_date: "2020-02-29", net_sales_field: "Net_Amount_2",
@@ -89,11 +90,30 @@ describe("AC3 the top bar", () => {
     expect(within(crumbs).getByText(trail[trail.length - 1])).toHaveAttribute("aria-current", "page");
   });
 
-  it("shows the as-of date and the provisional net sales badge", async () => {
+  it("shows the as-of date and no net sales field badge (story #161)", async () => {
     mockApi({ "/health": HEALTH, "/definitions": DEFINITIONS });
     app("/");
     expect(await screen.findByText("2020-02-29")).toBeInTheDocument();
-    expect(screen.getByText(/Net sales: Net_Amount_2 \(provisional\)/)).toBeInTheDocument();
+    expect(screen.getByRole("banner")).not.toHaveTextContent(/Net_Amount_2|provisional/);
+  });
+
+  it("the definition of a net sales value names the field and that it is provisional (story #161)",
+    async () => {
+      mockApi({ "/health": HEALTH, "/definitions": DEFINITIONS });
+      renderWithProviders(
+        <Metric metric={{ value: 1500, unit: "net sales", definition_id: "opp_value_low" }} label="value low" />,
+      );
+      await userEvent.click(screen.getByRole("button", { name: "Definition of value low" }));
+      expect(await screen.findByRole("tooltip")).toHaveTextContent(
+        "Net sales are taken from Net_Amount_2 (provisional).",
+      );
+    });
+
+  it("the definition of a value that is not net sales does not mention the field", async () => {
+    mockApi({ "/health": HEALTH, "/definitions": DEFINITIONS });
+    renderWithProviders(<Metric metric={{ value: 3, unit: "orders", definition_id: "x" }} label="orders" />);
+    await userEvent.click(screen.getByRole("button", { name: "Definition of orders" }));
+    expect(await screen.findByRole("tooltip")).not.toHaveTextContent("Net_Amount_2");
   });
 
   it("warns when the data is not built", async () => {

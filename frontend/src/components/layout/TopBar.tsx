@@ -1,11 +1,11 @@
-// The top bar (story #147): the menu button on narrow screens, breadcrumbs, the as-of date and
-// the provisional net sales badge, and the not-reachable and not-built banners.
+// The top bar (story #147): the menu button on narrow screens, breadcrumbs, the as-of date, and
+// the not-reachable and not-built banners. The net sales field badge was removed in story #161;
+// the field is named in the definition of every net sales value (Metric).
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CalendarDays, Database, Menu } from "lucide-react";
+import { AlertTriangle, CalendarDays, Menu } from "lucide-react";
 import { useState } from "react";
 
 import { api } from "../../api/client";
-import { Badge } from "../ui/badge";
 import { Breadcrumb } from "../ui/breadcrumb";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "../ui/sheet";
@@ -42,13 +42,6 @@ export function TopBar() {
               <CalendarDays className="h-4 w-4" aria-hidden="true" />
               Data as of <strong className="text-text">{info.as_of_date}</strong>
             </span>
-          )}
-          {info && (
-            <Badge tone="neutral">
-              <Database className="h-3.5 w-3.5" aria-hidden="true" />
-              Net sales: {info.net_sales_field}
-              {info.net_sales_provisional ? " (provisional)" : ""}
-            </Badge>
           )}
         </div>
       </div>

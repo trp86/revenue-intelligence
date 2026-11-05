@@ -36,8 +36,9 @@ and Definitions are out of scope for the POC (E4, E8 and E9 were dropped).
 | /actions (optional) | Action tracker | What was decided? |
 | /definitions (optional) | Data and Definitions | What does each number mean? Quality report |
 
-Persistent shell: sidebar nav, header with as-of date and
-"Net sales: <field> (provisional)" badge.
+Persistent shell: sidebar nav, header with the as-of date. The "Net sales: <field> (provisional)"
+badge was removed in story #161: the definition (ⓘ) of every net sales value names the source field
+and whether it is provisional.
 
 ### Built in story #135 (foundation)
 `frontend/`: Vite 5 + React 18 + TypeScript + Tailwind 3, TanStack Query and React Router. Commands
@@ -77,7 +78,7 @@ own ports 8765 and 5174), so it never calls Gemini.
 route change), `Sidebar` (navy, 768 px and wider: the app name, Overview and Opportunity Explorer, which is marked
 "Main workspace"; the active item has a bar, bold text and `aria-current`), a `Sheet` with the same navigation
 below 768 px (opened by "Open menu", closed by Escape or by choosing a screen), `TopBar` (breadcrumbs, the as-of
-date, the provisional net sales badge, and the not-reachable and not-built banners), `PageHeader` (title, subtitle,
+date (the net sales badge was removed in #161), and the not-reachable and not-built banners), `PageHeader` (title, subtitle,
 actions) and `crumbs.tsx` (the trail per route; a page sets its last crumb with `useCrumbTitle`, as the Detail page
 does with "<Type>: <Customer>").
 
@@ -131,7 +132,7 @@ detail-shaped skeleton. The toaster (`ui/toaster.tsx`) is our own polite live re
 
 ### Information architecture and components after the redesign (story #151, epic #145)
 ```
-Sidebar (navy; a Sheet "Open menu" below 768 px)   Top bar: breadcrumb · Data as of · Net sales badge
+Sidebar (navy; a Sheet "Open menu" below 768 px)   Top bar: breadcrumb · Data as of
  ├ Overview               /                      Overview
  ├ Opportunity Explorer   /opportunities          Overview / Opportunities   (marked "Main workspace")
  └ (Detail)               /opportunities/:id      Overview / Opportunities / <Type>: <Customer>

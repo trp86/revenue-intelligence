@@ -216,6 +216,35 @@ def test_ac4_numbers_from_the_evidence_pass_in_formatted_form(work: Settings) ->
     check(brief, package)
 
 
+# Story #158: the masked customer label is not a number --------
+
+
+@pytest.mark.parametrize("label", ["Customer C-0017", "C-0042", "customer C-0001"])
+def test_158_ac1_the_entity_label_is_not_read_as_a_number(work: Settings, label: str) -> None:
+    package = briefs.package_for(work, opp(work, "dormancy"))
+    brief = AiBrief.model_validate(
+        good_brief(package, explanation=f"{label} has gone quiet.", recommendation=f"Call {label}.")
+    )
+    check(brief, package)
+
+
+def test_158_ac2_an_invented_number_next_to_the_label_is_still_rejected(work: Settings) -> None:
+    package = briefs.package_for(work, opp(work, "dormancy"))
+    brief = AiBrief.model_validate(
+        good_brief(package, explanation=f"{package.entity} could buy 987654 more.")
+    )
+    with pytest.raises(GuardrailError, match="G2: the number 987654"):
+        check(brief, package)
+
+
+def test_158_ac3_the_label_pattern_is_defined_once_in_the_store() -> None:
+    found = store.ENTITY_LABEL.search(store.LABEL_FORMAT.format(n=17))
+    assert found is not None and found.group() == "C-0017"
+    source = Path("src/revint/ai/guardrails.py").read_text(encoding="utf-8")
+    assert "store.ENTITY_LABEL" in source
+    assert "C-" not in source  # no second copy of the label format
+
+
 def test_ac4_an_unknown_evidence_id_is_rejected(work: Settings) -> None:
     package = briefs.package_for(work, opp(work, "dormancy"))
     brief = AiBrief.model_validate(good_brief(package, evidence_ids_used=["made_up"]))

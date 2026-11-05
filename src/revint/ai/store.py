@@ -11,6 +11,7 @@ Never the warehouse. Two tables:
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -21,6 +22,11 @@ from typing import Any
 import duckdb
 
 from revint.config import Settings
+
+# The masked customer label (story #158): the one definition of its format, used to create labels
+# here and by guardrail G2, which must not read the label's digits as a number.
+LABEL_FORMAT = "Customer C-{n:04d}"
+ENTITY_LABEL = re.compile(r"\bC-\d{4}\b")
 
 _SCHEMA = (
     """
@@ -101,7 +107,7 @@ def mask_label(settings: Settings, customer_key: int) -> str:
         if found:
             return found[0][0]
         ((n,),) = con.execute("select count(*) from app_entity_masks").fetchall()
-        label = f"Customer C-{n + 1:04d}"
+        label = LABEL_FORMAT.format(n=n + 1)
         con.execute("insert into app_entity_masks values (?, ?)", [customer_key, label])
         return label
 

@@ -29,6 +29,7 @@ import {
   PriorityBadge,
   TYPE_LABEL,
   TYPE_META,
+  TYPE_SHORT,
   TypeBadge,
 } from "../components/labels";
 import { Metric } from "../components/Metric";
@@ -40,13 +41,7 @@ import { formatCompact, formatValue } from "../format";
 
 const LEVELS: Level[] = ["High", "Medium", "Low"];
 
-/** Short names for chart axes on narrow screens; the tooltip and the table use the full names. */
-const SHORT: Record<OppType, string> = {
-  dormancy: "Dormant",
-  recovery: "Recovery",
-  whitespace: "Whitespace",
-  crosssell: "Cross-sell",
-};
+const SHORT = TYPE_SHORT;
 
 function explorer(type?: OppType, priority?: Level) {
   const params = new URLSearchParams();

@@ -92,6 +92,23 @@ use the chart and priority tokens, and short axis labels (full names in the tool
 and the definition button use Lucide icons. `components/display/` is not named `data/`, because the root
 `.gitignore` ignores every `data/` folder (it keeps client data out of git).
 
+### Opportunity Explorer (story #149, epic #145)
+`screens/Opportunities.tsx` is the main working screen. `components/explorer/` holds:
+- `TypeTabs`: toggle buttons with `aria-pressed`;
+- `FilterBar`: labelled native selects for priority, confidence and sort, and a branch search applied on Enter
+  or when the field loses focus;
+- `FilterChips`: each active filter as a removable chip, plus "Clear all";
+- `OpportunityPreview`: loads the selected opportunity by id and shows what happened, why it matters (value
+  range, priority, confidence, score) and "Open details".
+
+The table shows rank, a short type pill, the customer with its category beneath, priority, confidence (on
+screens 1536 px and wider; it is always in the preview), score and the value range. The sorted column has
+`aria-sort`. The score and value definitions sit once in their column headers (`DefinitionButton` in
+`Metric.tsx`) rather than on every number. A row is selected by clicking it or its Preview button; the
+customer link opens the Detail page. The filters, sort, page and `selected` are in the URL, so back, forward
+and shared links restore them. "What happened" comes from `src/summaries.ts`: one line per engine, built only
+from the measured facts. When nothing matches, the empty state offers "Clear filters".
+
 ## 4. Design tokens
 - All colour, spacing, radius, type, elevation as tokens (CSS variables
   mapped in Tailwind config). No hard-coded colours in components;

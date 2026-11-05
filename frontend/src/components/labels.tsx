@@ -24,6 +24,14 @@ export const TYPE_LABEL: Record<OppType, string> = {
   crosssell: "Cross-sell",
 };
 
+/** Short names for dense tables and chart axes; the full name stays in titles and tooltips. */
+export const TYPE_SHORT: Record<OppType, string> = {
+  dormancy: "Dormant",
+  recovery: "Recovery",
+  whitespace: "Whitespace",
+  crosssell: "Cross-sell",
+};
+
 /** Per engine: its icon and its chart colour token (one per engine, never the only signal). */
 export const TYPE_META: Record<OppType, { icon: LucideIcon; chart: string }> = {
   crosssell: { icon: ArrowLeftRight, chart: "var(--color-chart-1)" },
@@ -46,12 +54,12 @@ const PRIORITY: Record<Level, { icon: LucideIcon; tone: "danger" | "warn" | "neu
 
 const CONFIDENCE: Record<Level, LucideIcon> = { High: SignalHigh, Medium: SignalMedium, Low: SignalLow };
 
-export function TypeBadge({ type }: { type: OppType }) {
+export function TypeBadge({ type, short = false }: { type: OppType; short?: boolean }) {
   const Icon = TYPE_META[type].icon;
   return (
-    <Badge tone="opportunity">
+    <Badge tone="opportunity" className="w-fit whitespace-nowrap" title={short ? TYPE_LABEL[type] : undefined}>
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-      {TYPE_LABEL[type]}
+      {short ? TYPE_SHORT[type] : TYPE_LABEL[type]}
     </Badge>
   );
 }

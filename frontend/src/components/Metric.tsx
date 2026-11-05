@@ -3,7 +3,8 @@
 // definition can sit once in the column header instead (DefinitionButton, story #149).
 import { useQuery } from "@tanstack/react-query";
 import { Info } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 
 import { api } from "../api/client";
 import type { Metric as MetricValue } from "../api/types";
@@ -22,6 +23,22 @@ function NetSalesSource() {
   );
 }
 
+const PANEL_WIDTH = 288; // px; never below 240 on a narrow screen
+const GAP = 8; // px between the panel and the button or the viewport edge
+const ROOM_BELOW = 160; // px needed below the button, else the panel opens above it
+
+/** Where the panel goes: under the button, shifted to stay in the viewport, above if no room. */
+export function placePanel(rect: Pick<DOMRect, "left" | "top" | "bottom">): CSSProperties {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const width = Math.max(240, Math.min(PANEL_WIDTH, vw - 2 * GAP));
+  const left = Math.max(GAP, Math.min(rect.left, vw - width - GAP));
+  const vertical = vh - rect.bottom < ROOM_BELOW && rect.top > ROOM_BELOW
+    ? { bottom: vh - rect.top + 4 }
+    : { top: rect.bottom + 4 };
+  return { left, width, ...vertical };
+}
+
 /** The info button that opens a definition, closed again by Escape or a second press. */
 export function DefinitionButton({
   definitionId,
@@ -34,11 +51,27 @@ export function DefinitionButton({
   unit?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<CSSProperties>({});
+  const button = useRef<HTMLButtonElement>(null);
   const definition = useDefinition(definitionId);
   const panel = useId();
+  // The panel is portalled to <body> with a fixed position, so a scrolling table cannot clip it
+  // (story #162); it follows the button on scroll and resize while open.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => button.current && setPosition(placePanel(button.current.getBoundingClientRect()));
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [open]);
   return (
     <span className="relative inline-flex">
       <button
+        ref={button}
         type="button"
         aria-expanded={open}
         aria-controls={panel}
@@ -52,16 +85,20 @@ export function DefinitionButton({
       >
         <Info className="h-3.5 w-3.5" aria-hidden="true" />
       </button>
-      {open && (
-        <span
-          id={panel}
-          role="tooltip"
-          className="absolute left-0 top-full z-dialog mt-1 w-72 rounded border border-border bg-surface p-2 text-left text-xs font-normal normal-case tracking-normal text-text shadow-md"
-        >
-          {definition?.text ?? "No definition found."}
-          {unit === "net sales" && <NetSalesSource />}
-        </span>
-      )}
+      {open &&
+        createPortal(
+          <span
+            id={panel}
+            role="tooltip"
+            style={position}
+            className="fixed z-dialog block rounded border border-border bg-surface p-2 text-left text-xs font-normal normal-case tracking-normal text-text shadow-md"
+          >
+            {definition?.text ?? "No definition found."}
+            {unit === "net sales" && <NetSalesSource />}
+          </span>,
+          // inside <main> so it stays in a landmark; fixed, so no scroll container clips it
+          document.getElementById("main") ?? document.body,
+        )}
     </span>
   );
 }

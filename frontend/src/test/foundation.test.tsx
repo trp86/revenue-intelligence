@@ -68,7 +68,7 @@ describe("AC5 Metric", () => {
     expect(formatValue(12345.678, "net sales")).toBe("12,346");
     expect(formatValue(0.5, "share")).toBe("50%");
     expect(formatValue(19.99, "percent")).toBe("19.99%");
-    expect(formatValue(null, "days")).toBe("â€”");
+    expect(formatValue(null, "days")).toBe("—");
   });
 
   it("opens its definition on click and from the keyboard", async () => {

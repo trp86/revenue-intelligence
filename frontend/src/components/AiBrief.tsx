@@ -31,9 +31,9 @@ function Brief({ data }: { data: BriefResponse }) {
         </div>
       )}
       <p className="text-xs text-muted">
-        AI suggestion, not a measured fact Â· confidence {brief.confidence_label} Â· model{" "}
-        {provenance.model} Â· prompt {provenance.prompt_version} Â· generated{" "}
-        {provenance.generated_at.replace("T", " ").slice(0, 16)} Â· {provenance.review_status}
+        AI suggestion, not a measured fact · confidence {brief.confidence_label} · model{" "}
+        {provenance.model} · prompt {provenance.prompt_version} · generated{" "}
+        {provenance.generated_at.replace("T", " ").slice(0, 16)} · {provenance.review_status}
       </p>
     </div>
   );
@@ -52,7 +52,7 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
   });
 
   if (query.isPending) {
-    return <p role="status" aria-live="polite" className="text-sm text-muted">Loading the AI briefâ€¦</p>;
+    return <p role="status" aria-live="polite" className="text-sm text-muted">Loading the AI brief…</p>;
   }
   if (query.data) return <Brief data={query.data} />;
 
@@ -70,7 +70,7 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
       )}
       {failed && (
         <p role="alert" className="text-sm text-danger">
-          âš  {failed.code === "ai_disabled" ? "AI briefs are turned off." : failed.message}
+          ⚠ {failed.code === "ai_disabled" ? "AI briefs are turned off." : failed.message}
         </p>
       )}
       <button
@@ -80,7 +80,7 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
         aria-busy={generate.isPending}
         className="rounded bg-primary px-3 py-1 text-sm text-on-primary disabled:opacity-60"
       >
-        {generate.isPending ? "Generatingâ€¦" : "Generate brief"}
+        {generate.isPending ? "Generating…" : "Generate brief"}
       </button>
     </div>
   );

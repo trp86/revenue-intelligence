@@ -81,6 +81,17 @@ date, the provisional net sales badge, and the not-reachable and not-built banne
 actions) and `crumbs.tsx` (the trail per route; a page sets its last crumb with `useCrumbTitle`, as the Detail page
 does with "<Type>: <Customer>").
 
+### Overview (story #148, epic #145)
+`screens/Overview.tsx`: four `StatCard`s (`components/display/`: an icon badge, a label, the number through
+`Metric`, and the estimates badged "Estimate"); two `ChartCard`s, each named by a one-line summary and with a
+"Show as table" alternative of the same numbers with links: opportunities by type and priority (a stacked bar)
+and the high value estimate by type (a sorted horizontal bar, chosen over a donut on the UI UX Pro Max chart
+guidance); and the top 10 as a table with type and priority pills. Clicking a bar, a table cell, a type or the
+Opportunities KPI opens the Explorer with that filter. Charts do not animate (the data is readable at once),
+use the chart and priority tokens, and short axis labels (full names in the tooltip and the table). Badges
+and the definition button use Lucide icons. `components/display/` is not named `data/`, because the root
+`.gitignore` ignores every `data/` folder (it keeps client data out of git).
+
 ## 4. Design tokens
 - All colour, spacing, radius, type, elevation as tokens (CSS variables
   mapped in Tailwind config). No hard-coded colours in components;

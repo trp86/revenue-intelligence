@@ -70,7 +70,7 @@ export function AsyncBoundary<T>({
   if (query.isPending) {
     return (
       <div role="status" aria-live="polite" aria-busy="true">
-        <span className="sr-only">Loading {label}â€¦</span>
+        <span className="sr-only">Loading {label}…</span>
         <SkeletonBlock kind={skeleton} />
       </div>
     );

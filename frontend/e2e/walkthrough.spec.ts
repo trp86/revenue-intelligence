@@ -36,6 +36,12 @@ test("Overview to an opportunity and its evidence", async ({ page }) => {
   // story #138: no brief yet, so generate one (a fake Gemini answers) and read it
   const ai = page.getByRole("region", { name: /AI suggestion/ });
   await ai.getByRole("button", { name: "Generate brief" }).click();
+  // story #150: generating asks first, then reports the result in a toast
+  const confirm = page.getByRole("dialog", { name: "Generate an AI brief?" });
+  await expect(confirm).toContainText("counts toward the daily limit");
+  await noViolations(page);
+  await confirm.getByRole("button", { name: "Generate" }).click();
+  await expect(page.getByText("AI brief generated")).toBeVisible();
   await expect(ai.getByText("Win back this customer")).toBeVisible();
   await expect(ai.getByText(/AI suggestion, not a measured fact/)).toBeVisible();
   await noViolations(page);

@@ -1,5 +1,5 @@
 // Story #138 AC4: the AI suggestion block on the Detail screen.
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -25,6 +25,13 @@ const BRIEF = {
 const NO_BRIEF = { status: 404, body: { error: { code: "no_brief",
   message: "this opportunity has no AI brief yet" } } };
 
+// story #150: Generate asks for confirmation first
+async function generateWithConfirm() {
+  await userEvent.click(await screen.findByRole("button", { name: "Generate brief" }));
+  const dialog = await screen.findByRole("dialog", { name: "Generate an AI brief?" });
+  await userEvent.click(within(dialog).getByRole("button", { name: "Generate" }));
+}
+
 describe("AC4 the AI suggestion block", () => {
   it("shows the brief labelled as AI with its provenance", async () => {
     mockApi({ "/opportunities/opp-1/brief": BRIEF });
@@ -49,8 +56,8 @@ describe("AC4 the AI suggestion block", () => {
       return new Response(JSON.stringify(NO_BRIEF.body), { status: 404 });
     }) as typeof fetch;
     renderWithProviders(<AiBriefBlock oppId="opp-1" />);
-    expect(await screen.findByText(/none yet for this opportunity/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Generate brief" }));
+    expect(await screen.findByText(/no AI brief for this opportunity yet/)).toBeInTheDocument();
+    await generateWithConfirm();
     expect(await screen.findByText("Win back a quiet customer")).toBeInTheDocument();
     expect(posted).toBe(true);
   });
@@ -64,7 +71,7 @@ describe("AC4 the AI suggestion block", () => {
       return new Response(JSON.stringify(NO_BRIEF.body), { status: 404 });
     }) as typeof fetch;
     renderWithProviders(<AiBriefBlock oppId="opp-1" />);
-    await userEvent.click(await screen.findByRole("button", { name: "Generate brief" }));
+    await generateWithConfirm();
     expect(await screen.findByRole("alert")).toHaveTextContent("Gemini error 503");
     expect(screen.getByRole("button", { name: "Generate brief" })).toBeEnabled();
   });
@@ -78,7 +85,7 @@ describe("AC4 the AI suggestion block", () => {
       return new Response(JSON.stringify(NO_BRIEF.body), { status: 404 });
     }) as typeof fetch;
     renderWithProviders(<AiBriefBlock oppId="opp-1" />);
-    await userEvent.click(await screen.findByRole("button", { name: "Generate brief" }));
+    await generateWithConfirm();
     expect(await screen.findByRole("alert")).toHaveTextContent("AI briefs are turned off.");
   });
 

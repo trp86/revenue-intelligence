@@ -44,7 +44,8 @@ icon or a label.
 
 ## Components (frontend/src/components)
 - `ui/`: Button, Card, Badge, Input, Select, Table, Skeleton, Dialog, Sheet, Tooltip,
-  Breadcrumb and the Toaster (shadcn/ui on Radix, plus sonner).
+  Breadcrumb and the Toaster (shadcn/ui on Radix; the Toaster is our own small live region since
+  story #150, because sonner's markup failed axe).
 - `feedback/`: EmptyState (an icon, the reason, an action), ErrorState (the cause and Retry),
   ConfirmDialog (Cancel or Escape closes it; focus stays inside and returns to the control that
   opened it).

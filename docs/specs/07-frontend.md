@@ -129,6 +129,37 @@ reason inline. Reason codes show as chips and data-quality notes as amber notes.
 detail-shaped skeleton. The toaster (`ui/toaster.tsx`) is our own polite live region: sonner's
 `<li role="status">` markup failed axe.
 
+### Information architecture and components after the redesign (story #151, epic #145)
+```
+Sidebar (navy; a Sheet "Open menu" below 768 px)   Top bar: breadcrumb · Data as of · Net sales badge
+ ├ Overview               /                      Overview
+ ├ Opportunity Explorer   /opportunities          Overview / Opportunities   (marked "Main workspace")
+ └ (Detail)               /opportunities/:id      Overview / Opportunities / <Type>: <Customer>
+```
+- **Flow:** Overview (KPIs, two charts, the top 10) → the Explorer, filtered by a chart, type or KPI
+  link → a row preview (what happened, why it matters) → Open details → the Detail page: what
+  happened, where, why it matters, then the Measured fact, Estimate and AI suggestion blocks.
+- **Filters, sort, page and the selected row live in the URL**, so a view can be shared and the
+  Back button works.
+- **Components** (`frontend/src/components/`):
+  - `ui/`: shadcn-style primitives (button, card, badge, input, select, table, skeleton, dialog,
+    sheet, tooltip, breadcrumb) and our own `toaster`;
+  - `feedback/`: `EmptyState`, `ErrorState` (Retry), `ConfirmDialog`; `AsyncBoundary` (skeleton
+    variants `lines`, `cards`, `table`, `detail`);
+  - `layout/`: `AppLayout` (skip link, focus to `<main>` on route change), `Sidebar`, `TopBar`,
+    `PageHeader`, breadcrumbs (`crumbs.tsx`);
+  - `display/`: `StatCard`, `ChartCard` (chart or table toggle, text summary);
+  - `explorer/`: `TypeTabs`, `FilterBar`, `FilterChips`, `OpportunityPreview`;
+  - `detail/panels.tsx`: `EvidencePanel`, `EstimatePanel`, `AiPanel`; `AiBrief.tsx`;
+  - `labels.tsx` (type, priority and confidence badges with icons), `Metric.tsx` (every number and
+    its definition button).
+- **Tokens:** `src/tokens/tokens.css` is the only file with colour values (enforced by
+  `tokens.test.ts`); the palette and its roles are in `docs/design-tokens.md`.
+- **Browser checks** (`npm run e2e`, `e2e/walkthrough.spec.ts`, one worker, in order): a
+  keyboard-only pass, the mouse walkthrough ending in a generated brief (fake Gemini), and axe with
+  colour contrast on all three screens at 1440, 1024 and 390 px with no sideways page scroll;
+  screenshots are saved to `frontend/test-results/` (git-ignored).
+
 ## 4. Design tokens
 - All colour, spacing, radius, type, elevation as tokens (CSS variables
   mapped in Tailwind config). No hard-coded colours in components;
@@ -136,8 +167,8 @@ detail-shaped skeleton. The toaster (`ui/toaster.tsx`) is our own polite live re
 - Semantic tokens: `--color-measured`, `--color-estimate`,
   `--color-ai`, `--color-success/warn/danger`, `--color-priority-high/med/low`.
 - Light theme required; dark theme optional [x].
-- Palette and type scale chosen with ui-ux-pro-max, recorded in
-  docs/design-tokens.md when decided.
+- Palette and type scale chosen with ui-ux-pro-max (story #146), recorded in
+  docs/design-tokens.md.
 
 ## 5. States
 Every screen and every data region has: loading (skeleton), empty
@@ -156,11 +187,11 @@ unavailable but evidence shown). Implemented via shared
 ## 7. Accessibility
 | Requirement | |
 |---|---|
-| WCAG 2.1 AA contrast; keyboard operable; visible focus | |
-| Colour never the only signal (priority = text + icon + colour) | |
-| Charts: text alternative / data table toggle | |
-| Semantic landmarks, labelled form controls, aria-live for async status | |
-| Respect `prefers-reduced-motion` | |
+| WCAG 2.1 AA contrast; keyboard operable; visible focus | axe with contrast on every screen at 3 widths; keyboard-only e2e pass; 2 px `:focus-visible` ring checked in the browser (#151) |
+| Colour never the only signal (priority = text + icon + colour) | badges and blocks carry text and a Lucide icon (#146, #150) |
+| Charts: text alternative / data table toggle | `ChartCard`: summary as the image name, a Show as table toggle (#148) |
+| Semantic landmarks, labelled form controls, aria-live for async status | skip link, landmarks, labelled filters, polite status and toast regions (#147, #149) |
+| Respect `prefers-reduced-motion` | `index.css` turns off transitions and animations (#146) |
 
 ## 8. Behaviour rules
 - Approve / Assign / Defer call API; optimistic update rolled back on error.

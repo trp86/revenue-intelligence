@@ -14,7 +14,10 @@ const WEB_PORT = 5174;
 
 export default defineConfig({
   testDir: "e2e",
-  timeout: 60_000,
+  timeout: 90_000,
+  // the tests share one server and one generated brief, so they run one at a time, in order
+  workers: 1,
+  fullyParallel: false,
   use: { baseURL: `http://localhost:${WEB_PORT}`, trace: "off" },
   webServer: [
     {

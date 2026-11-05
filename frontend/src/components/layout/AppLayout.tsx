@@ -11,12 +11,12 @@ import { TopBar } from "./TopBar";
 function MainRegion({ children }: { children: ReactNode }) {
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
-  const first = useRef(true);
+  // the previous path, not a "first render" flag: StrictMode runs effects twice in development,
+  // which would otherwise move focus past the skip link on the first page load (story #151)
+  const previous = useRef(pathname);
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
+    if (previous.current === pathname) return;
+    previous.current = pathname;
     main.current?.focus();
   }, [pathname]);
   return (

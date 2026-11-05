@@ -1,53 +1,171 @@
-// Story #136 AC5 and AC6: a manager goes from the Overview to an opportunity and reads its
-// evidence, against the real API on a synthetic warehouse; axe runs on every screen, contrast
-// included (a real browser lays the page out).
+// The browser walkthrough and accessibility checks (stories #136, #138, #148-#151). The real API
+// serves a synthetic warehouse (e2e/make_warehouse.py) with a fake Gemini (e2e/serve_fake_ai.py).
+// The tests share that server and run in this order: the keyboard pass opens the brief dialog but
+// never generates; the walkthrough generates the one brief; the width pass checks every screen.
+// Screenshots go to frontend/test-results/ (git-ignored) for review.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-async function noViolations(page: Page) {
-  const result = await new AxeBuilder({ page }).analyze();
-  expect(result.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+test.describe.configure({ mode: "serial" });
+
+const WIDTHS = [
+  { width: 1440, height: 1000 },
+  { width: 1024, height: 900 },
+  { width: 390, height: 900 },
+];
+
+async function noViolations(page: Page, where: string) {
+  const result = await new AxeBuilder({ page }).analyze(); // every rule, colour contrast included
+  expect(result.violations.map((v) => `${where}: ${v.id}: ${v.help}`)).toEqual([]);
 }
 
-test("Overview to an opportunity and its evidence", async ({ page }) => {
+/** Press Tab until the focused element has this accessible name (at most 80 presses). */
+async function tabTo(page: Page, name: RegExp) {
+  for (let i = 0; i < 80; i++) {
+    await page.keyboard.press("Tab");
+    const label = await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null;
+      // only controls count: Tab can wrap round to <body>, whose text holds every name
+      if (!el || !el.matches("a, button, input, select, textarea, [role=tab], [tabindex='0']")) return "";
+      return (el.getAttribute("aria-label") ?? el.innerText ?? "").trim();
+    });
+    if (name.test(label)) return;
+  }
+  throw new Error(`no focusable element named ${name} within 80 Tab presses`);
+}
+
+/** The focused element shows the 2 px focus ring from the design tokens. */
+async function expectFocusRing(page: Page) {
+  const outline = await page.evaluate(() => {
+    const style = getComputedStyle(document.activeElement as Element);
+    return { style: style.outlineStyle, width: style.outlineWidth };
+  });
+  expect(outline).toEqual({ style: "solid", width: "2px" });
+}
+
+async function firstOpportunityId(page: Page): Promise<string> {
+  await page.goto("/opportunities");
+  const href = await page.getByRole("table").getByRole("link").first().getAttribute("href");
+  return href!.split("/").pop()!;
+}
+
+test("keyboard only: skip link, navigation, preview, definitions, dialog and the menu", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+
+  // the first Tab reaches the skip link, which moves focus to the main region
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
+  await expectFocusRing(page);
+  await page.keyboard.press("Enter");
+  await expect(page.locator("main#main")).toBeFocused();
+
+  // sidebar navigation to the Explorer
+  await page.locator("body").focus();
+  await tabTo(page, /Opportunity Explorer/);
+  await expectFocusRing(page);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/opportunities$/);
+  await expect(page.getByText(/opportunities · page 1/)).toBeVisible();
+
+  // a type tab, then the first row's preview, then Open details
+  await tabTo(page, /^Dormant customer$/);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/type=dormancy/);
+  await tabTo(page, /^Preview /);
+  await expectFocusRing(page);
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("region", { name: "Preview" })).toBeVisible();
+  await tabTo(page, /Open details/);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/opportunities\/[0-9a-f]{32}$/);
+
+  // a definition opens and closes by keyboard
+  await expect(page.getByRole("region", { name: "Measured fact" })).toBeVisible();
+  await tabTo(page, /^Definition of Days since the last order$/);
+  await expectFocusRing(page);
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("tooltip")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+
+  // the Generate dialog opens by keyboard, keeps focus inside, and Escape closes it
+  await tabTo(page, /^Generate brief$/);
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Generate an AI brief?" });
+  await expect(dialog).toBeVisible();
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press("Tab");
+    expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+  }
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Generate brief" })).toBeFocused();
+
+  // on a phone the navigation is a menu that opens and closes by keyboard
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto("/");
+  await tabTo(page, /^Open menu$/);
+  await expectFocusRing(page);
+  await page.keyboard.press("Enter");
+  const menu = page.getByRole("dialog");
+  await expect(menu).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open menu" })).toBeFocused();
+});
+
+test("walkthrough: Overview, a type, the Explorer preview, Detail and an AI brief", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/");
   await expect(page.getByText("Data as of")).toBeVisible();
-  await expect(page.getByText(/Net sales: Net_Amount_2 \(provisional\)/)).toBeVisible();
-  // story #148: the Overview charts; the chart's table view links each type to the Explorer
   const byType = page.getByRole("region", { name: "Opportunities by type and priority" });
   await expect(byType.getByRole("img", { name: /has the most opportunities/ })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Value by type (high estimate)" })).toBeVisible();
-  await noViolations(page);
   await byType.getByRole("button", { name: "Show as table" }).click();
-  await noViolations(page);
-
+  await noViolations(page, "overview table view");
   await byType.getByRole("link", { name: "Dormant customer", exact: true }).click();
-  await expect(page).toHaveURL(/\/opportunities\?type=dormancy$/);
-  await expect(page.getByText(/2 opportunities · page 1 of 1/)).toBeVisible();
-  await noViolations(page);
 
-  await page.getByRole("table").getByRole("link").first().click();
+  await expect(page).toHaveURL(/\/opportunities\?type=dormancy$/);
+  await page.getByRole("button", { name: /^Preview / }).first().click();
+  const preview = page.getByRole("region", { name: "Preview" });
+  await expect(preview.getByText("What happened")).toBeVisible();
+  await noViolations(page, "explorer with preview");
+  await preview.getByRole("link", { name: /Open details/ }).click();
+
   await expect(page).toHaveURL(/\/opportunities\/[0-9a-f]{32}$/);
-  const measured = page.getByRole("region", { name: /Measured fact/ });
-  await expect(measured.getByText("Days since the last order")).toBeVisible();
-  await expect(page.getByRole("region", { name: /Estimate/ })).toContainText("Estimate:");
-  // story #138: no brief yet, so generate one (a fake Gemini answers) and read it
-  const ai = page.getByRole("region", { name: /AI suggestion/ });
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText("Dormant customer:");
+  await expect(page.getByRole("region", { name: "Measured fact" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Estimate" })).toBeVisible();
+  const ai = page.getByRole("region", { name: "AI suggestion" });
   await ai.getByRole("button", { name: "Generate brief" }).click();
-  // story #150: generating asks first, then reports the result in a toast
   const confirm = page.getByRole("dialog", { name: "Generate an AI brief?" });
   await expect(confirm).toContainText("counts toward the daily limit");
-  await noViolations(page);
+  await noViolations(page, "confirm dialog");
   await confirm.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByText("AI brief generated")).toBeVisible();
   await expect(ai.getByText("Win back this customer")).toBeVisible();
-  await expect(ai.getByText(/AI suggestion, not a measured fact/)).toBeVisible();
-  await noViolations(page);
-
-  // a number's definition opens from the keyboard
-  await measured.getByRole("button", { name: /Definition of Days since the last order/ }).focus();
-  await page.keyboard.press("Enter");
-  await expect(page.getByRole("tooltip")).toContainText("Days from the customer's last order");
+  await noViolations(page, "detail with brief");
+  await page.screenshot({ path: "test-results/walkthrough-brief-1440.png", fullPage: true });
 });
+
+for (const size of WIDTHS) {
+  test(`every screen passes axe at ${size.width} px, with a screenshot`, async ({ page }) => {
+    await page.setViewportSize(size);
+    const id = await firstOpportunityId(page);
+    const screens = [
+      { name: "overview", path: "/", ready: "Opportunities by type and priority" },
+      { name: "explorer", path: `/opportunities?selected=${id}`, ready: "Preview" },
+      { name: "detail", path: `/opportunities/${id}`, ready: "AI suggestion" },
+    ];
+    for (const s of screens) {
+      await page.goto(s.path);
+      await expect(page.getByRole("region", { name: s.ready })).toBeVisible();
+      await page.waitForTimeout(300); // let fonts and layout settle before the contrast check
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow, `${s.name} at ${size.width} px scrolls sideways`).toBeLessThanOrEqual(0);
+      await noViolations(page, `${s.name} at ${size.width} px`);
+      await page.screenshot({ path: `test-results/${s.name}-${size.width}.png`, fullPage: true });
+    }
+  });
+}

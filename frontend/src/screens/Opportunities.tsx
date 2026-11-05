@@ -134,7 +134,7 @@ export function Opportunities() {
                         <TableHead scope="col" aria-sort={sortedBy("value_high")} className="text-right">
                           <span className="inline-flex items-center gap-1">
                             Value (estimate)
-                            <DefinitionButton definitionId="opp_value_high" label="value (estimate)" />
+                            <DefinitionButton definitionId="opp_value_high" label="value (estimate)" unit="net sales" />
                           </span>
                         </TableHead>
                         <TableHead scope="col"><span className="sr-only">Preview</span></TableHead>

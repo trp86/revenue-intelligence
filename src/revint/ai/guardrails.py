@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 
+from revint.ai import store
 from revint.ai.evidence import EvidencePackage
 from revint.ai.schema import AiBrief
 
@@ -91,7 +92,9 @@ def check(brief: AiBrief, package: EvidencePackage) -> None:
         if term in lowered:
             raise GuardrailError(f"G6: banned term '{term}'")
     allowed = _allowed_numbers(package)
-    for match in _NUMBER.findall(text):
+    # the masked customer label (store.LABEL_FORMAT) is a name, not a number
+    numeric_text = store.ENTITY_LABEL.sub(" ", text)
+    for match in _NUMBER.findall(numeric_text):
         number = float(match.replace(",", ""))
         if not _close(number, allowed):
             raise GuardrailError(f"G2: the number {match} is not in the evidence")

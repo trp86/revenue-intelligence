@@ -6,7 +6,8 @@
 # sentence for a sales manager), applies_to (the table.column names it defines; "*" matches any
 # run of characters and "{column}" a source column name, which "{column}" in text and source
 # is then replaced by), and optionally source (the source column), rule (the silver or gold rule
-# id) and flags (the flags that change the value). Every gold column needs exactly one entry; a
+# id), flags (the flags that change the value) and plain (story #169: at most 2 sentences in
+# business words, shown in the screens' popups instead of text). Every gold column needs exactly one entry; a
 # test fails and names a column that has none. Change a definition through a PR.
 
 definitions:
@@ -448,18 +449,21 @@ definitions:
 
   # ---- opportunity tables (spec 03, stories #107 to #116) ------------------------------------
   - id: opp_id
+    plain: "Each opportunity is one specific chance to sell more to one customer. This counts them all."
     kind: key
     text: >-
       The id of an opportunity: the md5 of its type, customer, category and as-of date, so the
       same opportunity on the same as-of date always has the same id.
     applies_to: ["opp_*.opp_id"]
   - id: opp_type
+    plain: "The kind of chance: a customer who stopped ordering, falling sales, a category similar customers buy, or a category that goes with what the customer already buys."
     kind: dimension
     text: >-
       The engine: dormancy, recovery, whitespace or crosssell (in opp_evidence_facts a star means
       the fact applies to every engine).
     applies_to: ["opp_*.type"]
   - id: opp_customer_key
+    plain: "The number of different customers that have at least one opportunity."
     kind: key
     text: The customer of the opportunity (dim_customer); the unknown customer is never one.
     applies_to: ["opp_*.customer_key"]
@@ -490,6 +494,7 @@ definitions:
     text: The tests the opportunity met, and marks such as peer_fallback or confidence_capped.
     applies_to: ["opp_*.reason_codes"]
   - id: opp_score
+    plain: "How strongly we recommend acting, from 0 to 100. It combines how big the chance is, how solid the evidence is and how urgent it is."
     kind: metric
     text: >-
       Score from 0 to 100, the weighted sum of value rank, evidence strength, urgency and data
@@ -507,6 +512,7 @@ definitions:
       for a possible merged identity or a peer group still below the minimum size.
     applies_to: [opp_opportunities.confidence]
   - id: opp_value_low
+    plain: "The cautious end of the extra net sales this could bring, based on the customer's own sales history. It is an estimate, not a promise."
     kind: metric
     text: >-
       Estimate, not a measured outcome. value.low_factor times the gap; empty when the gap cannot
@@ -514,6 +520,7 @@ definitions:
     applies_to: ["opp_*.value_low"]
     source: value.low_factor
   - id: opp_value_high
+    plain: "The optimistic end of the extra net sales this could bring, based on the customer's own sales history. It is an estimate, not a promise."
     kind: metric
     text: >-
       Estimate, not a measured outcome. value.high_factor times the gap; empty when the gap
@@ -674,26 +681,31 @@ definitions:
 # own; the same fields as above, with applies_to naming opp_evidence.<fact>.
 evidence:
   - id: ev_days_since_last_order
+    plain: "How many days have passed since this customer last ordered."
     kind: metric
     text: Days from the customer's last order to the as-of date.
     applies_to: [opp_evidence.days_since_last_order]
     rule: dormancy
   - id: ev_median_interval_days
+    plain: "How many days usually pass between this customer's orders."
     kind: metric
     text: The customer's own usual gap between orders, the median of its intervals in days.
     applies_to: [opp_evidence.median_interval_days]
     rule: dormancy
   - id: ev_n_orders
+    plain: "How many times this customer has ordered so far, counting one per order day."
     kind: metric
     text: Orders (distinct order days) the customer placed up to the as-of date.
     applies_to: [opp_evidence.n_orders]
     rule: dormancy
   - id: ev_last_order_date
+    plain: "The day this customer last placed an order."
     kind: dimension
     text: The date of the customer's last order on or before the as-of date.
     applies_to: [opp_evidence.last_order_date]
     rule: dormancy
   - id: ev_lookback_net_sales
+    plain: "What this customer bought in the months before it stopped ordering."
     kind: metric
     text: >-
       Net sales of the customer in the dormancy.lookback_months months up to its last order; the
@@ -701,41 +713,49 @@ evidence:
     applies_to: [opp_evidence.lookback_net_sales]
     rule: dormancy
   - id: ev_prior_net_sales
+    plain: "What this customer bought in the same months last year."
     kind: metric
     text: Net sales of the customer in the same months one year before the current window.
     applies_to: [opp_evidence.prior_net_sales]
     rule: recovery
   - id: ev_current_net_sales
+    plain: "What this customer bought in the most recent months."
     kind: metric
     text: Net sales of the customer in the recovery.window_months months up to the as-of date.
     applies_to: [opp_evidence.current_net_sales]
     rule: recovery
   - id: ev_prior_orders
+    plain: "How many times this customer ordered in the same months last year."
     kind: metric
     text: Orders (distinct order days) of the customer in the prior window.
     applies_to: [opp_evidence.prior_orders]
     rule: recovery
   - id: ev_decline_pct
+    plain: "How much lower this customer's sales are than in the same months last year."
     kind: metric
     text: The fall in net sales from the prior to the current window, in percent of the prior.
     applies_to: [opp_evidence.decline_pct]
     rule: recovery
   - id: ev_n_peers
+    plain: "How many similar customers this customer is compared with."
     kind: metric
     text: Customers in the customer's peer group, not counting the customer itself.
     applies_to: [opp_evidence.n_peers]
     rule: whitespace
   - id: ev_n_buying_peers
+    plain: "How many of those similar customers buy this category."
     kind: metric
     text: Of those peers, the customers with net sales above zero in the category.
     applies_to: [opp_evidence.n_buying_peers]
     rule: whitespace
   - id: ev_peer_penetration
+    plain: "The share of similar customers that buy this category."
     kind: metric
     text: The share of the peers that buy the category (buying peers divided by peers).
     applies_to: [opp_evidence.peer_penetration]
     rule: whitespace
   - id: ev_peer_median_net_sales
+    plain: "What a typical similar customer spends on this category."
     kind: metric
     text: >-
       The median net sales in the category per buying peer; the gap of a whitespace opportunity,
@@ -743,16 +763,19 @@ evidence:
     applies_to: [opp_evidence.peer_median_net_sales]
     rule: whitespace
   - id: ev_support
+    plain: "How many customers buy both categories."
     kind: metric
     text: Customers who bought both category A and category B.
     applies_to: [opp_evidence.support]
     rule: crosssell
   - id: ev_confidence
+    plain: "Of the customers who buy the first category, the share that also buy the second."
     kind: metric
     text: The share of the buyers of A who also bought B.
     applies_to: [opp_evidence.confidence]
     rule: crosssell
   - id: ev_lift
+    plain: "How much more likely buyers of the first category are to buy the second than customers in general. Above 1 means the two really go together."
     kind: metric
     text: >-
       How much more often buyers of A buy B than customers in general (confidence divided by
@@ -760,6 +783,7 @@ evidence:
     applies_to: [opp_evidence.lift]
     rule: crosssell
   - id: ev_median_b_net_sales
+    plain: "What a typical customer who buys both spends on the second category."
     kind: metric
     text: >-
       The median net sales in B among customers who bought both A and B; the gap of a cross-sell
@@ -767,6 +791,7 @@ evidence:
     applies_to: [opp_evidence.median_b_net_sales]
     rule: crosssell
   - id: ev_value_low
+    plain: "The cautious end of the extra net sales this could bring, based on the customer's own sales history. It is an estimate, not a promise."
     kind: metric
     text: >-
       Estimate, not a measured outcome: the low end of the value range, value.low_factor times
@@ -774,6 +799,7 @@ evidence:
     applies_to: [opp_evidence.value_low]
     rule: value
   - id: ev_value_high
+    plain: "The optimistic end of the extra net sales this could bring, based on the customer's own sales history. It is an estimate, not a promise."
     kind: metric
     text: >-
       Estimate, not a measured outcome: the high end of the value range, value.high_factor times

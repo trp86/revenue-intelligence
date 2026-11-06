@@ -104,16 +104,18 @@ describe("AC3 the top bar", () => {
         <Metric metric={{ value: 1500, unit: "net sales", definition_id: "opp_value_low" }} label="value low" />,
       );
       await userEvent.click(screen.getByRole("button", { name: "Definition of value low" }));
-      expect(await screen.findByRole("tooltip")).toHaveTextContent(
-        "Net sales are taken from Net_Amount_2 (provisional).",
-      );
+      const tip = await screen.findByRole("tooltip");
+      expect(tip).toHaveTextContent("All money values use the same net sales figure.");
+      expect(tip).toHaveTextContent("Which sales figure to use is still to be confirmed.");
+      expect(tip).not.toHaveTextContent("Net_Amount_2"); // story #169: no column names
+
     });
 
   it("the definition of a value that is not net sales does not mention the field", async () => {
     mockApi({ "/health": HEALTH, "/definitions": DEFINITIONS });
     renderWithProviders(<Metric metric={{ value: 3, unit: "orders", definition_id: "x" }} label="orders" />);
     await userEvent.click(screen.getByRole("button", { name: "Definition of orders" }));
-    expect(await screen.findByRole("tooltip")).not.toHaveTextContent("Net_Amount_2");
+    expect(await screen.findByRole("tooltip")).not.toHaveTextContent("net sales figure");
   });
 
   it("warns when the data is not built", async () => {

@@ -217,6 +217,17 @@
             "title": "Kind",
             "type": "string"
           },
+          "plain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plain"
+          },
           "rule": {
             "anyOf": [
               {

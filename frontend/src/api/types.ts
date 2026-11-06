@@ -25,6 +25,8 @@ export interface Definition {
   group: "column" | "evidence";
   kind: string;
   text: string;
+  /** Plain wording for the screens (story #169); falls back to text. */
+  plain?: string | null;
   applies_to: string[];
   source: string | null;
   rule: string | null;

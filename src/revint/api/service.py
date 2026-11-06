@@ -130,6 +130,7 @@ def definitions() -> list[dict[str, Any]]:
                     "group": group,
                     "kind": item.kind,
                     "text": item.text,
+                    "plain": item.plain,
                     "applies_to": item.applies_to,
                     "source": item.source,
                     "rule": item.rule,

@@ -186,6 +186,8 @@ unavailable but evidence shown). Implemented via shared
   clips it (story #162).
   At most one definition is open at a time; a click outside or Escape closes it. Dense tables
   carry the definitions once in their column headers, not in every cell (story #173).
+  The popup shows the definition's `plain` text (config/definitions.yaml, story #169): at most
+  2 sentences in business words; the technical `text` stays for the data dictionary.
 
 - Blocks are labelled Measured fact / Estimate / AI suggestion with
   text + icon + token colour (never colour alone).

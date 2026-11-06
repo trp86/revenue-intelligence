@@ -122,3 +122,25 @@ describe("story #173 one popup at a time", () => {
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
   });
 });
+
+describe("story #169 plain-language definitions", () => {
+  it("AC3 shows the plain text and not the technical one", async () => {
+    mockApi({
+      "/definitions": { definitions: [{ id: "opp_score", group: "column", text: "Weighted sum of value_rank.",
+        plain: "How strongly we recommend acting." }] },
+      "/health": { status: "ready" },
+    });
+    renderWithProviders(<DefinitionButton definitionId="opp_score" label="score" />);
+    await userEvent.click(screen.getByRole("button", { name: "Definition of score" }));
+    const tip = await screen.findByRole("tooltip");
+    expect(tip).toHaveTextContent("How strongly we recommend acting.");
+    expect(tip).not.toHaveTextContent("value_rank");
+  });
+
+  it("AC3 falls back to the technical text when there is no plain one", async () => {
+    mockApi({ "/definitions": DEFINITIONS, "/health": { status: "ready" } });
+    renderWithProviders(<DefinitionButton definitionId="opp_value_high" label="value" />);
+    await userEvent.click(screen.getByRole("button", { name: "Definition of value" }));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Estimated value, high end of the range.");
+  });
+});

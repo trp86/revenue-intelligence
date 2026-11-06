@@ -137,7 +137,7 @@ test("walkthrough: Overview, a type, the Explorer preview, Detail and an AI brie
   await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText("Dormant customer:");
   await expect(page.getByRole("region", { name: "Measured fact" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Estimate" })).toBeVisible();
-  const ai = page.getByRole("region", { name: "AI suggestion" });
+  const ai = page.getByRole("region", { name: /Suggested next steps/ });
   await ai.getByRole("button", { name: "Generate brief" }).click();
   const confirm = page.getByRole("dialog", { name: "Generate an AI brief?" });
   await expect(confirm).toContainText("counts toward the daily limit");
@@ -156,7 +156,7 @@ for (const size of WIDTHS) {
     const screens = [
       { name: "overview", path: "/", ready: "Opportunities by type and priority" },
       { name: "explorer", path: `/opportunities?selected=${id}`, ready: "Preview" },
-      { name: "detail", path: `/opportunities/${id}`, ready: "AI suggestion" },
+      { name: "detail", path: `/opportunities/${id}`, ready: "Suggested next steps (AI-generated)" },
     ];
     for (const s of screens) {
       await page.goto(s.path);

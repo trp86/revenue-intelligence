@@ -5,6 +5,7 @@ Gemini only the evidence package.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from revint.ai import briefs, store
@@ -29,11 +30,47 @@ def _exists(settings: Settings, opp_id: str) -> None:
         raise NotFoundError(opp_id)
 
 
-def _body(output: store.Output, cached: bool) -> dict[str, Any]:
+def _real_customer(settings: Settings, opp_id: str) -> tuple[str, str] | None:
+    """The masked label of the opportunity's customer and its real "name · code", if known."""
+    with connect(settings) as con:
+        rows = con.execute(
+            "select o.customer_key, c.customer_name, c.customer_code from opp_opportunities o "
+            "left join dim_customer c on o.customer_key = c.customer_key where o.opp_id = ?",
+            [opp_id],
+        ).fetchall()
+    if not rows:
+        return None
+    key, name, code = rows[0]
+    real = " · ".join(part for part in (name, code) if part)
+    return (store.mask_label(settings, key), real) if real else None
+
+
+def _unmasked(value: Any, label: str, real: str) -> Any:
+    """Every string of the brief with the masked label (with or without "Customer") replaced."""
+    code = store.ENTITY_LABEL.search(label)
+    if code is None:
+        return value
+    pattern = re.compile(rf"\b(?:customer\s+)?{re.escape(code.group())}\b", re.IGNORECASE)
+    if isinstance(value, str):
+        return pattern.sub(real, value)
+    if isinstance(value, list):
+        return [_unmasked(item, label, real) for item in value]
+    if isinstance(value, dict):
+        return {key: _unmasked(item, label, real) for key, item in value.items()}
+    return value
+
+
+def _body(settings: Settings, output: store.Output, cached: bool) -> dict[str, Any]:
+    # Story #170: Gemini only ever saw the masked label, and the stored brief keeps it; the real
+    # customer is put back here, locally, on the way to the screen.
+    brief = output.response
+    customer = _real_customer(settings, output.opp_id)
+    if customer is not None:
+        brief = _unmasked(brief, *customer)
     return {
         "kind": "ai",
         "opp_id": output.opp_id,
-        "brief": output.response,
+        "brief": brief,
         "provenance": {
             "model": output.model,
             "prompt_version": output.prompt_version,
@@ -54,7 +91,7 @@ def latest_brief(settings: Settings, opp_id: str) -> dict[str, Any]:
         raise NotReadyError(str(exc)) from exc
     if output is None or output.validation_status != "valid":
         raise NoBriefError(opp_id)
-    return _body(output, cached=True)
+    return _body(settings, output, cached=True)
 
 
 def generate_brief(
@@ -72,7 +109,7 @@ def generate_brief(
         raise NotReadyError(str(exc)) from exc
     if result.output.validation_status != "valid":
         raise AiFailedError("the AI brief did not pass the checks; try again later")
-    return _body(result.output, result.cached)
+    return _body(settings, result.output, result.cached)
 
 
 __all__ = [

@@ -39,7 +39,9 @@ describe("AC4 the AI suggestion block", () => {
     expect(await screen.findByText("Win back a quiet customer")).toBeInTheDocument();
     expect(screen.getByText("Call the buyer")).toBeInTheDocument();
     expect(screen.getByText("The customer may have moved")).toBeInTheDocument();
-    const provenance = screen.getByText(/AI suggestion, not a measured fact/);
+    // story #170: folded into "About this suggestion"
+    expect(screen.getByText("About this suggestion").closest("details")).not.toHaveAttribute("open");
+    const provenance = screen.getByText(/Written by AI from the measured facts/);
     expect(provenance).toHaveTextContent("gemini-2.5-flash");
     expect(provenance).toHaveTextContent("system.v1+dormancy.v1@abc");
     expect(provenance).toHaveTextContent("2026-11-03 10:15");

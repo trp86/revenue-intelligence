@@ -43,7 +43,7 @@ describe("AC3 Detail", () => {
     const estimate = screen.getByRole("region", { name: /Estimate/ });
     expect(estimate).toHaveTextContent("1,000");
     expect(estimate).toHaveTextContent(/Based on 25% to 75% of /); // plain text since story #171
-    const ai = screen.getByRole("region", { name: /AI suggestion/ });
+    const ai = screen.getByRole("region", { name: /Suggested next steps/ });
     // story #138: the block loads the brief; with none it offers to generate one
     expect(await within(ai).findByRole("button", { name: "Generate brief" })).toBeInTheDocument();
   });

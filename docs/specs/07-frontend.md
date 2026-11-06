@@ -194,7 +194,10 @@ unavailable but evidence shown). Implemented via shared
 
 - Blocks are labelled Measured fact / Estimate / AI suggestion with
   text + icon + token colour (never colour alone).
-- AI block shows model, prompt version, time, review status.
+- The AI block is headed "Suggested next steps" (with a sparkle icon and the screen-reader text
+  "AI-generated"); model, prompt version, time and review status are folded into "About this
+  suggestion" (story #170). The brief names the real customer: the API swaps the masked label
+  back locally, after validation; Gemini and the stored brief only ever hold the label.
 - Data-quality badge where flags affect an entity.
 
 ## 7. Accessibility

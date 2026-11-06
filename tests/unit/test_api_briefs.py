@@ -10,6 +10,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import duckdb
 import pytest
 from fastapi.testclient import TestClient
 from silver_helpers import query
@@ -95,7 +96,7 @@ def test_ac1_the_latest_brief_with_its_provenance(work: Settings, fake: FakeClie
     assert body["kind"] == "ai" and body["brief"]["headline"] == ANSWER["headline"]
     provenance = body["provenance"]
     assert provenance["model"] == work.ai.model
-    assert provenance["prompt_version"].startswith("system.v1+")
+    assert provenance["prompt_version"].startswith("system.v")  # the newest system prompt
     assert provenance["validation_status"] == "valid" and provenance["review_status"] == "Draft"
     assert provenance["generated_at"]
 
@@ -175,3 +176,71 @@ def test_ac6_every_ac_has_a_test_in_this_module() -> None:
     text = Path(__file__).read_text(encoding="utf-8")
     for ac in (1, 2, 3, 5):
         assert f"def test_ac{ac}_" in text
+
+
+# Story #170: the brief names the real customer, only after Gemini and on the way out ------
+
+
+def _real_name(settings: Settings, opp: str) -> str:
+    name, code = query(
+        settings,
+        "select c.customer_name, c.customer_code from opp_opportunities o "
+        "join dim_customer c on o.customer_key = c.customer_key where o.opp_id = ?",
+        opp,
+    )[0]
+    return " · ".join(part for part in (name, code) if part)
+
+
+@pytest.fixture
+def labelled(monkeypatch: pytest.MonkeyPatch) -> FakeClient:
+    """A fake Gemini that names the customer by its masked label, as the prompt asks."""
+    answer = {
+        **ANSWER,
+        "headline": "Win back Customer C-0001",
+        "actions": [
+            {
+                "text": "Call C-0001 this week",
+                "suggested_owner_role": "Sales rep",
+                "evidence_ids": [],
+            }
+        ],
+    }
+    client = FakeClient(answer=json.dumps(answer))
+    monkeypatch.setattr(ai_briefs, "default_client", lambda: client)
+    return client
+
+
+def test_170_ac2_the_brief_shows_the_real_customer(work: Settings, labelled: FakeClient) -> None:
+    client = TestClient(create_app(work))
+    opp = first(work)
+    real = _real_name(work, opp)
+    for body in (
+        client.post(f"{API}/opportunities/{opp}/brief").json(),
+        client.get(f"{API}/opportunities/{opp}/brief").json(),
+    ):
+        assert body["brief"]["headline"] == f"Win back {real}"
+        assert body["brief"]["actions"][0]["text"] == f"Call {real} this week"
+
+
+def test_170_ac2_gemini_never_receives_the_name_or_code(
+    work: Settings, labelled: FakeClient
+) -> None:
+    opp = first(work)
+    TestClient(create_app(work)).post(f"{API}/opportunities/{opp}/brief")
+    name, code = _real_name(work, opp).split(" · ")
+    sent = json.dumps(labelled.calls, default=str)
+    assert name not in sent and code not in sent
+    assert "C-0001" in sent
+
+
+def test_170_ac2_the_stored_brief_stays_masked(work: Settings, labelled: FakeClient) -> None:
+    opp = first(work)
+    TestClient(create_app(work)).post(f"{API}/opportunities/{opp}/brief")
+    con = duckdb.connect(str(work.paths.app_db), read_only=True)
+    try:
+        stored = con.execute("select response_json from app_ai_outputs").fetchall()
+    finally:
+        con.close()
+    assert stored and all("C-0001" in row[0] for row in stored)
+    name = _real_name(work, opp).split(" · ")[0]
+    assert all(name not in row[0] for row in stored)

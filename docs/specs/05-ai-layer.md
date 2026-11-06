@@ -104,6 +104,10 @@ never overwrites, and only on explicit request.
 Measured fact (from `facts`), Estimate (value range), AI suggestion
 (everything from Gemini) are three visually and textually distinct
 blocks (spec 07).
+Since story #170 the AI block is headed "Suggested next steps" (marked AI-generated for screen
+readers), and its provenance is folded away. On the way to the screen only, the API replaces
+the masked label with the real customer name and code; Gemini never receives them and
+`app_ai_outputs` keeps the masked text.
 
 ## 10. Acceptance-level checks
 - [ ] Package for a fixture contains no raw rows, names or codes when masking on

@@ -49,11 +49,15 @@ function Brief({ data }: { data: BriefResponse }) {
           <ul className="mt-1 list-disc space-y-1 pl-5">{brief.risks.map((r) => <li key={r}>{r}</li>)}</ul>
         </div>
       )}
-      <p className="border-t border-border pt-3 text-xs text-muted">
-        AI suggestion, not a measured fact {"·"} confidence {brief.confidence_label} {"·"} model{" "}
-        {provenance.model} {"·"} prompt {provenance.prompt_version} {"·"} generated{" "}
-        {provenance.generated_at.replace("T", " ").slice(0, 16)} {"·"} {provenance.review_status}
-      </p>
+      {/* story #170: the provenance is kept (spec 05) but folded away, for the data team */}
+      <details className="border-t border-border pt-3 text-xs text-muted">
+        <summary className="cursor-pointer rounded-sm">About this suggestion</summary>
+        <p className="mt-2">
+          Written by AI from the measured facts above, not a measured fact {"·"} confidence{" "}
+          {brief.confidence_label} {"·"} model {provenance.model} {"·"} prompt {provenance.prompt_version}{" "}
+          {"·"} generated {provenance.generated_at.replace("T", " ").slice(0, 16)} {"·"} {provenance.review_status}
+        </p>
+      </details>
     </div>
   );
 }

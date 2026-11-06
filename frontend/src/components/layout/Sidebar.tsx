@@ -64,7 +64,7 @@ export function Sidebar() {
       <Brand />
       <NavLinks />
       <p className="mt-auto px-6 py-4 text-xs text-sidebar-muted">
-        Values are labelled Measured, Estimate or AI suggestion.
+        Measured facts, estimates and AI-suggested next steps are shown apart.
       </p>
     </aside>
   );

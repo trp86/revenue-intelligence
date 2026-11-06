@@ -188,6 +188,9 @@ unavailable but evidence shown). Implemented via shared
   carry the definitions once in their column headers, not in every cell (story #173).
   The popup shows the definition's `plain` text (config/definitions.yaml, story #169): at most
   2 sentences in business words; the technical `text` stays for the data dictionary.
+  The Estimate block explains the range in one plain sentence per opportunity type, from the
+  config factors (`low_factor`, `high_factor` in the API's estimate), e.g. "Based on 25% to 75% of
+  what this customer bought in the months before going quiet." (story #171).
 
 - Blocks are labelled Measured fact / Estimate / AI suggestion with
   text + icon + token colour (never colour alone).

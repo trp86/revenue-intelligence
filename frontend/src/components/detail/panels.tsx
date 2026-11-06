@@ -1,12 +1,13 @@
 // The Detail page blocks (story #150). Measured fact (blue), Estimate (teal) and AI suggestion
-// (purple) are separate cards, each with a heading, an icon and its token colour, so they are
+// (slate since story #171) are separate cards, each with a heading, an icon and its token colour, so they are
 // told apart by text and shape as well as colour.
 import { CheckCircle2, Scale, Sparkles, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-import type { OpportunityDetail } from "../../api/types";
+import type { OppType, OpportunityDetail } from "../../api/types";
 import { cn } from "../../lib/utils";
 import { factLabel } from "../../facts";
+import { estimateText } from "../../summaries";
 import { Metric } from "../Metric";
 import { Badge } from "../ui/badge";
 import { useMoneyUnit } from "../../money";
@@ -71,10 +72,10 @@ export function EvidencePanel({ facts }: { facts: OpportunityDetail["measured"] 
   );
 }
 
-export function EstimatePanel({ estimate }: { estimate: OpportunityDetail["estimate"] }) {
+export function EstimatePanel({ estimate, type }: { estimate: OpportunityDetail["estimate"]; type: OppType }) {
   const money = useMoneyUnit();
   return (
-    <Panel id="estimate-title" tone="estimate" icon={Scale} title="Estimate" kicker="Not a measured result">
+    <Panel id="estimate-title" tone="estimate" icon={Scale} title="Estimate">
       <p className="text-xs font-medium text-muted">Value range, {money}</p>
       <p className="mt-1 flex flex-wrap items-baseline gap-1 font-heading text-2xl font-bold text-text">
         <Metric metric={estimate.value_low} label="value low" hideUnit />
@@ -85,7 +86,7 @@ export function EstimatePanel({ estimate }: { estimate: OpportunityDetail["estim
         <span className="text-muted">Level</span>
         <Badge tone="opportunity">{estimate.value_level}</Badge>
       </p>
-      {estimate.method && <p className="mt-3 text-xs text-muted">{estimate.method}</p>}
+      <p className="mt-3 text-sm text-muted">{estimateText(type, estimate.low_factor, estimate.high_factor)}</p>
     </Panel>
   );
 }

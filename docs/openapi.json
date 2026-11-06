@@ -315,10 +315,18 @@
       },
       "Estimate": {
         "properties": {
+          "high_factor": {
+            "title": "High Factor",
+            "type": "number"
+          },
           "kind": {
             "const": "estimate",
             "title": "Kind",
             "type": "string"
+          },
+          "low_factor": {
+            "title": "Low Factor",
+            "type": "number"
           },
           "method": {
             "anyOf": [
@@ -347,7 +355,9 @@
           "value_low",
           "value_high",
           "value_level",
-          "method"
+          "method",
+          "low_factor",
+          "high_factor"
         ],
         "title": "Estimate",
         "type": "object"

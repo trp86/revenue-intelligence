@@ -302,6 +302,9 @@ def opportunity(settings: Settings, opp_id: str) -> dict[str, Any]:
             "value_high": item["value_high"],
             "value_level": item["value_level"],
             "method": method[0][0] if method else None,
+            # the range factors, so the screen can explain the estimate plainly (story #171)
+            "low_factor": settings.value.low_factor,
+            "high_factor": settings.value.high_factor,
         },
         "data_quality_notes": notes,
     }

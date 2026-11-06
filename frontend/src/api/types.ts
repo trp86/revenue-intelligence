@@ -93,6 +93,9 @@ export interface OpportunityDetail extends OpportunityItem {
     value_high: Metric;
     value_level: Level;
     method: string | null;
+    /** value.low_factor and value.high_factor from config (story #171). */
+    low_factor: number;
+    high_factor: number;
   };
   data_quality_notes: string[];
 }

@@ -77,10 +77,9 @@ describe("AC1 the token palette", () => {
 });
 
 describe("AC2 fonts and focus", () => {
-  it("bundles Inter and Plus Jakarta Sans locally, with no font CDN", () => {
+  it("bundles Inter locally, with no font CDN (one font since story #171)", () => {
     const main = readFileSync(join(__dirname, "..", "main.tsx"), "utf-8");
     expect(main).toContain("@fontsource/inter");
-    expect(main).toContain("@fontsource/plus-jakarta-sans");
     const html = readFileSync(join(__dirname, "..", "..", "index.html"), "utf-8");
     const css = readFileSync(join(__dirname, "..", "index.css"), "utf-8");
     expect(html + css).not.toMatch(/fonts\.googleapis|fonts\.gstatic/);

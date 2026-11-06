@@ -2,7 +2,7 @@
  * The ONLY file with colour values: src/test/tokens.test.ts fails on a hex, rgb or hsl colour
  * anywhere else, and src/test/contrast.test.ts checks the text pairs below against WCAG AA.
  * Light theme only. Roles: teal = opportunity (and the value estimate), blue = measured
- * evidence, purple = AI suggestion, amber = attention, red = risk. Colour is never the only
+ * evidence, slate = AI suggestion (story #171), amber = attention, red = risk. Colour is never the only
  * signal: every badge and block also has text and an icon. */
 :root {
   /* surfaces and text */
@@ -32,8 +32,9 @@
   --color-measured-bg: #eff6ff;
   --color-estimate: #0f766e;
   --color-estimate-bg: #e6f4f1;
-  --color-ai: #6d28d9;
-  --color-ai-bg: #f5f3ff;
+  /* AI suggestion: neutral slate, not purple (story #171) */
+  --color-ai: #334155;
+  --color-ai-bg: #f1f5f9;
 
   /* status */
   --color-success: #15803d;
@@ -84,6 +85,6 @@
 
   /* type */
   --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
-  --font-heading: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-heading: "Inter", "Segoe UI", system-ui, sans-serif; /* one Google font everywhere (story #171) */
   --font-mono: ui-monospace, "Cascadia Mono", monospace;
 }

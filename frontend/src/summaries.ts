@@ -42,3 +42,17 @@ export function summaryFor(
         : `Customers who buy a related category often add ${category ?? "this one"}.`;
   }
 }
+
+/** What the gap of each opportunity type is, in plain words (story #171). */
+const GAP: Record<OppType, string> = {
+  dormancy: "what this customer bought in the months before going quiet",
+  recovery: "how much this customer's sales fell compared with last year",
+  whitespace: "what a typical similar customer spends on this category",
+  crosssell: "what a typical customer who buys both spends on the second category",
+};
+
+/** The estimate in one plain sentence; the percentages are the config factors (story #171). */
+export function estimateText(type: OppType, low: number, high: number): string {
+  const pct = (f: number) => `${Math.round(f * 100)}%`;
+  return `Based on ${pct(low)} to ${pct(high)} of ${GAP[type]}.`;
+}

@@ -196,6 +196,8 @@ test("large KPI values fit their cards at every width (story #159)", async ({ pa
     await noViolations(page, `overview with large values at ${size.width} px`);
     await page.screenshot({ path: `test-results/overview-large-values-${size.width}.png` });
   }
+});
+
 test("the Value (estimate) definition opens fully on screen at 1440 px (story #162)", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/opportunities");

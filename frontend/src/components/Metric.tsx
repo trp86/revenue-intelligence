@@ -7,7 +7,7 @@ import { useId, useState } from "react";
 
 import { api } from "../api/client";
 import type { Metric as MetricValue } from "../api/types";
-import { formatValue, unitLabel } from "../format";
+import { formatKpi, formatValue, unitLabel } from "../format";
 import { useDefinition } from "./Definitions";
 
 /** Which source column net sales is taken from, for net sales values (story #161). */
@@ -74,13 +74,33 @@ interface Props {
   hideUnit?: boolean;
   /** Leave out the definition button when the column header carries it. */
   hideDefinition?: boolean;
+  /** Show values of 1 billion or more in compact form (4.49B), the full value in the title (#159). */
+  compact?: boolean;
 }
 
-export function Metric({ metric, label, className, hideUnit = false, hideDefinition = false }: Props) {
+const BILLION = 1_000_000_000;
+
+export function Metric({
+  metric,
+  label,
+  className,
+  hideUnit = false,
+  hideDefinition = false,
+  compact = false,
+}: Props) {
   const unit = unitLabel(metric.unit);
+  const full = formatValue(metric.value, metric.unit);
+  const short = compact && typeof metric.value === "number" && Math.abs(metric.value) >= BILLION;
   return (
-    <span className={`relative inline-flex items-baseline gap-1 ${className ?? ""}`}>
-      <span className="tabular-nums">{formatValue(metric.value, metric.unit)}</span>
+    <span data-metric className={`relative inline-flex items-baseline gap-1 ${className ?? ""}`}>
+      {short ? (
+        <>
+          <span className="tabular-nums" title={full} aria-hidden="true">{formatKpi(metric.value as number)}</span>
+          <span className="sr-only">({full})</span>
+        </>
+      ) : (
+        <span className="tabular-nums">{full}</span>
+      )}
       {unit && !hideUnit && <span className="text-xs text-muted">{unit}</span>}
       {!hideDefinition && (
         <DefinitionButton definitionId={metric.definition_id} label={label ?? metric.definition_id} unit={metric.unit} />

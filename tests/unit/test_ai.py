@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -179,7 +180,7 @@ def test_ac3_prompts_exist_for_every_engine_and_carry_a_version() -> None:
         "crosssell.v1.md",
     } <= names
     version = prompt_for("dormancy").version
-    assert version.startswith("system.v1+dormancy.v1@")
+    assert re.match(r"system\.v\d+\+dormancy\.v1@", version)  # the newest system prompt
     assert prompt_for("dormancy").version != prompt_for("recovery").version
 
 
@@ -194,7 +195,7 @@ def test_ac3_a_newer_prompt_file_gives_a_new_version(
     before = prompts.prompt_for("dormancy").version
     (tmp_path / "dormancy.v2.md").write_text("A new task text.\n", encoding="utf-8")
     after = prompts.prompt_for("dormancy").version
-    assert after.startswith("system.v1+dormancy.v2@") and after != before
+    assert re.match(r"system\.v\d+\+dormancy\.v2@", after) and after != before
 
 
 # AC4: guardrails ------
@@ -478,3 +479,57 @@ def test_ac8_every_ac_has_a_test_in_this_module() -> None:
 def test_ac8_the_store_is_only_app_db() -> None:
     source = Path(store.__file__).read_text(encoding="utf-8")
     assert "paths.app_db" in source and "paths.warehouse" not in source
+
+
+# Story #172: numbers in the brief look like the screens ------
+
+
+@pytest.mark.parametrize(
+    ("value", "unit", "shown"),
+    [
+        (47.0, "days", "47"),
+        (14.0, "days", "14"),
+        (3661650.0, "net sales", "3,661,650"),
+        (915412.5, "net sales", "915,413"),
+        (0.8503, "share", "85.03%"),
+        (85.03, "percent", "85.03%"),
+        (2.456, "ratio", "2.46"),
+        (12.5, "orders", "12.5"),
+        ("2020-01-13", "date", "2020-01-13"),
+    ],
+)
+def test_172_ac1_display_matches_the_screen_format(value: object, unit: str, shown: str) -> None:
+    from revint.ai.evidence import display_value
+
+    assert display_value(value, unit) == shown
+
+
+def test_172_ac1_the_package_carries_display_forms(work: Settings) -> None:
+    package = briefs.package_for(work, opp(work, "dormancy"))
+    assert all(f.display for f in package.facts)
+    assert package.estimate.value_high_display is not None
+    assert (
+        "." not in package.estimate.value_high_display or "%" in package.estimate.value_high_display
+    )
+
+
+def test_172_ac1_the_newest_prompt_asks_for_the_display_form() -> None:
+    prompt = prompt_for("dormancy")
+    assert prompt.version.startswith("system.v2+")
+    assert "display" in prompt.system
+
+
+def test_172_ac2_display_forms_pass_g2_and_inventions_still_fail(work: Settings) -> None:
+    package = briefs.package_for(work, opp(work, "dormancy"))
+    shown = " and ".join(f.display for f in package.facts if f.unit != "date")
+    brief = AiBrief.model_validate(
+        good_brief(
+            package, explanation=f"Facts: {shown}; up to {package.estimate.value_high_display}."
+        )
+    )
+    check(brief, package)
+    with pytest.raises(GuardrailError, match="G2"):
+        check(
+            AiBrief.model_validate(good_brief(package, explanation="It could add 7,777,777.")),
+            package,
+        )

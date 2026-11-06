@@ -196,4 +196,22 @@ test("large KPI values fit their cards at every width (story #159)", async ({ pa
     await noViolations(page, `overview with large values at ${size.width} px`);
     await page.screenshot({ path: `test-results/overview-large-values-${size.width}.png` });
   }
+test("the Value (estimate) definition opens fully on screen at 1440 px (story #162)", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/opportunities");
+  await page.getByRole("button", { name: "Definition of value (estimate)" }).click();
+  const tip = page.getByRole("tooltip");
+  await expect(tip).toBeVisible();
+  const box = (await tip.boundingBox())!;
+  expect(box.width).toBeGreaterThanOrEqual(240);
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(1440);
+  // nothing covers it: the topmost element at its centre is the panel itself
+  const onTop = await page.evaluate(([x, y]) => {
+    const el = document.elementFromPoint(x, y);
+    return !!el?.closest("[role=tooltip]");
+  }, [box.x + box.width / 2, box.y + box.height / 2]);
+  expect(onTop).toBe(true);
+  await noViolations(page, "explorer with the value definition open");
+  await page.screenshot({ path: "test-results/explorer-definition-1440.png" });
 });

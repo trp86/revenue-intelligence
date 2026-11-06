@@ -180,8 +180,11 @@ unavailable but evidence shown). Implemented via shared
 ## 6. Definitions and provenance
 - Every number renders through `<Metric>`; click/hover opens its
   definition from /definitions (`definition_id`).
-  On the Overview stat cards a value of 1 billion or more is shown in compact form (4.49B) on
-  one line with its unit; the full value is its title and is read by screen readers (story #159).
+
+  The definition panel is portalled into `<main>` with a fixed position, kept inside the
+  viewport and flipped above the button when there is no room below, so a scrolling table never
+  clips it (story #162).
+
 - Blocks are labelled Measured fact / Estimate / AI suggestion with
   text + icon + token colour (never colour alone).
 - AI block shows model, prompt version, time, review status.

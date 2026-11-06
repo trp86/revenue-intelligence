@@ -46,9 +46,10 @@ export const PRIORITY_COLOR: Record<Level, string> = {
   Low: "var(--color-priority-low)",
 };
 
-const PRIORITY: Record<Level, { icon: LucideIcon; tone: "danger" | "warn" | "neutral" }> = {
-  High: { icon: ArrowUp, tone: "danger" },
-  Medium: { icon: Minus, tone: "warn" },
+// priority pills are calm (story #174): one neutral pill, told apart by text, icon and a shade swatch
+const PRIORITY: Record<Level, { icon: LucideIcon; tone: "neutral" }> = {
+  High: { icon: ArrowUp, tone: "neutral" },
+  Medium: { icon: Minus, tone: "neutral" },
   Low: { icon: ArrowDown, tone: "neutral" },
 };
 
@@ -57,7 +58,10 @@ const CONFIDENCE: Record<Level, LucideIcon> = { High: SignalHigh, Medium: Signal
 export function TypeBadge({ type, short = false }: { type: OppType; short?: boolean }) {
   const Icon = TYPE_META[type].icon;
   return (
-    <Badge tone="opportunity" className="w-fit whitespace-nowrap" title={short ? TYPE_LABEL[type] : undefined}>
+    <Badge tone="neutral" className="w-fit whitespace-nowrap" title={short ? TYPE_LABEL[type] : undefined}>
+      {/* the type's colour, the same in every chart and tab (story #174); text stays in ink */}
+      <span data-type-dot aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full"
+        style={{ backgroundColor: TYPE_META[type].chart }} />
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {short ? TYPE_SHORT[type] : TYPE_LABEL[type]}
     </Badge>
@@ -67,7 +71,8 @@ export function TypeBadge({ type, short = false }: { type: OppType; short?: bool
 export function PriorityBadge({ level }: { level: Level }) {
   const { icon: Icon, tone } = PRIORITY[level];
   return (
-    <Badge tone={tone} data-level={level}>
+    <Badge tone={tone} data-level={level} className={level === "High" ? "font-semibold" : undefined}>
+      <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-sm" style={{ backgroundColor: PRIORITY_COLOR[level] }} />
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {level}
     </Badge>

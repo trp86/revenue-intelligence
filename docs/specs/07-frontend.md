@@ -83,6 +83,10 @@ actions) and `crumbs.tsx` (the trail per route; a page sets its last crumb with 
 does with "<Type>: <Customer>").
 
 ### Overview (story #148, epic #145)
+Since story #174: "Opportunities by type and priority" is a horizontal bar chart, largest
+first, with the count at the end of every bar and priority in three shades of one slate hue;
+"Value range by type (estimate)" draws a floating bar from the low to the high estimate,
+labelled "low to high". Each opportunity type keeps one colour on every screen.
 `screens/Overview.tsx`: four `StatCard`s (`components/display/`: an icon badge, a label, the number through
 `Metric`, and the estimates badged "Estimate"); two `ChartCard`s, each named by a one-line summary and with a
 "Show as table" alternative of the same numbers with links: opportunities by type and priority (a stacked bar)

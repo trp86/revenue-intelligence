@@ -43,19 +43,22 @@
   --color-warn-bg: #fffbeb;
   --color-danger: #b91c1c;
   --color-danger-bg: #fef2f2;
-  --color-priority-high: #b91c1c;
-  --color-priority-medium: #b45309;
-  --color-priority-low: #475569;
+  /* priority: one slate hue in three shades, darkest = High (story #174); red is for errors only */
+  --color-priority-high: #1e293b;
+  --color-priority-medium: #64748b;
+  --color-priority-low: #b6c2d2;
 
   /* focus */
   --color-focus: #2563eb;
   --color-focus-on-dark: #60a5fa;
 
-  /* charts: one per engine, each at least 3:1 on white; never the only signal */
-  --color-chart-1: #0f766e;
-  --color-chart-2: #2563eb;
-  --color-chart-3: #d97706;
-  --color-chart-4: #64748b;
+  /* one colour per opportunity type, everywhere (story #174): 1 cross-sell, 2 whitespace,
+     3 dormant, 4 recovery. Validated with the dataviz validator: CVD-safe (worst adjacent
+     protan dE 8.7), normal-vision dE >= 16, each >= 3:1 on white; never the only signal */
+  --color-chart-1: #2a78d6;
+  --color-chart-2: #c9531e;
+  --color-chart-3: #0f8a63;
+  --color-chart-4: #a06d00;
   --color-chart-grid: #e2e8f0;
 
   /* scrim behind dialogs and the sheet */

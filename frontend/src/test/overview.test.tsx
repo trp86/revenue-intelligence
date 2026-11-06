@@ -55,7 +55,7 @@ describe("AC2 charts with a table alternative", () => {
     await ready();
     expect(screen.getByRole("img", { name: /Dormant customer has the most opportunities \(3 of 5\); 2 are High priority/ }))
       .toBeInTheDocument();
-    expect(screen.getByRole("img", { name: new RegExp(`Category whitespace has the largest value estimate, up to ${formatCompact(27000)}`) }))
+    expect(screen.getByRole("img", { name: new RegExp(`Category whitespace has the largest value estimate: .+ to ${formatCompact(27000)}`) }))
       .toBeInTheDocument();
   });
 
@@ -77,7 +77,7 @@ describe("AC2 charts with a table alternative", () => {
 
   it("lists the value estimates in the value table, sorted by the high estimate", async () => {
     await ready();
-    const card = screen.getByRole("region", { name: "Value by type (high estimate)" });
+    const card = screen.getByRole("region", { name: "Value range by type (estimate)" });
     await userEvent.click(within(card).getByRole("button", { name: "Show as table" }));
     const rows = within(within(card).getByRole("table")).getAllByRole("row").slice(1);
     expect(rows.map((r) => r.textContent)).toEqual(["Category whitespace9,00027,000",

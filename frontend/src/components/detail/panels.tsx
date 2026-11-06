@@ -9,6 +9,7 @@ import { cn } from "../../lib/utils";
 import { factLabel } from "../../facts";
 import { Metric } from "../Metric";
 import { Badge } from "../ui/badge";
+import { useMoneyUnit } from "../../money";
 
 const TONES = {
   measured: { border: "border-measured", bg: "bg-measured-bg", text: "text-measured" },
@@ -71,9 +72,10 @@ export function EvidencePanel({ facts }: { facts: OpportunityDetail["measured"] 
 }
 
 export function EstimatePanel({ estimate }: { estimate: OpportunityDetail["estimate"] }) {
+  const money = useMoneyUnit();
   return (
     <Panel id="estimate-title" tone="estimate" icon={Scale} title="Estimate" kicker="Not a measured result">
-      <p className="text-xs font-medium text-muted">Value range, net sales</p>
+      <p className="text-xs font-medium text-muted">Value range, {money}</p>
       <p className="mt-1 flex flex-wrap items-baseline gap-1 font-heading text-2xl font-bold text-text">
         <Metric metric={estimate.value_low} label="value low" hideUnit />
         <span className="text-muted">to</span>

@@ -80,7 +80,7 @@ describe("AC3 the table", () => {
     const rows = within(screen.getByRole("table")).getAllByRole("row");
     expect(within(rows[0]).getAllByRole("columnheader").map((h) => h.textContent?.trim())).toEqual([
       "Rank", "Type", "Customer and category", "Priority", "Confidence", "Score",
-      "Value (estimate)", "Preview",
+      "Value (estimate, net sales)", "Preview",
     ]);
     // one definition per column in the header, instead of one per number
     expect(within(rows[0]).getByRole("button", { name: "Definition of score" })).toBeInTheDocument();

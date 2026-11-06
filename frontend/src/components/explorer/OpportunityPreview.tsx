@@ -12,8 +12,10 @@ import { Metric } from "../Metric";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
+import { useMoneyUnit } from "../../money";
 
 export function OpportunityPreview({ id }: { id: string | null }) {
+  const money = useMoneyUnit();
   const detail = useQuery({
     queryKey: ["opportunity", id],
     queryFn: () => api.opportunity(id!),
@@ -60,14 +62,14 @@ export function OpportunityPreview({ id }: { id: string | null }) {
           <h3 id="preview-what" className="mb-1 text-xs font-semibold uppercase tracking-wide text-measured">
             What happened
           </h3>
-          <p className="text-text">{summaryFor(item.type, item.measured, item.category)}</p>
+          <p className="text-text">{summaryFor(item.type, item.measured, item.category, money)}</p>
         </section>
         <section aria-labelledby="preview-why">
           <h3 id="preview-why" className="mb-2 text-xs font-semibold uppercase tracking-wide text-opportunity">
             Why it matters
           </h3>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
-            <dt className="text-muted">Value (estimate)</dt>
+            <dt className="text-muted">Value (estimate, {money})</dt>
             <dd className="text-right">
               <Metric metric={item.value_low} label="value low" hideUnit />
               {" – "}

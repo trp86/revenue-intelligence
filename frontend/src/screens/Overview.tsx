@@ -38,6 +38,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { formatCompact, formatValue } from "../format";
+import { useMoneyUnit } from "../money";
 
 const LEVELS: Level[] = ["High", "Medium", "Low"];
 
@@ -123,6 +124,7 @@ function ByTypeChart({ data }: { data: OverviewData }) {
 }
 
 function ValueChart({ data }: { data: OverviewData }) {
+  const money = useMoneyUnit();
   const navigate = useNavigate();
   const rows = [...data.by_type]
     .sort((a, b) => (b.value_high.value ?? 0) - (a.value_high.value ?? 0))
@@ -131,7 +133,7 @@ function ValueChart({ data }: { data: OverviewData }) {
       high: r.value_high.value ?? 0 }));
   const top = rows[0];
   const summary = top
-    ? `${top.label} has the largest value estimate, up to ${formatCompact(top.high)} net sales.`
+    ? `${top.label} has the largest value estimate, up to ${formatCompact(top.high)} ${money}.`
     : "No value estimate.";
   return (
     <ChartCard
@@ -145,7 +147,7 @@ function ValueChart({ data }: { data: OverviewData }) {
               tick={{ fontSize: 12, fill: "var(--color-text-muted)" }} tickLine={false} axisLine={false} />
             <YAxis type="category" dataKey="short" width={84}
               tick={{ fontSize: 12, fill: "var(--color-text-muted)" }} tickLine={false} axisLine={false} />
-            <Tooltip formatter={(v: number) => `${formatValue(v, "net sales")} net sales`}
+            <Tooltip formatter={(v: number) => `${formatValue(v, "net sales")} ${money}`}
               labelFormatter={(_l: string, p: { payload?: { label?: string } }[]) => p?.[0]?.payload?.label ?? _l}
               cursor={{ fill: "var(--color-surface-muted)" }} />
             <Bar dataKey="high" name="High estimate" cursor="pointer" radius={[0, 4, 4, 0]}
@@ -185,6 +187,7 @@ function ValueChart({ data }: { data: OverviewData }) {
 }
 
 function TopTable({ data }: { data: OverviewData }) {
+  const money = useMoneyUnit();
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-2">
@@ -208,7 +211,7 @@ function TopTable({ data }: { data: OverviewData }) {
               <TableHead scope="col">Category</TableHead>
               <TableHead scope="col">Priority</TableHead>
               <TableHead scope="col" className="text-right">Score</TableHead>
-              <TableHead scope="col" className="text-right">Value range, net sales (estimate)</TableHead>
+              <TableHead scope="col" className="text-right">Value range, {money} (estimate)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

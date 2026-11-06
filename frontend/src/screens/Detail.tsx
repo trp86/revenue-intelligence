@@ -17,8 +17,10 @@ import { Metric } from "../components/Metric";
 import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
 import { summaryFor } from "../summaries";
+import { useMoneyUnit } from "../money";
 
 function HeaderCard({ o }: { o: OpportunityDetail }) {
+  const money = useMoneyUnit();
   const where = [
     o.branch && { label: "Branch", value: o.branch },
     o.channel && { label: "Channel", value: o.channel },
@@ -57,7 +59,7 @@ function HeaderCard({ o }: { o: OpportunityDetail }) {
       </div>
       <div className="mt-4 rounded-md border-l-4 border-measured bg-measured-bg p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-measured">What happened</p>
-        <p className="mt-1 text-text">{summaryFor(o.type, o.measured, o.category)}</p>
+        <p className="mt-1 text-text">{summaryFor(o.type, o.measured, o.category, money)}</p>
       </div>
       {o.customer.f_multi_identity && (
         <p role="note" className="mt-3 flex items-start gap-2 rounded-md bg-warn-bg p-3 text-sm text-warn">

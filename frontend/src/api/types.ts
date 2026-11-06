@@ -14,6 +14,8 @@ export interface Health {
   as_of_date: string | null;
   net_sales_field: string;
   net_sales_provisional: boolean;
+  /** display.currency (story #160); null keeps the "net sales" label. */
+  currency?: string | null;
   built_at: string | null;
   message: string | null;
 }

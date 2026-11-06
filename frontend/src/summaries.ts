@@ -12,7 +12,12 @@ function fmt(facts: Fact[], name: string): string {
   return fact ? formatValue(fact.value, fact.unit) : "—";
 }
 
-export function summaryFor(type: OppType, facts: Fact[], category?: string | null): string {
+export function summaryFor(
+  type: OppType,
+  facts: Fact[],
+  category?: string | null,
+  money = "net sales", // the money unit, from useMoneyUnit (story #160)
+): string {
   const has = (...names: string[]) => names.every((n) => value(facts, n) !== null);
   switch (type) {
     case "dormancy":
@@ -23,7 +28,7 @@ export function summaryFor(type: OppType, facts: Fact[], category?: string | nul
     case "recovery":
       return has("decline_pct", "prior_net_sales", "current_net_sales")
         ? `Net sales fell ${fmt(facts, "decline_pct")} on the same months last year ` +
-          `(${fmt(facts, "prior_net_sales")} → ${fmt(facts, "current_net_sales")} net sales).`
+          `(${fmt(facts, "prior_net_sales")} → ${fmt(facts, "current_net_sales")} ${money}).`
         : "Net sales fell against the same months last year.";
     case "whitespace":
       return has("n_buying_peers", "n_peers")

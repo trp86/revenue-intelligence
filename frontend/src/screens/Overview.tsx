@@ -32,7 +32,7 @@ import {
   TYPE_SHORT,
   TypeBadge,
 } from "../components/labels";
-import { Metric } from "../components/Metric";
+import { DefinitionButton, Metric } from "../components/Metric";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -202,7 +202,7 @@ function TopTable({ data }: { data: OverviewData }) {
         </Button>
       </CardHeader>
       <CardContent>
-        <Table>
+        <Table aria-label={`Top ${data.top.length} opportunities`}>
           <TableHeader>
             <TableRow>
               <TableHead scope="col">#</TableHead>
@@ -210,8 +210,17 @@ function TopTable({ data }: { data: OverviewData }) {
               <TableHead scope="col">Customer</TableHead>
               <TableHead scope="col">Category</TableHead>
               <TableHead scope="col">Priority</TableHead>
-              <TableHead scope="col" className="text-right">Score</TableHead>
-              <TableHead scope="col" className="text-right">Value range, {money} (estimate)</TableHead>
+              <TableHead scope="col" className="text-right">
+                <span className="inline-flex items-center justify-end gap-1">
+                  Score <DefinitionButton definitionId="opp_score" label="score" />
+                </span>
+              </TableHead>
+              <TableHead scope="col" className="text-right">
+                <span className="inline-flex items-center justify-end gap-1">
+                  Value range, {money} (estimate)
+                  <DefinitionButton definitionId="opp_value_high" label="value range (estimate)" unit="net sales" />
+                </span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -227,11 +236,11 @@ function TopTable({ data }: { data: OverviewData }) {
                 </TableCell>
                 <TableCell className="text-muted">{item.category ?? "—"}</TableCell>
                 <TableCell><PriorityBadge level={item.priority} /></TableCell>
-                <TableCell className="text-right"><Metric metric={item.score} label="score" /></TableCell>
+                <TableCell className="text-right"><Metric metric={item.score} label="score" hideDefinition /></TableCell>
                 <TableCell className="whitespace-nowrap text-right">
-                  <Metric metric={item.value_low} label="value low" hideUnit />
+                  <Metric metric={item.value_low} label="value low" hideUnit hideDefinition />
                   <span className="text-muted"> – </span>
-                  <Metric metric={item.value_high} label="value high" hideUnit />
+                  <Metric metric={item.value_high} label="value high" hideUnit hideDefinition />
                 </TableCell>
               </TableRow>
             ))}

@@ -62,6 +62,8 @@ export const DETAIL: OpportunityDetail = {
     value_high: metric(3000, "net sales", "opp_value_high"),
     value_level: "High",
     method: "Estimate: 0.25 to 0.75 x the gap.",
+    low_factor: 0.25,
+    high_factor: 0.75,
   },
   data_quality_notes: ["The customer code may stand for more than one customer (f_multi_identity)."],
 };

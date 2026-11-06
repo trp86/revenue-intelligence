@@ -150,6 +150,8 @@ def test_ac5_detail_has_measured_facts_and_the_estimate(client: TestClient) -> N
     assert body["measured"] and all(f["kind"] == "measured" for f in body["measured"])
     assert body["estimate"]["kind"] == "estimate"
     assert body["estimate"]["method"].startswith("Estimate:")
+    # story #171: the range factors from config, for the plain explanation on the screen
+    assert (body["estimate"]["low_factor"], body["estimate"]["high_factor"]) == (0.25, 0.75)
     assert isinstance(body["data_quality_notes"], list)
     assert body["reason_codes"]
 

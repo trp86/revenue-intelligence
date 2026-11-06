@@ -109,7 +109,7 @@ export function Detail() {
             <HeaderCard o={o} />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
               <EvidencePanel facts={o.measured} />
-              <EstimatePanel estimate={o.estimate} />
+              <EstimatePanel estimate={o.estimate} type={o.type} />
             </div>
             <AiPanel>
               <AiBriefBlock oppId={o.opp_id} />

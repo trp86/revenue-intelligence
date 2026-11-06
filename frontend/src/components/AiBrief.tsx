@@ -105,7 +105,6 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
         </p>
       )}
       <Button
-        className="bg-ai"
         onClick={() => setConfirming(true)}
         disabled={generate.isPending}
         aria-busy={generate.isPending}

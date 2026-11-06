@@ -19,7 +19,7 @@ components map to these tokens. Light theme only.
 | Opportunity (primary action) | `--color-opportunity`, `--color-primary` | #0F766E (tint #E6F4F1) | 5.5:1 on white, 4.8:1 on the tint |
 | Estimate (the opportunity's value) | `--color-estimate` | teal, as the opportunity | – |
 | Measured evidence | `--color-measured` | #1D4ED8 (tint #EFF6FF) | 6.2:1 |
-| AI suggestion | `--color-ai` | #6D28D9 (tint #F5F3FF) | 6.5:1 |
+| AI suggestion | `--color-ai` | #334155 slate (tint #F1F5F9); no purple since story #171 | 10.4:1 |
 | Attention | `--color-warn` | #B45309 (tint #FFFBEB) | 4.8:1 |
 | Risk | `--color-danger` | #B91C1C (tint #FEF2F2) | 5.9:1 |
 | Focus ring | `--color-focus` / `--color-focus-on-dark` | #2563EB / #60A5FA | 5.2:1 on white / 6.7:1 on navy |
@@ -29,8 +29,10 @@ Colour is never the only signal: every badge, block and chart series also has te
 icon or a label.
 
 ## Type, space, shape, depth, motion
-- **Fonts:** Plus Jakarta Sans for headings, Inter for body text and numbers (`tabular` class:
-  tabular figures). Both are bundled with `@fontsource`; no font CDN.
+- **Font:** Inter, a Google font, for all text: headings, body and numbers (`tabular` class:
+  tabular figures), weights 400 to 700. It is bundled with `@fontsource/inter` (the Google Fonts
+  files, served by the app, so it works offline and behind the company proxy); no font CDN.
+  One font since story #171.
 - **Type scale:** 12 (captions) / 14 (table cells, labels) / 16 (body, line height 1.5) /
   20 (section titles) / 28 (page titles, KPI values). Weights 400, 500 and 600–700.
 - **Spacing:** 4, 8, 12, 16, 24 and 32 px (`--space-*`).

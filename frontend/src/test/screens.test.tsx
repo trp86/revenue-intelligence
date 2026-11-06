@@ -42,7 +42,7 @@ describe("AC3 Detail", () => {
     expect(within(measured).getByText("2019-11-21")).toBeInTheDocument();
     const estimate = screen.getByRole("region", { name: /Estimate/ });
     expect(estimate).toHaveTextContent("1,000");
-    expect(estimate).toHaveTextContent("Estimate: 0.25 to 0.75 x the gap.");
+    expect(estimate).toHaveTextContent(/Based on 25% to 75% of /); // plain text since story #171
     const ai = screen.getByRole("region", { name: /AI suggestion/ });
     // story #138: the block loads the brief; with none it offers to generate one
     expect(await within(ai).findByRole("button", { name: "Generate brief" })).toBeInTheDocument();

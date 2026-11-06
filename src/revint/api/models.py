@@ -120,6 +120,8 @@ class Estimate(BaseModel):
     value_high: Metric
     value_level: str
     method: str | None
+    low_factor: float
+    high_factor: float
 
 
 class BriefAction(BaseModel):

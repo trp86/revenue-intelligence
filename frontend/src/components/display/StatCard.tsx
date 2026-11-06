@@ -41,7 +41,7 @@ export function StatCard({
         </span>
       </div>
       <div className="font-heading text-2xl font-bold leading-none text-text md:text-[28px]">
-        <Metric metric={metric} label={label} />
+        <Metric metric={metric} label={label} compact className="whitespace-nowrap" />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
         <span>{note}</span>

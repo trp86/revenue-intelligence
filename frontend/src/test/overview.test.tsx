@@ -149,3 +149,38 @@ describe("AC5 loading, empty and error states", () => {
     expect(result.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
   });
 });
+
+describe("story #159 large KPI values fit their cards", () => {
+  const BIG = {
+    ...OVERVIEW,
+    kpis: {
+      ...OVERVIEW.kpis,
+      value_low: { value: 1498167302, unit: "net sales", definition_id: "opp_value_low" },
+      value_high: { value: 4494501907, unit: "net sales", definition_id: "opp_value_high" },
+    },
+  };
+
+  it("AC1 shows a value of 1 billion or more in compact form, on one line with its unit", async () => {
+    mockApi({ "/overview": BIG, "/definitions": DEFINITIONS });
+    page();
+    const value = await screen.findByText("4.49B");
+    const metric = value.closest("[data-metric]") as HTMLElement;
+    expect(metric).toHaveClass("whitespace-nowrap");
+    expect(within(metric).getByText("net sales")).toBeInTheDocument();
+    expect(screen.getByText("1.5B")).toBeInTheDocument();
+  });
+
+  it("AC2 the full value is in the title and read by screen readers", async () => {
+    mockApi({ "/overview": BIG, "/definitions": DEFINITIONS });
+    page();
+    const value = await screen.findByText("4.49B");
+    expect(value).toHaveAttribute("title", "4,494,501,907");
+    expect(screen.getByText("(4,494,501,907)")).toHaveClass("sr-only");
+  });
+
+  it("values below 1 billion keep their full form", async () => {
+    mockApi({ "/overview": OVERVIEW, "/definitions": DEFINITIONS });
+    page();
+    expect(await screen.findByText("45,000")).toBeInTheDocument();
+  });
+});

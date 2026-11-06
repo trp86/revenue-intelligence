@@ -170,6 +170,32 @@ for (const size of WIDTHS) {
   });
 }
 
+test("large KPI values fit their cards at every width (story #159)", async ({ page }) => {
+  // the synthetic warehouse is small, so the overview answer is patched with billion-sized values
+  await page.route("**/api/v1/overview", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.kpis.value_low.value = 1498167302;
+    body.kpis.value_high.value = 4494501907;
+    await route.fulfill({ response, json: body });
+  });
+  for (const size of WIDTHS) {
+    await page.setViewportSize(size);
+    await page.goto("/");
+    await expect(page.getByText("4.49B")).toBeVisible();
+    for (const name of ["Value, low estimate", "Value, high estimate"]) {
+      const card = page.locator("div", { has: page.getByText(name, { exact: true }) }).filter({ has: page.locator("[data-metric]") }).last();
+      const fits = await card.evaluate((el) => {
+        const metric = el.querySelector("[data-metric]") as HTMLElement;
+        const box = el.getBoundingClientRect();
+        const inner = metric.getBoundingClientRect();
+        return inner.right <= box.right && inner.height < 48; // one line, inside the card
+      });
+      expect(fits, `${name} at ${size.width} px`).toBe(true);
+    }
+    await noViolations(page, `overview with large values at ${size.width} px`);
+    await page.screenshot({ path: `test-results/overview-large-values-${size.width}.png` });
+  }
 test("the Value (estimate) definition opens fully on screen at 1440 px (story #162)", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/opportunities");

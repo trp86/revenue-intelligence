@@ -29,3 +29,10 @@ const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFra
 export function formatCompact(value: number | null | undefined): string {
   return value === null || value === undefined ? "—" : compact.format(value);
 }
+
+const kpi = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 });
+
+/** Short form for a large KPI value: 4.49B (story #159); the full value goes in the title. */
+export function formatKpi(value: number): string {
+  return kpi.format(value);
+}

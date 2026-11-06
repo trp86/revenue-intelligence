@@ -52,6 +52,8 @@ function explorer(type?: OppType, priority?: Level) {
   return `/opportunities${query ? `?${query}` : ""}`;
 }
 
+// story #174: horizontal bars, largest first, the count at the end of every bar so small types stay
+// readable; priority as shades of one hue with a 2 px surface gap between segments
 function ByTypeChart({ data }: { data: OverviewData }) {
   const navigate = useNavigate();
   const rows = [...data.by_type]
@@ -72,20 +74,30 @@ function ByTypeChart({ data }: { data: OverviewData }) {
       summary={summary}
       chart={
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} stroke="var(--color-chart-grid)" />
-            <XAxis dataKey="short" tick={{ fontSize: 12, fill: "var(--color-text-muted)" }}
-              tickLine={false} axisLine={false} interval={0} />
-            <YAxis tickFormatter={(v: number) => formatCompact(v)} width={48}
+          <BarChart data={rows} layout="vertical" barCategoryGap="28%"
+            margin={{ top: 4, right: 64, bottom: 0, left: 8 }}>
+            <CartesianGrid horizontal={false} stroke="var(--color-chart-grid)" />
+            <XAxis type="number" tickFormatter={(v: number) => formatCompact(v)}
               tick={{ fontSize: 12, fill: "var(--color-text-muted)" }} tickLine={false} axisLine={false} />
+            <YAxis type="category" dataKey="short" width={84} interval={0}
+              tick={{ fontSize: 12, fill: "var(--color-text)" }} tickLine={false} axisLine={false} />
             <Tooltip formatter={(v: number) => formatValue(v, "opportunities")}
               labelFormatter={(_l: string, p: { payload?: { label?: string } }[]) => p?.[0]?.payload?.label ?? _l}
               cursor={{ fill: "var(--color-surface-muted)" }} />
-            <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} />
-            {LEVELS.map((level) => (
+            <Legend iconType="square" wrapperStyle={{ fontSize: 12 }}
+              formatter={(value: string) => <span style={{ color: "var(--color-text)" }}>{value}</span>} />
+            {LEVELS.map((level, i) => (
               <Bar key={level} dataKey={level} name={`${level} priority`} stackId="priority"
-                fill={PRIORITY_COLOR[level]} cursor="pointer" isAnimationActive={false}
-                onClick={(entry: { type?: OppType }) => navigate(explorer(entry.type, level))} />
+                fill={PRIORITY_COLOR[level]} stroke="var(--color-surface)" strokeWidth={2}
+                radius={i === LEVELS.length - 1 ? [0, 4, 4, 0] : undefined}
+                cursor="pointer" isAnimationActive={false}
+                onClick={(entry: { type?: OppType }) => navigate(explorer(entry.type, level))}>
+                {i === LEVELS.length - 1 && (
+                  <LabelList dataKey="total" position="right"
+                    formatter={(v: number) => formatValue(v, "opportunities")}
+                    style={{ fontSize: 12, fontWeight: 600, fill: "var(--color-text)" }} />
+                )}
+              </Bar>
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -130,32 +142,50 @@ function ValueChart({ data }: { data: OverviewData }) {
     .sort((a, b) => (b.value_high.value ?? 0) - (a.value_high.value ?? 0))
     .map((r) => ({ type: r.type, label: TYPE_LABEL[r.type], short: SHORT[r.type],
       low: r.value_low.value ?? 0,
-      high: r.value_high.value ?? 0 }));
+      high: r.value_high.value ?? 0 }))
+    // a floating bar from the low to the high estimate (story #174)
+    .map((r) => ({ ...r, range: [r.low, r.high] as [number, number] }));
   const top = rows[0];
+  const range = (r: { low: number; high: number }) => `${formatCompact(r.low)} to ${formatCompact(r.high)}`;
   const summary = top
-    ? `${top.label} has the largest value estimate, up to ${formatCompact(top.high)} ${money}.`
+    ? `${top.label} has the largest value estimate: ${range(top)} ${money}.`
     : "No value estimate.";
   return (
     <ChartCard
-      title="Value by type (high estimate)"
+      title="Value range by type (estimate)"
       summary={summary}
       chart={
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rows} layout="vertical" margin={{ top: 8, right: 56, bottom: 0, left: 8 }}>
+          <BarChart data={rows} layout="vertical" barCategoryGap="28%"
+            margin={{ top: 4, right: 112, bottom: 0, left: 8 }}>
             <CartesianGrid horizontal={false} stroke="var(--color-chart-grid)" />
             <XAxis type="number" tickFormatter={(v: number) => formatCompact(v)}
               tick={{ fontSize: 12, fill: "var(--color-text-muted)" }} tickLine={false} axisLine={false} />
-            <YAxis type="category" dataKey="short" width={84}
-              tick={{ fontSize: 12, fill: "var(--color-text-muted)" }} tickLine={false} axisLine={false} />
-            <Tooltip formatter={(v: number) => `${formatValue(v, "net sales")} ${money}`}
+            <YAxis type="category" dataKey="short" width={84} interval={0}
+              tick={{ fontSize: 12, fill: "var(--color-text)" }} tickLine={false} axisLine={false} />
+            <Tooltip formatter={(v: number | [number, number]) =>
+                Array.isArray(v)
+                  ? `${formatValue(v[0], "net sales")} to ${formatValue(v[1], "net sales")} ${money}`
+                  : `${formatValue(v, "net sales")} ${money}`}
               labelFormatter={(_l: string, p: { payload?: { label?: string } }[]) => p?.[0]?.payload?.label ?? _l}
               cursor={{ fill: "var(--color-surface-muted)" }} />
-            <Bar dataKey="high" name="High estimate" cursor="pointer" radius={[0, 4, 4, 0]}
+            <Bar dataKey="range" name="Estimated value" cursor="pointer" radius={4}
               isAnimationActive={false}
               onClick={(entry: { type?: OppType }) => navigate(explorer(entry.type))}>
               {rows.map((r) => <Cell key={r.type} fill={TYPE_META[r.type].chart} />)}
-              <LabelList dataKey="high" position="right" formatter={(v: number) => formatCompact(v)}
-                style={{ fontSize: 12, fill: "var(--color-text)" }} />
+              {/* drawn by hand: the default label wraps to the bar's width */}
+              <LabelList dataKey="label"
+                content={(p: { x?: number | string; y?: number | string; width?: number | string;
+                  height?: number | string; index?: number }) => {
+                  const r = rows[p.index ?? 0];
+                  if (!r) return null;
+                  return (
+                    <text x={Number(p.x) + Number(p.width) + 6} y={Number(p.y) + Number(p.height) / 2}
+                      dominantBaseline="central" fontSize={12} fontWeight={600} fill="var(--color-text)">
+                      {range(r)}
+                    </text>
+                  );
+                }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>

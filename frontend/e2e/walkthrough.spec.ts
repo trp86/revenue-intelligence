@@ -161,6 +161,7 @@ for (const size of WIDTHS) {
     for (const s of screens) {
       await page.goto(s.path);
       await expect(page.getByRole("region", { name: s.ready })).toBeVisible();
+      if (s.name === "overview") await expect(page.locator(".recharts-bar-rectangle path").first()).toBeVisible();
       await page.waitForTimeout(300); // let fonts and layout settle before the contrast check
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow, `${s.name} at ${size.width} px scrolls sideways`).toBeLessThanOrEqual(0);
@@ -233,4 +234,28 @@ test("only one definition popup is open at a time; a click outside closes it (st
   await page.goto("/");
   const top = page.getByRole("table", { name: /^Top \d+ opportunities$/ });
   await expect(top.getByRole("button", { name: /^Definition of/ })).toHaveCount(2);
+});
+
+test("every bar in both Overview charts is drawn and carries its label (story #174)", async ({ page }) => {
+  for (const size of WIDTHS) {
+    await page.setViewportSize(size);
+    await page.goto("/");
+    for (const name of ["Opportunities by type and priority", "Value range by type (estimate)"]) {
+      const chart = page.getByRole("region", { name });
+      await expect(chart.locator(".recharts-bar-rectangle path").first(), `${name} at ${size.width} px`)
+        .toBeVisible();
+      await expect(chart.locator(".recharts-label-list text, .recharts-label-list > text")).toHaveCount(4);
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/");
+  for (const name of ["Opportunities by type and priority", "Value range by type (estimate)"]) {
+    const chart = page.getByRole("region", { name });
+    await expect(chart.locator(".recharts-yAxis .recharts-cartesian-axis-tick")).toHaveCount(4);
+    await expect(chart.locator(".recharts-label-list text, .recharts-label-list > text")).toHaveCount(4);
+  }
+  await expect(page.getByRole("region", { name: "Value range by type (estimate)" })
+    .locator(".recharts-label-list text").first()).toHaveText(/ to /);
+  await noViolations(page, "overview charts");
+  await page.screenshot({ path: "test-results/overview-charts-1440.png" });
 });

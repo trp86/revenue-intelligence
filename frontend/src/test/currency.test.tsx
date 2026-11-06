@@ -33,7 +33,7 @@ describe("AC1 money values show the configured currency", () => {
   it("the Overview chart summary names the currency", async () => {
     mockApi({ "/overview": OVERVIEW, "/health": health("MMK"), "/definitions": DEFINITIONS });
     renderWithProviders(<Overview />);
-    expect(await screen.findByText(/has the largest value estimate, up to .* MMK\./)).toBeInTheDocument();
+    expect(await screen.findByText(/has the largest value estimate: .+ to .+ MMK\./)).toBeInTheDocument();
   });
 
   it("the 'what happened' line uses the currency", () => {

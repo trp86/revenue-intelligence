@@ -23,7 +23,8 @@ components map to these tokens. Light theme only.
 | Attention | `--color-warn` | #B45309 (tint #FFFBEB) | 4.8:1 |
 | Risk | `--color-danger` | #B91C1C (tint #FEF2F2) | 5.9:1 |
 | Focus ring | `--color-focus` / `--color-focus-on-dark` | #2563EB / #60A5FA | 5.2:1 on white / 6.7:1 on navy |
-| Chart series (one per engine) | `--color-chart-1` to `--color-chart-4` | #0F766E, #2563EB, #D97706, #64748B | each 3:1 or more on white |
+| Opportunity type (one colour each, everywhere: pills, tabs, charts) | `--color-chart-1` cross-sell, `-2` whitespace, `-3` dormant, `-4` recovery | #2A78D6, #C9531E, #0F8A63, #A06D00 | each 3:1 or more on white; validated CVD-safe (story #174) |
+| Priority (one hue, three shades) | `--color-priority-high` / `-medium` / `-low` | #1E293B, #64748B, #B6C2D2 | with an arrow icon and the word; red is for errors and risks only (story #174) |
 
 Colour is never the only signal: every badge, block and chart series also has text and a Lucide
 icon or a label.

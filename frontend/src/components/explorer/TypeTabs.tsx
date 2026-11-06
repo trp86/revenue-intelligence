@@ -24,6 +24,11 @@ export function TypeTabs({ value, onChange }: { value?: OppType; onChange: (t?: 
                 : "border-border bg-surface text-text hover:border-border-strong",
             )}
           >
+            {type && (
+              // the type's colour, as in the charts and pills (story #174)
+              <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full ring-1 ring-surface"
+                style={{ backgroundColor: TYPE_META[type].chart }} />
+            )}
             {Icon && <Icon className="h-4 w-4" aria-hidden="true" />}
             {type ? TYPE_LABEL[type] : "All types"}
           </button>

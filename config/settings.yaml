@@ -283,3 +283,7 @@ ai:
 
 asof:
   date: 2020-02-29                       # as-of date of the data
+
+# How values are labelled on the screens (story #160). Not used in SQL.
+display:
+  currency: MMK                          # provisional: Myanmar kyat, inferred from the branches; confirm with the client. Empty = "net sales"

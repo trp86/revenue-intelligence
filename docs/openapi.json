@@ -425,6 +425,17 @@
             ],
             "title": "Built At"
           },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
           "message": {
             "anyOf": [
               {

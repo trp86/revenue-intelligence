@@ -99,6 +99,7 @@ def health(settings: Settings) -> dict[str, Any]:
         "as_of_date": None,
         "net_sales_field": settings.net_sales.field,
         "net_sales_provisional": True,
+        "currency": settings.display.currency or None,
         "built_at": None,
         "message": None,
     }

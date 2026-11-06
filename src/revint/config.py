@@ -634,6 +634,17 @@ class ReconSettings(_Section):
     )
 
 
+class DisplaySettings(_Section):
+    """How values are labelled on the screens (story #160); never used in SQL."""
+
+    currency: str = Field(
+        default="",
+        pattern=r"^([A-Z]{3})?$",
+        description="ISO 4217 code shown as the unit of money values (for example MMK); empty "
+        "keeps the generic 'net sales' label. No conversion is done.",
+    )
+
+
 class Settings(_Section):
     """Top-level settings. Each field is a section and needs a test module
     tests/unit/test_settings_<section>.py."""
@@ -661,6 +672,7 @@ class Settings(_Section):
     opportunities: OpportunitiesSettings = Field(default_factory=OpportunitiesSettings)
     api: ApiSettings = Field(default_factory=ApiSettings)
     ai: AiSettings = Field(default_factory=AiSettings)
+    display: DisplaySettings = Field(default_factory=DisplaySettings)
     asof: AsofSettings
 
     @model_validator(mode="after")

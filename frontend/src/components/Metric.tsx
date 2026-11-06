@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { api } from "../api/client";
 import type { Metric as MetricValue } from "../api/types";
 import { formatKpi, formatValue, unitLabel } from "../format";
+import { NET_SALES, useMoneyUnit } from "../money";
 import { useDefinition } from "./Definitions";
 
 /** Which source column net sales is taken from, for net sales values (story #161). */
@@ -125,7 +126,8 @@ export function Metric({
   hideDefinition = false,
   compact = false,
 }: Props) {
-  const unit = unitLabel(metric.unit);
+  const money = useMoneyUnit();
+  const unit = metric.unit === NET_SALES ? money : unitLabel(metric.unit);
   const full = formatValue(metric.value, metric.unit);
   const short = compact && typeof metric.value === "number" && Math.abs(metric.value) >= BILLION;
   return (

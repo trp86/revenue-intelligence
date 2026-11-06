@@ -123,3 +123,9 @@ in 3 days.
   POC deadline").
 The dropped work can come back later as new stories; the engines already take any as-of
 date, so a backtest needs no engine change.
+
+## 12. Currency label (2026-11-06, story #160)
+- Money values show the currency code from `display.currency` in config/settings.yaml, set
+  to **MMK** (Myanmar kyat). **Provisional:** the data and the docs do not state the currency;
+  MMK is inferred from the branches (Yangon, Magway, Pyay). To be confirmed with the client.
+- Label only: no conversion. An empty `display.currency` keeps the generic "net sales" label.

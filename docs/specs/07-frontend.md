@@ -212,7 +212,7 @@ unavailable but evidence shown). Implemented via shared
 | `VITE_API_BASE` (env) | `http://localhost:8000/api/v1` |
 | Top N on Overview | 10 |
 | Table page size | 25 |
-| Currency symbol / locale | [x] |
+| Currency symbol / locale | `display.currency` (MMK, provisional); en-US numbers |
 
 ## 10. Edge cases
 - Very long customer names truncated with tooltip.
@@ -233,8 +233,8 @@ unavailable but evidence shown). Implemented via shared
 Spec 06 (API). Hosts 08 screens and 09 controls.
 
 ## 13. OPEN QUESTIONS
-- OPEN QUESTION: Currency and locale. Default: show unit as configured
-  `display.currency` = [x]; no conversion. Why: currency not stated in docs.
+- DECIDED (provisionally) in story #160, docs/decisions.md section 12: money values show
+  `display.currency` (MMK, to be confirmed by the client) as their unit; no conversion; locale en-US.
 - OPEN QUESTION: Branding/theme of the client. Default: neutral theme. Why: none supplied.
 - OPEN QUESTION: Chart library, Recharts or ECharts? Default: Recharts. Why: simpler for POC chart set.
 - OPEN QUESTION: Are the Action tracker and Data and Definitions screens in the POC? Default: Definitions yes (cheap, supports explainability), Tracker via Detail page only until E9.

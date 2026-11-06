@@ -64,6 +64,7 @@ def test_ac1_health_is_ready_with_the_build_info(client: TestClient) -> None:
     assert body["as_of_date"] == "2020-02-29"
     assert body["net_sales_field"] == "Net_Amount_2"
     assert body["net_sales_provisional"] is True
+    assert body["currency"] == "MMK"  # story #160, from display.currency
 
 
 def test_ac1_health_is_not_ready_without_a_warehouse(tmp_path: Path) -> None:

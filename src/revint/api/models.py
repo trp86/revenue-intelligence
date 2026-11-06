@@ -32,6 +32,7 @@ class HealthResponse(BaseModel):
     as_of_date: date | None
     net_sales_field: str
     net_sales_provisional: bool
+    currency: str | None = None
     built_at: datetime | None
     message: str | None
 

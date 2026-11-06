@@ -26,6 +26,7 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { cn } from "../lib/utils";
+import { useMoneyUnit } from "../money";
 
 const LEVELS: Level[] = ["High", "Medium", "Low"];
 const SORTS: { value: NonNullable<OpportunityFilters["sort"]>; label: string }[] = [
@@ -37,6 +38,7 @@ const PAGE_SIZE = 25;
 const FILTER_KEYS = ["type", "priority", "confidence", "branch"] as const;
 
 export function Opportunities() {
+  const money = useMoneyUnit();
   const [params, setParams] = useSearchParams();
   const sort = (params.get("sort") as OpportunityFilters["sort"]) || "rank";
   const filters: OpportunityFilters = {
@@ -133,7 +135,7 @@ export function Opportunities() {
                         </TableHead>
                         <TableHead scope="col" aria-sort={sortedBy("value_high")} className="text-right">
                           <span className="inline-flex items-center gap-1">
-                            Value (estimate)
+                            Value (estimate, {money})
                             <DefinitionButton definitionId="opp_value_high" label="value (estimate)" unit="net sales" />
                           </span>
                         </TableHead>

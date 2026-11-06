@@ -77,6 +77,9 @@ class Definition(BaseModel):
     id: str
     kind: str
     text: str = Field(min_length=1)
+    # story #169: the screens show this plain business wording when present; text stays the
+    # data dictionary definition
+    plain: str | None = Field(default=None, min_length=1)
     applies_to: list[str] = Field(min_length=1)
     source: str | None = None
     rule: str | None = None

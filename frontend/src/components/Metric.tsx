@@ -16,10 +16,11 @@ import { useDefinition } from "./Definitions";
 function NetSalesSource() {
   const health = useQuery({ queryKey: ["health"], queryFn: api.health });
   if (!health.data?.net_sales_field) return null;
+  // plain wording (story #169): the source column is recorded in docs/decisions.md, not shown here
   return (
     <span className="mt-1 block text-muted">
-      Net sales are taken from {health.data.net_sales_field}
-      {health.data.net_sales_provisional ? " (provisional)" : ""}.
+      All money values use the same net sales figure.
+      {health.data.net_sales_provisional ? " Which sales figure to use is still to be confirmed." : ""}
     </span>
   );
 }
@@ -94,7 +95,7 @@ export function DefinitionButton({
             style={position}
             className="fixed z-dialog block rounded border border-border bg-surface p-2 text-left text-xs font-normal normal-case tracking-normal text-text shadow-md"
           >
-            {definition?.text ?? "No definition found."}
+            {definition?.plain ?? definition?.text ?? "No definition found."}
             {unit === "net sales" && <NetSalesSource />}
           </span>,
           // inside <main> so it stays in a landmark; fixed, so no scroll container clips it

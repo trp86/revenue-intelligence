@@ -42,6 +42,7 @@ class Definition(BaseModel):
     group: Literal["column", "evidence"]
     kind: str
     text: str
+    plain: str | None = None
     applies_to: list[str]
     source: str | None
     rule: str | None

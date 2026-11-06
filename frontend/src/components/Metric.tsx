@@ -3,7 +3,7 @@
 // definition can sit once in the column header instead (DefinitionButton, story #149).
 import { useQuery } from "@tanstack/react-query";
 import { Info } from "lucide-react";
-import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
 import { api } from "../api/client";
@@ -41,7 +41,20 @@ export function placePanel(rect: Pick<DOMRect, "left" | "top" | "bottom">): CSSP
   return { left, width, ...vertical };
 }
 
-/** The info button that opens a definition, closed again by Escape or a second press. */
+// At most one definition is open at a time in the whole app (story #173): opening one closes the
+// others. A tiny shared store holds the id of the open panel.
+let openPanel: string | null = null;
+const listeners = new Set<() => void>();
+function setOpenPanel(id: string | null) {
+  openPanel = id;
+  for (const listener of listeners) listener();
+}
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** The info button that opens a definition, closed by Escape, a second press or a click outside. */
 export function DefinitionButton({
   definitionId,
   label,
@@ -52,11 +65,31 @@ export function DefinitionButton({
   /** The value's unit; a net sales value also names the source field. */
   unit?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const panel = useId();
+  const open = useSyncExternalStore(subscribe, () => openPanel === panel, () => false);
+  const setOpen = (next: boolean | ((was: boolean) => boolean)) => {
+    const value = typeof next === "function" ? next(openPanel === panel) : next;
+    if (value) setOpenPanel(panel);
+    else if (openPanel === panel) setOpenPanel(null);
+  };
   const [position, setPosition] = useState<CSSProperties>({});
   const button = useRef<HTMLButtonElement>(null);
   const definition = useDefinition(definitionId);
-  const panel = useId();
+  // a click or tap outside the button and the panel closes it
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (button.current?.contains(target) || document.getElementById(panel)?.contains(target)) return;
+      if (openPanel === panel) setOpenPanel(null);
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [open, panel]);
+  // a panel that unmounts while open does not keep the store pointing at it
+  useEffect(() => () => {
+    if (openPanel === panel) setOpenPanel(null);
+  }, [panel]);
   // The panel is portalled to <body> with a fixed position, so a scrolling table cannot clip it
   // (story #162); it follows the button on scroll and resize while open.
   useLayoutEffect(() => {

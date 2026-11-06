@@ -184,3 +184,16 @@ describe("story #159 large KPI values fit their cards", () => {
     expect(await screen.findByText("45,000")).toBeInTheDocument();
   });
 });
+
+describe("story #173 the top-10 table puts definitions in the headers", () => {
+  it("AC3 score and value definitions appear once, in the column headers", async () => {
+    mockApi({ "/overview": OVERVIEW, "/definitions": DEFINITIONS });
+    page();
+    const table = await screen.findByRole("table", { name: /Top/ });
+    const headers = within(table).getAllByRole("columnheader");
+    expect(within(table).getAllByRole("button", { name: /^Definition of/ })).toHaveLength(2);
+    expect(headers.some((h) => within(h).queryByRole("button", { name: "Definition of score" }))).toBe(true);
+    expect(headers.some((h) => within(h).queryByRole("button", { name: "Definition of value range (estimate)" })))
+      .toBe(true);
+  });
+});

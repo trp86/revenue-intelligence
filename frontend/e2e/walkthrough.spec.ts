@@ -217,3 +217,20 @@ test("the Value (estimate) definition opens fully on screen at 1440 px (story #1
   await noViolations(page, "explorer with the value definition open");
   await page.screenshot({ path: "test-results/explorer-definition-1440.png" });
 });
+
+test("only one definition popup is open at a time; a click outside closes it (story #173)", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const id = await firstOpportunityId(page);
+  await page.goto(`/opportunities/${id}`);
+  const measured = page.getByRole("region", { name: "Measured fact" });
+  const buttons = measured.getByRole("button", { name: /^Definition of/ });
+  await buttons.nth(0).click();
+  await buttons.nth(1).click();
+  await expect(page.getByRole("tooltip")).toHaveCount(1);
+  await noViolations(page, "detail with one definition open");
+  await page.getByRole("heading", { level: 1 }).click();
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await page.goto("/");
+  const top = page.getByRole("table", { name: /^Top \d+ opportunities$/ });
+  await expect(top.getByRole("button", { name: /^Definition of/ })).toHaveCount(2);
+});

@@ -86,6 +86,43 @@ describe("AC3 keyboard behaviour is unchanged", () => {
   });
 });
 
+describe("story #173 one popup at a time", () => {
+  function two() {
+    mockApi({ "/definitions": DEFINITIONS, "/health": { status: "ready" } });
+    return renderWithProviders(
+      <div>
+        <DefinitionButton definitionId="opp_value_high" label="first" />
+        <DefinitionButton definitionId="opp_value_high" label="second" />
+        <p>outside</p>
+      </div>,
+    );
+  }
+
+  it("AC1 opening a second popup closes the first", async () => {
+    two();
+    await userEvent.click(screen.getByRole("button", { name: "Definition of first" }));
+    await userEvent.click(screen.getByRole("button", { name: "Definition of second" }));
+    expect(await screen.findAllByRole("tooltip")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Definition of first" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Definition of second" })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("AC2 a click outside closes it", async () => {
+    two();
+    await userEvent.click(screen.getByRole("button", { name: "Definition of first" }));
+    expect(await screen.findByRole("tooltip")).toBeInTheDocument();
+    await userEvent.click(screen.getByText("outside"));
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("AC2 a click inside the popup keeps it open", async () => {
+    two();
+    await userEvent.click(screen.getByRole("button", { name: "Definition of first" }));
+    await userEvent.click(await screen.findByRole("tooltip"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  });
+});
+
 describe("story #169 plain-language definitions", () => {
   it("AC3 shows the plain text and not the technical one", async () => {
     mockApi({

@@ -138,3 +138,10 @@ date, so a backtest needs no engine change.
   wording of stories #150 and #183). The limit still applies and its error message says so
   when it is reached. The privacy rule is unchanged: only the masked evidence package is sent.
 
+## 14. No AI provenance on screen (2026-11-08, story #189)
+- The suggestion block no longer shows the model, prompt version, generation time, review
+  status or AI confidence, not even folded away. Decided by the maintainer in manual testing:
+  it is technical and distracts sales managers.
+- The provenance is still stored with every attempt in `app_ai_outputs` (spec 05 section 7)
+  and returned by the brief API, so it can be audited. Only the screen stops showing it.
+

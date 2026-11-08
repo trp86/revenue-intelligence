@@ -45,7 +45,6 @@ describe("story #185 simple dialogs", () => {
     api(true);
     renderWithProviders(<AiBriefBlock oppId="opp-1" />);
     await screen.findByText("Win back the customer");
-    await userEvent.click(screen.getByText("About this suggestion"));
     await userEvent.click(screen.getByRole("button", { name: "Refresh suggestions" }));
     const dialog = await screen.findByRole("dialog", { name: "Refresh suggestions?" });
     expect(dialog).toHaveTextContent(

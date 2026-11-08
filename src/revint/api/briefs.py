@@ -95,14 +95,18 @@ def latest_brief(settings: Settings, opp_id: str) -> dict[str, Any]:
 
 
 def generate_brief(
-    settings: Settings, opp_id: str, client: BriefClient | None = None
+    settings: Settings,
+    opp_id: str,
+    client: BriefClient | None = None,
+    regenerate: bool = False,
 ) -> dict[str, Any]:
-    """Generate the brief, or return the cached one."""
+    """Generate the brief, or return the cached one; `regenerate` skips the cache (story #181).
+    A new attempt always adds a row, so the previous brief is kept."""
     _exists(settings, opp_id)
     if not settings.ai.enabled:
         raise AiDisabledError("AI briefs are turned off")
     try:
-        result = briefs.generate(settings, opp_id, client)
+        result = briefs.generate(settings, opp_id, client, force=regenerate)
     except briefs.AiDisabledError as exc:
         raise AiDisabledError(str(exc)) from exc
     except (PackageError, store.StoreError) as exc:

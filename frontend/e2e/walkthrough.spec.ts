@@ -146,6 +146,14 @@ test("walkthrough: Overview, a type, the Explorer preview, Detail and an AI brie
   await expect(page.getByText("AI brief generated")).toBeVisible();
   await expect(ai.getByText("Win back this customer")).toBeVisible();
   await noViolations(page, "detail with brief");
+  // story #181: regenerate once from "About this suggestion"
+  await ai.getByText("About this suggestion").click();
+  await ai.getByRole("button", { name: "Regenerate" }).click();
+  const again = page.getByRole("dialog", { name: "Regenerate the AI suggestion?" });
+  await noViolations(page, "regenerate dialog");
+  await again.getByRole("button", { name: "Regenerate" }).click();
+  await expect(page.getByText("New AI suggestion generated")).toBeVisible();
+  await expect(ai.getByText("Win back this customer")).toBeVisible();
   await page.screenshot({ path: "test-results/walkthrough-brief-1440.png", fullPage: true });
 });
 

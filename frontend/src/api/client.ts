@@ -54,6 +54,8 @@ export const api = {
     get<OpportunitiesPage>("/opportunities", { ...filters }),
   opportunity: (id: string) => get<OpportunityDetail>(`/opportunities/${encodeURIComponent(id)}`),
   brief: (id: string) => get<BriefResponse>(`/opportunities/${encodeURIComponent(id)}/brief`),
-  generateBrief: (id: string) =>
-    get<BriefResponse>(`/opportunities/${encodeURIComponent(id)}/brief`, undefined, "POST"),
+  /** `regenerate` skips the cache and always calls Gemini (story #181). */
+  generateBrief: (id: string, regenerate = false) =>
+    get<BriefResponse>(`/opportunities/${encodeURIComponent(id)}/brief`,
+      regenerate ? { regenerate: "true" } : undefined, "POST"),
 };

@@ -202,6 +202,9 @@ unavailable but evidence shown). Implemented via shared
   "AI-generated"); model, prompt version, time and review status are folded into "About this
   suggestion" (story #170). The brief names the real customer: the API swaps the masked label
   back locally, after validation; Gemini and the stored brief only ever hold the label.
+  "About this suggestion" has a Regenerate button (story #181): it asks for confirmation, then
+  calls `POST .../brief?regenerate=true`, which skips the cache; the previous brief stays in
+  `app_ai_outputs`, and a failure keeps it on screen.
 - Data-quality badge where flags affect an entity.
 
 ## 7. Accessibility

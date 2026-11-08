@@ -98,6 +98,11 @@ and the definition button use Lucide icons. `components/display/` is not named `
 `.gitignore` ignores every `data/` folder (it keeps client data out of git).
 
 ### Opportunity Explorer (story #149, epic #145)
+Since story #187 the Explorer list uses the full screen width (other pages keep a reading width
+of max-w-7xl); the preview sits beside the table from 1536 px and below it on narrower screens;
+Confidence shows from 1280 px; a value range of a million or more is compact ("9.17M - 27.52M")
+with the full numbers on hover and for screen readers. The table never scrolls sideways at
+1280 px and wider.
 `screens/Opportunities.tsx` is the main working screen. `components/explorer/` holds:
 - `TypeTabs`: toggle buttons with `aria-pressed`;
 - `FilterBar`: labelled native selects for priority, confidence and sort, and a branch search applied on Enter

@@ -11,6 +11,8 @@ import { TopBar } from "./TopBar";
 function MainRegion({ children }: { children: ReactNode }) {
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
+  // the Explorer list is a wide working table, so it uses the full width (story #187)
+  const wide = pathname === "/opportunities";
   // the previous path, not a "first render" flag: StrictMode runs effects twice in development,
   // which would otherwise move focus past the skip link on the first page load (story #151)
   const previous = useRef(pathname);
@@ -20,7 +22,7 @@ function MainRegion({ children }: { children: ReactNode }) {
     main.current?.focus();
   }, [pathname]);
   return (
-    <main id="main" ref={main} tabIndex={-1} className="mx-auto w-full max-w-7xl px-4 py-6 outline-none md:px-6 md:py-8">
+    <main id="main" ref={main} tabIndex={-1} className={`mx-auto w-full ${wide ? "max-w-none" : "max-w-7xl"} px-4 py-6 outline-none md:px-6 md:py-8`}>
       {children}
     </main>
   );

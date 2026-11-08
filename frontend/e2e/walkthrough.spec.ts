@@ -267,3 +267,33 @@ test("every bar in both Overview charts is drawn and carries its label (story #1
   await noViolations(page, "overview charts");
   await page.screenshot({ path: "test-results/overview-charts-1440.png" });
 });
+
+test("the Explorer table never scrolls sideways at 1280 px and wider (story #187)", async ({ page }) => {
+  // the synthetic warehouse is small, so the list is patched with real-size values and long names
+  await page.route("**/api/v1/opportunities?*", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    for (const item of Array.isArray(body.items) ? body.items : []) {
+      item.value_low.value = 9174325;
+      item.value_high.value = 27522976;
+      item.customer.name = "Asia Light (H.Q)MigalarTaung Nyunt Trading";
+    }
+    await route.fulfill({ response, json: body });
+  });
+  for (const width of [1280, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const path of ["/opportunities", `/opportunities?selected=${await firstOpportunityId(page)}`]) {
+      await page.goto(path);
+      const table = page.getByRole("table");
+      await expect(table.getByRole("row").nth(1)).toBeVisible();
+      if (path.includes("selected")) await expect(page.getByRole("region", { name: "Preview" })).toBeVisible();
+      const overflow = await table.evaluate((t) => {
+        const box = t.parentElement as HTMLElement; // the scroll container of the table
+        return box.scrollWidth - box.clientWidth;
+      });
+      expect(overflow, `${path} at ${width} px scrolls sideways`).toBeLessThanOrEqual(0);
+      await noViolations(page, `explorer ${path} at ${width} px`);
+    }
+    await page.screenshot({ path: `test-results/explorer-wide-${width}.png` });
+  }
+});

@@ -25,6 +25,7 @@ import { DefinitionButton, Metric } from "../components/Metric";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { formatKpi, formatValue } from "../format";
 import { cn } from "../lib/utils";
 import { useMoneyUnit } from "../money";
 
@@ -36,6 +37,21 @@ const SORTS: { value: NonNullable<OpportunityFilters["sort"]>; label: string }[]
 ];
 const PAGE_SIZE = 25;
 const FILTER_KEYS = ["type", "priority", "confidence", "branch"] as const;
+
+const MILLION = 1_000_000;
+
+/** The value range of a row, compact from a million (9.17M – 27.52M), full numbers in its title (story #187). */
+export function ValueRange({ low, high }: { low: number | null; high: number | null }) {
+  const full = `${formatValue(low, "net sales")} – ${formatValue(high, "net sales")}`;
+  const wide = Math.max(Math.abs(low ?? 0), Math.abs(high ?? 0)) >= MILLION;
+  if (!wide || low === null || high === null) return <span className="tabular-nums">{full}</span>;
+  return (
+    <span className="tabular-nums">
+      <span aria-hidden="true" title={full}>{`${formatKpi(low)} – ${formatKpi(high)}`}</span>
+      <span className="sr-only">{full}</span>
+    </span>
+  );
+}
 
 export function Opportunities() {
   const money = useMoneyUnit();
@@ -101,7 +117,7 @@ export function Opportunities() {
         <FilterChips chips={chips} onRemove={(key) => update({ [key]: undefined })} onClear={clearAll} />
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1fr)_20rem]">
         <AsyncBoundary
           query={query}
           label="opportunities"
@@ -127,7 +143,7 @@ export function Opportunities() {
                         <TableHead scope="col">Type</TableHead>
                         <TableHead scope="col">Customer and category</TableHead>
                         <TableHead scope="col">Priority</TableHead>
-                        <TableHead scope="col" className="hidden 2xl:table-cell">Confidence</TableHead>
+                        <TableHead scope="col" className="hidden xl:table-cell">Confidence</TableHead>
                         <TableHead scope="col" aria-sort={sortedBy("score")} className="text-right">
                           <span className="inline-flex items-center gap-1">
                             Score <DefinitionButton definitionId="opp_score" label="score" />
@@ -162,14 +178,12 @@ export function Opportunities() {
                               </span>
                             </TableCell>
                             <TableCell><PriorityBadge level={item.priority} /></TableCell>
-                            <TableCell className="hidden 2xl:table-cell"><ConfidenceBadge level={item.confidence} /></TableCell>
+                            <TableCell className="hidden xl:table-cell"><ConfidenceBadge level={item.confidence} /></TableCell>
                             <TableCell className="text-right">
                               <Metric metric={item.score} label="score" hideDefinition />
                             </TableCell>
                             <TableCell className="whitespace-nowrap text-right">
-                              <Metric metric={item.value_low} label="value low" hideUnit hideDefinition />
-                              <span className="text-muted">{" – "}</span>
-                              <Metric metric={item.value_high} label="value high" hideUnit hideDefinition />
+                              <ValueRange low={item.value_low.value} high={item.value_high.value} />
                             </TableCell>
                             <TableCell>
                               <Button variant="ghost" size="icon" aria-pressed={selected}
@@ -201,7 +215,7 @@ export function Opportunities() {
             );
           }}
         </AsyncBoundary>
-        <div className="xl:sticky xl:top-20 xl:self-start">
+        <div className="2xl:sticky 2xl:top-20 2xl:self-start">
           <OpportunityPreview id={selectedId} />
         </div>
       </div>

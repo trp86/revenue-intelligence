@@ -207,6 +207,8 @@ unavailable but evidence shown). Implemented via shared
   `app_ai_outputs`, and a failure keeps it on screen.
   Plain wording since story #183: "No suggestions yet for this customer.", "Get suggestions",
   "Refresh suggestions", "Suggestions ready"; no "AI brief" on screen. The sidebar has no footer note.
+  The confirmations are "Get suggestions?" and "Refresh suggestions?" in one plain sentence each
+  (story #185, docs/decisions.md section 13).
 - Data-quality badge where flags affect an entity.
 
 ## 7. Accessibility

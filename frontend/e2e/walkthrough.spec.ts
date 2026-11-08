@@ -93,7 +93,7 @@ test("keyboard only: skip link, navigation, preview, definitions, dialog and the
   // the Generate dialog opens by keyboard, keeps focus inside, and Escape closes it
   await tabTo(page, /^Get suggestions$/);
   await page.keyboard.press("Enter");
-  const dialog = page.getByRole("dialog", { name: "Get suggested next steps?" });
+  const dialog = page.getByRole("dialog", { name: "Get suggestions?" });
   await expect(dialog).toBeVisible();
   for (let i = 0; i < 4; i++) {
     await page.keyboard.press("Tab");
@@ -139,8 +139,8 @@ test("walkthrough: Overview, a type, the Explorer preview, Detail and an AI brie
   await expect(page.getByRole("region", { name: "Estimate" })).toBeVisible();
   const ai = page.getByRole("region", { name: /Suggested next steps/ });
   await ai.getByRole("button", { name: "Get suggestions" }).click();
-  const confirm = page.getByRole("dialog", { name: "Get suggested next steps?" });
-  await expect(confirm).toContainText("counts toward the daily limit");
+  const confirm = page.getByRole("dialog", { name: "Get suggestions?" });
+  await expect(confirm).toContainText("Customer names are never shared.");
   await noViolations(page, "confirm dialog");
   await confirm.getByRole("button", { name: "Get suggestions" }).click();
   await expect(page.getByText("Suggestions ready")).toBeVisible();
@@ -149,9 +149,9 @@ test("walkthrough: Overview, a type, the Explorer preview, Detail and an AI brie
   // story #181: regenerate once from "About this suggestion"
   await ai.getByText("About this suggestion").click();
   await ai.getByRole("button", { name: "Refresh suggestions" }).click();
-  const again = page.getByRole("dialog", { name: "Refresh the suggestions?" });
+  const again = page.getByRole("dialog", { name: "Refresh suggestions?" });
   await noViolations(page, "regenerate dialog");
-  await again.getByRole("button", { name: "Refresh suggestions" }).click();
+  await again.getByRole("button", { name: "Refresh", exact: true }).click();
   await expect(page.getByText("New suggestions ready")).toBeVisible();
   await expect(ai.getByText("Win back this customer")).toBeVisible();
   await page.screenshot({ path: "test-results/walkthrough-brief-1440.png", fullPage: true });

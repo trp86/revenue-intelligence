@@ -28,7 +28,7 @@ const NO_BRIEF = { status: 404, body: { error: { code: "no_brief",
 // story #150: Generate asks for confirmation first
 async function generateWithConfirm() {
   await userEvent.click(await screen.findByRole("button", { name: "Get suggestions" }));
-  const dialog = await screen.findByRole("dialog", { name: "Get suggested next steps?" });
+  const dialog = await screen.findByRole("dialog", { name: "Get suggestions?" });
   await userEvent.click(within(dialog).getByRole("button", { name: "Get suggestions" }));
 }
 

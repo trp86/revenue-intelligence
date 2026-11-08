@@ -146,8 +146,7 @@ test("walkthrough: Overview, a type, the Explorer preview, Detail and an AI brie
   await expect(page.getByText("Suggestions ready")).toBeVisible();
   await expect(ai.getByText("Win back this customer")).toBeVisible();
   await noViolations(page, "detail with brief");
-  // story #181: regenerate once from "About this suggestion"
-  await ai.getByText("About this suggestion").click();
+  // story #181: regenerate once (the button is at the bottom of the block since #189)
   await ai.getByRole("button", { name: "Refresh suggestions" }).click();
   const again = page.getByRole("dialog", { name: "Refresh suggestions?" });
   await noViolations(page, "regenerate dialog");

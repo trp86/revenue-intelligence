@@ -15,7 +15,7 @@ import { Skeleton } from "./ui/skeleton";
 import { toast } from "./ui/toaster";
 
 function Brief({ data, onRegenerate, busy }: { data: BriefResponse; onRegenerate: () => void; busy: boolean }) {
-  const { brief, provenance } = data;
+  const { brief } = data;
   return (
     <div className="space-y-4 text-sm">
       <div>
@@ -49,20 +49,14 @@ function Brief({ data, onRegenerate, busy }: { data: BriefResponse; onRegenerate
           <ul className="mt-1 list-disc space-y-1 pl-5">{brief.risks.map((r) => <li key={r}>{r}</li>)}</ul>
         </div>
       )}
-      {/* story #170: the provenance is kept (spec 05) but folded away, for the data team */}
-      <details className="border-t border-border pt-3 text-xs text-muted">
-        <summary className="cursor-pointer rounded-sm">About this suggestion</summary>
-        <p className="mt-2">
-          Written by AI from the measured facts above, not a measured fact {"·"} confidence{" "}
-          {brief.confidence_label} {"·"} model {provenance.model} {"·"} prompt {provenance.prompt_version}{" "}
-          {"·"} generated {provenance.generated_at.replace("T", " ").slice(0, 16)} {"·"} {provenance.review_status}
-        </p>
+      {/* story #189: no provenance on screen (it is still stored and returned by the API, spec 05 section 7) */}
+      <div className="border-t border-border pt-3">
         {/* story #181: a fresh suggestion; the old one stays in the history */}
-        <Button variant="outline" size="sm" className="mt-2" onClick={onRegenerate} disabled={busy} aria-busy={busy}>
+        <Button variant="outline" size="sm" onClick={onRegenerate} disabled={busy} aria-busy={busy}>
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
           {busy ? "Refreshing…" : "Refresh suggestions"}
         </Button>
-      </details>
+      </div>
     </div>
   );
 }

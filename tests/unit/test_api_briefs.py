@@ -286,3 +286,13 @@ def test_181_ac4_a_failed_regenerate_keeps_the_previous_brief(
         client.get(f"{API}/opportunities/{opp}/brief").json()["brief"]["headline"]
         == ANSWER["headline"]
     )
+
+
+def test_189_ac3_the_api_still_returns_the_provenance(work: Settings, fake: FakeClient) -> None:
+    """The screen no longer shows it (story #189), but it is still stored and returned."""
+    client = TestClient(create_app(work))
+    opp = first(work)
+    client.post(f"{API}/opportunities/{opp}/brief")
+    provenance = client.get(f"{API}/opportunities/{opp}/brief").json()["provenance"]
+    assert provenance["model"] and provenance["prompt_version"] and provenance["generated_at"]
+    assert provenance["review_status"] == "Draft"

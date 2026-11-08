@@ -36,18 +36,16 @@ function page() {
 
 async function openRegenerate() {
   await screen.findByText("The old suggestion");
-  await userEvent.click(screen.getByText("About this suggestion"));
   await userEvent.click(screen.getByRole("button", { name: "Refresh suggestions" }));
   return screen.findByRole("dialog", { name: "Refresh suggestions?" });
 }
 
 describe("story #181 regenerate", () => {
-  it("AC1 a brief has a Regenerate button inside 'About this suggestion'", async () => {
+  it("AC1 a brief has a Refresh suggestions button (at the bottom since story #189)", async () => {
     api();
     page();
     await screen.findByText("The old suggestion");
-    const details = screen.getByText("About this suggestion").closest("details")!;
-    expect(within(details).getByRole("button", { name: "Refresh suggestions" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Refresh suggestions" })).toBeInTheDocument();
   });
 
   it("AC2 AC3 confirming asks for a fresh brief, shows it and a toast", async () => {

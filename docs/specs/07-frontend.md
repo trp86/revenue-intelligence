@@ -204,10 +204,10 @@ unavailable but evidence shown). Implemented via shared
 - Blocks are labelled Measured fact / Estimate / AI suggestion with
   text + icon + token colour (never colour alone).
 - The AI block is headed "Suggested next steps" (with a sparkle icon and the screen-reader text
-  "AI-generated"); model, prompt version, time and review status are folded into "About this
-  suggestion" (story #170). The brief names the real customer: the API swaps the masked label
+  "AI-generated"). Model, prompt version, time and review status are not shown on screen
+  (story #189; they are stored and returned by the API). The brief names the real customer: the API swaps the masked label
   back locally, after validation; Gemini and the stored brief only ever hold the label.
-  "About this suggestion" has a Regenerate button (story #181): it asks for confirmation, then
+  A "Refresh suggestions" button at the bottom of the block (stories #181, #189) asks for confirmation, then
   calls `POST .../brief?regenerate=true`, which skips the cache; the previous brief stays in
   `app_ai_outputs`, and a failure keeps it on screen.
   Plain wording since story #183: "No suggestions yet for this customer.", "Get suggestions",

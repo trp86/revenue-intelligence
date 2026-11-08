@@ -3,7 +3,7 @@
 // Gemini and counts toward the daily limit) and reports the result in a toast. When AI is off or
 // failing the block says so; the measured evidence on the page is unaffected.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ListChecks, ShieldAlert, Sparkles } from "lucide-react";
+import { AlertTriangle, ListChecks, RefreshCw, ShieldAlert, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { ApiError, api } from "../api/client";
@@ -14,7 +14,7 @@ import { Button } from "./ui/button";
 import { Skeleton } from "./ui/skeleton";
 import { toast } from "./ui/toaster";
 
-function Brief({ data }: { data: BriefResponse }) {
+function Brief({ data, onRegenerate, busy }: { data: BriefResponse; onRegenerate: () => void; busy: boolean }) {
   const { brief, provenance } = data;
   return (
     <div className="space-y-4 text-sm">
@@ -57,6 +57,11 @@ function Brief({ data }: { data: BriefResponse }) {
           {brief.confidence_label} {"·"} model {provenance.model} {"·"} prompt {provenance.prompt_version}{" "}
           {"·"} generated {provenance.generated_at.replace("T", " ").slice(0, 16)} {"·"} {provenance.review_status}
         </p>
+        {/* story #181: a fresh suggestion; the old one stays in the history */}
+        <Button variant="outline" size="sm" className="mt-2" onClick={onRegenerate} disabled={busy} aria-busy={busy}>
+          <RefreshCw className="h-4 w-4" aria-hidden="true" />
+          {busy ? "Regenerating…" : "Regenerate"}
+        </Button>
       </details>
     </div>
   );
@@ -65,20 +70,25 @@ function Brief({ data }: { data: BriefResponse }) {
 export function AiBriefBlock({ oppId }: { oppId: string }) {
   const client = useQueryClient();
   const [confirming, setConfirming] = useState(false);
+  const [confirmingRegenerate, setConfirmingRegenerate] = useState(false);
   const query = useQuery({
     queryKey: ["brief", oppId],
     queryFn: () => api.brief(oppId),
     retry: false,
   });
   const generate = useMutation({
-    mutationFn: () => api.generateBrief(oppId),
-    onSuccess: (data) => {
+    mutationFn: (regenerate: boolean) => api.generateBrief(oppId, regenerate),
+    onSuccess: (data, regenerate) => {
       client.setQueryData(["brief", oppId], data);
-      toast.success(data.provenance.cached ? "AI brief loaded from the cache" : "AI brief generated");
+      toast.success(regenerate ? "New AI suggestion generated"
+        : data.provenance.cached ? "AI brief loaded from the cache" : "AI brief generated");
     },
-    onError: (error) => {
+    onError: (error, regenerate) => {
       const disabled = error instanceof ApiError && error.code === "ai_disabled";
-      toast.error(disabled ? "AI briefs are turned off" : "The AI brief could not be generated");
+      // on a failed regenerate the previous brief stays on screen (story #181)
+      toast.error(disabled ? "AI briefs are turned off"
+        : regenerate ? "A new AI suggestion could not be generated; the previous one is kept"
+        : "The AI brief could not be generated");
     },
   });
 
@@ -90,7 +100,21 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
       </div>
     );
   }
-  if (query.data) return <Brief data={query.data} />;
+  if (query.data) {
+    return (
+      <>
+        <Brief data={query.data} busy={generate.isPending} onRegenerate={() => setConfirmingRegenerate(true)} />
+        <ConfirmDialog
+          open={confirmingRegenerate}
+          onOpenChange={setConfirmingRegenerate}
+          title="Regenerate the AI suggestion?"
+          description="This asks Gemini for a new suggestion from the measured facts (never customer names or codes) and counts toward the daily limit. The current suggestion is kept in the history."
+          confirmLabel="Regenerate"
+          onConfirm={() => generate.mutate(true)}
+        />
+      </>
+    );
+  }
 
   const missing = query.error instanceof ApiError && query.error.code === "no_brief";
   const failed = generate.error instanceof ApiError ? generate.error : null;
@@ -122,7 +146,7 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
         title="Generate an AI brief?"
         description="This sends the measured facts of this opportunity (never customer names or codes) to Gemini and counts toward the daily limit. A brief that fails the checks is not shown."
         confirmLabel="Generate"
-        onConfirm={() => generate.mutate()}
+        onConfirm={() => generate.mutate(false)}
       />
     </div>
   );

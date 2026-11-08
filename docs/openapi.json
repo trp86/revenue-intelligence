@@ -1320,6 +1320,16 @@
               "title": "Opp Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "regenerate",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Regenerate",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {

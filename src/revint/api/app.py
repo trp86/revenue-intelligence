@@ -126,8 +126,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return briefs.latest_brief(settings, opp_id)
 
     @router.post("/opportunities/{opp_id}/brief", response_model=BriefResponse, responses=_ERRORS)
-    def generate_brief(opp_id: str) -> dict[str, Any]:
-        return briefs.generate_brief(settings, opp_id)
+    def generate_brief(opp_id: str, regenerate: bool = False) -> dict[str, Any]:
+        # regenerate=true skips the cache and always calls Gemini (story #181)
+        return briefs.generate_brief(settings, opp_id, regenerate=regenerate)
 
     app.include_router(router)
     return app

@@ -244,3 +244,45 @@ def test_170_ac2_the_stored_brief_stays_masked(work: Settings, labelled: FakeCli
     assert stored and all("C-0001" in row[0] for row in stored)
     name = _real_name(work, opp).split(" · ")[0]
     assert all(name not in row[0] for row in stored)
+
+
+# Story #181: regenerate skips the cache and keeps the old brief ------
+
+
+def test_181_ac3_regenerate_skips_the_cache_and_keeps_the_old_row(
+    work: Settings, fake: FakeClient
+) -> None:
+    client = TestClient(create_app(work))
+    opp = first(work)
+    first_body = client.post(f"{API}/opportunities/{opp}/brief").json()
+    cached = client.post(f"{API}/opportunities/{opp}/brief").json()
+    assert cached["provenance"]["cached"] is True and len(fake.calls) == 1
+    fresh = client.post(f"{API}/opportunities/{opp}/brief", params={"regenerate": "true"})
+    assert fresh.status_code == 200
+    assert fresh.json()["provenance"]["cached"] is False
+    assert len(fake.calls) == 2  # a new Gemini call although nothing changed
+    assert fresh.json()["provenance"]["generated_at"] >= first_body["provenance"]["generated_at"]
+    con = duckdb.connect(str(work.paths.app_db), read_only=True)
+    try:
+        ((rows,),) = con.execute(
+            "select count(*) from app_ai_outputs where opp_id = ? and validation_status = 'valid'",
+            [opp],
+        ).fetchall()
+    finally:
+        con.close()
+    assert rows == 2  # the old brief is kept, never overwritten
+
+
+def test_181_ac4_a_failed_regenerate_keeps_the_previous_brief(
+    work: Settings, fake: FakeClient
+) -> None:
+    client = TestClient(create_app(work))
+    opp = first(work)
+    client.post(f"{API}/opportunities/{opp}/brief")
+    fake.error = AiUnavailableError("Gemini error 503")
+    failed = client.post(f"{API}/opportunities/{opp}/brief", params={"regenerate": "true"})
+    assert failed.status_code == 503
+    assert (
+        client.get(f"{API}/opportunities/{opp}/brief").json()["brief"]["headline"]
+        == ANSWER["headline"]
+    )

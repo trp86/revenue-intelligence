@@ -1,5 +1,5 @@
 // The content of the AI suggestion block (spec 05 section 9, stories #138 and #150): the brief
-// with its provenance, or "Generate brief". Generating asks for confirmation first (it calls
+// with its provenance, or "Get suggestions" (plain wording since story #183). Getting asks for confirmation first (it calls
 // Gemini and counts toward the daily limit) and reports the result in a toast. When AI is off or
 // failing the block says so; the measured evidence on the page is unaffected.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -60,7 +60,7 @@ function Brief({ data, onRegenerate, busy }: { data: BriefResponse; onRegenerate
         {/* story #181: a fresh suggestion; the old one stays in the history */}
         <Button variant="outline" size="sm" className="mt-2" onClick={onRegenerate} disabled={busy} aria-busy={busy}>
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
-          {busy ? "Regenerating…" : "Regenerate"}
+          {busy ? "Refreshing…" : "Refresh suggestions"}
         </Button>
       </details>
     </div>
@@ -80,22 +80,22 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
     mutationFn: (regenerate: boolean) => api.generateBrief(oppId, regenerate),
     onSuccess: (data, regenerate) => {
       client.setQueryData(["brief", oppId], data);
-      toast.success(regenerate ? "New AI suggestion generated"
-        : data.provenance.cached ? "AI brief loaded from the cache" : "AI brief generated");
+      toast.success(regenerate ? "New suggestions ready"
+        : "Suggestions ready");
     },
     onError: (error, regenerate) => {
       const disabled = error instanceof ApiError && error.code === "ai_disabled";
       // on a failed regenerate the previous brief stays on screen (story #181)
-      toast.error(disabled ? "AI briefs are turned off"
-        : regenerate ? "A new AI suggestion could not be generated; the previous one is kept"
-        : "The AI brief could not be generated");
+      toast.error(disabled ? "Suggestions are turned off"
+        : regenerate ? "New suggestions could not be created; the current ones are kept"
+        : "Suggestions could not be created");
     },
   });
 
   if (query.isPending) {
     return (
       <div role="status" aria-live="polite" aria-busy="true" className="space-y-2">
-        <span className="sr-only">Loading the AI brief…</span>
+        <span className="sr-only">Loading the suggestions…</span>
         <Skeleton className="h-5 w-2/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-16 w-full" />
       </div>
     );
@@ -107,9 +107,9 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
         <ConfirmDialog
           open={confirmingRegenerate}
           onOpenChange={setConfirmingRegenerate}
-          title="Regenerate the AI suggestion?"
-          description="This asks Gemini for a new suggestion from the measured facts (never customer names or codes) and counts toward the daily limit. The current suggestion is kept in the history."
-          confirmLabel="Regenerate"
+          title="Refresh the suggestions?"
+          description="Gemini writes new suggestions from the measured facts (never customer names or codes). This counts toward the daily limit. The current suggestions are kept in the history."
+          confirmLabel="Refresh suggestions"
           onConfirm={() => generate.mutate(true)}
         />
       </>
@@ -122,14 +122,14 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
     <div className="space-y-3">
       <p role="status" className="text-sm text-muted">
         {missing
-          ? "There is no AI brief for this opportunity yet."
-          : `The AI brief is not available (${query.error instanceof ApiError ? query.error.message : "error"}). ` +
+          ? "No suggestions yet for this customer."
+          : `Suggestions are not available right now (${query.error instanceof ApiError ? query.error.message : "error"}). ` +
             "The measured facts and the estimate are complete."}
       </p>
       {failed && (
         <p role="alert" className="flex items-start gap-2 rounded-md border border-danger bg-danger-bg p-3 text-sm text-danger">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          {failed.code === "ai_disabled" ? "AI briefs are turned off." : failed.message}
+          {failed.code === "ai_disabled" ? "Suggestions are turned off." : failed.message}
         </p>
       )}
       <Button
@@ -138,14 +138,14 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
         aria-busy={generate.isPending}
       >
         <Sparkles className="h-4 w-4" aria-hidden="true" />
-        {generate.isPending ? "Generating…" : "Generate brief"}
+        {generate.isPending ? "Getting suggestions…" : "Get suggestions"}
       </Button>
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
-        title="Generate an AI brief?"
-        description="This sends the measured facts of this opportunity (never customer names or codes) to Gemini and counts toward the daily limit. A brief that fails the checks is not shown."
-        confirmLabel="Generate"
+        title="Get suggested next steps?"
+        description="The measured facts of this opportunity (never customer names or codes) are sent to Gemini to write the suggestions. This counts toward the daily limit. Suggestions that fail our checks are not shown."
+        confirmLabel="Get suggestions"
         onConfirm={() => generate.mutate(false)}
       />
     </div>

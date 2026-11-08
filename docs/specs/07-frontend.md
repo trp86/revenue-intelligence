@@ -205,6 +205,8 @@ unavailable but evidence shown). Implemented via shared
   "About this suggestion" has a Regenerate button (story #181): it asks for confirmation, then
   calls `POST .../brief?regenerate=true`, which skips the cache; the previous brief stays in
   `app_ai_outputs`, and a failure keeps it on screen.
+  Plain wording since story #183: "No suggestions yet for this customer.", "Get suggestions",
+  "Refresh suggestions", "Suggestions ready"; no "AI brief" on screen. The sidebar has no footer note.
 - Data-quality badge where flags affect an entity.
 
 ## 7. Accessibility

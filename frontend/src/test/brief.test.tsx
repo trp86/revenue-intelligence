@@ -27,9 +27,9 @@ const NO_BRIEF = { status: 404, body: { error: { code: "no_brief",
 
 // story #150: Generate asks for confirmation first
 async function generateWithConfirm() {
-  await userEvent.click(await screen.findByRole("button", { name: "Generate brief" }));
-  const dialog = await screen.findByRole("dialog", { name: "Generate an AI brief?" });
-  await userEvent.click(within(dialog).getByRole("button", { name: "Generate" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Get suggestions" }));
+  const dialog = await screen.findByRole("dialog", { name: "Get suggested next steps?" });
+  await userEvent.click(within(dialog).getByRole("button", { name: "Get suggestions" }));
 }
 
 describe("AC4 the AI suggestion block", () => {
@@ -58,7 +58,7 @@ describe("AC4 the AI suggestion block", () => {
       return new Response(JSON.stringify(NO_BRIEF.body), { status: 404 });
     }) as typeof fetch;
     renderWithProviders(<AiBriefBlock oppId="opp-1" />);
-    expect(await screen.findByText(/no AI brief for this opportunity yet/)).toBeInTheDocument();
+    expect(await screen.findByText(/No suggestions yet for this customer/)).toBeInTheDocument();
     await generateWithConfirm();
     expect(await screen.findByText("Win back a quiet customer")).toBeInTheDocument();
     expect(posted).toBe(true);
@@ -75,7 +75,7 @@ describe("AC4 the AI suggestion block", () => {
     renderWithProviders(<AiBriefBlock oppId="opp-1" />);
     await generateWithConfirm();
     expect(await screen.findByRole("alert")).toHaveTextContent("Gemini error 503");
-    expect(screen.getByRole("button", { name: "Generate brief" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Get suggestions" })).toBeEnabled();
   });
 
   it("says AI is turned off", async () => {
@@ -88,7 +88,7 @@ describe("AC4 the AI suggestion block", () => {
     }) as typeof fetch;
     renderWithProviders(<AiBriefBlock oppId="opp-1" />);
     await generateWithConfirm();
-    expect(await screen.findByRole("alert")).toHaveTextContent("AI briefs are turned off.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Suggestions are turned off.");
   });
 
   it("shows the evidence-is-complete message when the brief endpoint is down", async () => {

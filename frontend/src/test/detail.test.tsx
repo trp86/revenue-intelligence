@@ -100,13 +100,13 @@ describe("AC3 Generate brief asks first and reports the result", () => {
     const posts = api();
     page();
     const ai = await screen.findByRole("region", { name: /Suggested next steps/ });
-    await userEvent.click(await within(ai).findByRole("button", { name: "Generate brief" }));
-    const dialog = await screen.findByRole("dialog", { name: "Generate an AI brief?" });
+    await userEvent.click(await within(ai).findByRole("button", { name: "Get suggestions" }));
+    const dialog = await screen.findByRole("dialog", { name: "Get suggested next steps?" });
     expect(dialog).toHaveTextContent("counts toward the daily limit");
     expect(dialog).toHaveTextContent("never customer names or codes");
     expect(posts).toHaveLength(0); // nothing is sent before confirming
-    await userEvent.click(within(dialog).getByRole("button", { name: "Generate" }));
-    expect(await screen.findByText("AI brief generated")).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Get suggestions" }));
+    expect(await screen.findByText("Suggestions ready")).toBeInTheDocument();
     expect(await within(ai).findByText("Win back a quiet customer")).toBeInTheDocument();
     expect(posts).toHaveLength(1);
   });
@@ -115,7 +115,7 @@ describe("AC3 Generate brief asks first and reports the result", () => {
     const posts = api();
     page();
     const ai = await screen.findByRole("region", { name: /Suggested next steps/ });
-    await userEvent.click(await within(ai).findByRole("button", { name: "Generate brief" }));
+    await userEvent.click(await within(ai).findByRole("button", { name: "Get suggestions" }));
     await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(posts).toHaveLength(0);
@@ -125,9 +125,9 @@ describe("AC3 Generate brief asks first and reports the result", () => {
     api({ generate: "fail" });
     page();
     const ai = await screen.findByRole("region", { name: /Suggested next steps/ });
-    await userEvent.click(await within(ai).findByRole("button", { name: "Generate brief" }));
-    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Generate" }));
-    expect(await screen.findByText("The AI brief could not be generated")).toBeInTheDocument();
+    await userEvent.click(await within(ai).findByRole("button", { name: "Get suggestions" }));
+    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Get suggestions" }));
+    expect(await screen.findByText("Suggestions could not be created")).toBeInTheDocument();
     expect(await within(ai).findByRole("alert")).toHaveTextContent("Gemini error 503");
     expect(screen.getByRole("region", { name: "Measured fact" })).toBeInTheDocument();
   });

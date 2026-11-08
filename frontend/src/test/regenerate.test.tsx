@@ -37,8 +37,8 @@ function page() {
 async function openRegenerate() {
   await screen.findByText("The old suggestion");
   await userEvent.click(screen.getByText("About this suggestion"));
-  await userEvent.click(screen.getByRole("button", { name: "Regenerate" }));
-  return screen.findByRole("dialog", { name: "Regenerate the AI suggestion?" });
+  await userEvent.click(screen.getByRole("button", { name: "Refresh suggestions" }));
+  return screen.findByRole("dialog", { name: "Refresh the suggestions?" });
 }
 
 describe("story #181 regenerate", () => {
@@ -47,7 +47,7 @@ describe("story #181 regenerate", () => {
     page();
     await screen.findByText("The old suggestion");
     const details = screen.getByText("About this suggestion").closest("details")!;
-    expect(within(details).getByRole("button", { name: "Regenerate" })).toBeInTheDocument();
+    expect(within(details).getByRole("button", { name: "Refresh suggestions" })).toBeInTheDocument();
   });
 
   it("AC2 AC3 confirming asks for a fresh brief, shows it and a toast", async () => {
@@ -56,9 +56,9 @@ describe("story #181 regenerate", () => {
     const dialog = await openRegenerate();
     expect(dialog).toHaveTextContent("counts toward the daily limit");
     expect(posts).toHaveLength(0);
-    await userEvent.click(within(dialog).getByRole("button", { name: "Regenerate" }));
+    await userEvent.click(within(dialog).getByRole("button", { name: "Refresh suggestions" }));
     expect(await screen.findByText("A fresh suggestion")).toBeInTheDocument();
-    expect(await screen.findByText("New AI suggestion generated")).toBeInTheDocument();
+    expect(await screen.findByText("New suggestions ready")).toBeInTheDocument();
     expect(posts).toEqual(["?regenerate=true"]);
   });
 
@@ -75,8 +75,8 @@ describe("story #181 regenerate", () => {
     api({ fail: true });
     page();
     const dialog = await openRegenerate();
-    await userEvent.click(within(dialog).getByRole("button", { name: "Regenerate" }));
-    expect(await screen.findByText(/could not be generated; the previous one is kept/)).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Refresh suggestions" }));
+    expect(await screen.findByText(/could not be created; the current ones are kept/)).toBeInTheDocument();
     expect(screen.getByText("The old suggestion")).toBeInTheDocument();
   });
 });

@@ -45,7 +45,7 @@ describe("AC3 Detail", () => {
     expect(estimate).toHaveTextContent(/Based on 25% to 75% of /); // plain text since story #171
     const ai = screen.getByRole("region", { name: /Suggested next steps/ });
     // story #138: the block loads the brief; with none it offers to generate one
-    expect(await within(ai).findByRole("button", { name: "Generate brief" })).toBeInTheDocument();
+    expect(await within(ai).findByRole("button", { name: "Get suggestions" })).toBeInTheDocument();
   });
 
   it("shows the multiple-spellings notice and the reasons", async () => {

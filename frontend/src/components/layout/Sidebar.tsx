@@ -63,9 +63,6 @@ export function Sidebar() {
     <aside className="on-dark fixed inset-y-0 left-0 z-topbar hidden w-64 flex-col bg-sidebar md:flex">
       <Brand />
       <NavLinks />
-      <p className="mt-auto px-6 py-4 text-xs text-sidebar-muted">
-        Measured facts, estimates and AI-suggested next steps are shown apart.
-      </p>
     </aside>
   );
 }

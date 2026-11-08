@@ -91,9 +91,9 @@ test("keyboard only: skip link, navigation, preview, definitions, dialog and the
   await expect(page.getByRole("tooltip")).toHaveCount(0);
 
   // the Generate dialog opens by keyboard, keeps focus inside, and Escape closes it
-  await tabTo(page, /^Generate brief$/);
+  await tabTo(page, /^Get suggestions$/);
   await page.keyboard.press("Enter");
-  const dialog = page.getByRole("dialog", { name: "Generate an AI brief?" });
+  const dialog = page.getByRole("dialog", { name: "Get suggested next steps?" });
   await expect(dialog).toBeVisible();
   for (let i = 0; i < 4; i++) {
     await page.keyboard.press("Tab");
@@ -101,7 +101,7 @@ test("keyboard only: skip link, navigation, preview, definitions, dialog and the
   }
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Generate brief" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Get suggestions" })).toBeFocused();
 
   // on a phone the navigation is a menu that opens and closes by keyboard
   await page.setViewportSize({ width: 390, height: 900 });
@@ -138,21 +138,21 @@ test("walkthrough: Overview, a type, the Explorer preview, Detail and an AI brie
   await expect(page.getByRole("region", { name: "Measured fact" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Estimate" })).toBeVisible();
   const ai = page.getByRole("region", { name: /Suggested next steps/ });
-  await ai.getByRole("button", { name: "Generate brief" }).click();
-  const confirm = page.getByRole("dialog", { name: "Generate an AI brief?" });
+  await ai.getByRole("button", { name: "Get suggestions" }).click();
+  const confirm = page.getByRole("dialog", { name: "Get suggested next steps?" });
   await expect(confirm).toContainText("counts toward the daily limit");
   await noViolations(page, "confirm dialog");
-  await confirm.getByRole("button", { name: "Generate" }).click();
-  await expect(page.getByText("AI brief generated")).toBeVisible();
+  await confirm.getByRole("button", { name: "Get suggestions" }).click();
+  await expect(page.getByText("Suggestions ready")).toBeVisible();
   await expect(ai.getByText("Win back this customer")).toBeVisible();
   await noViolations(page, "detail with brief");
   // story #181: regenerate once from "About this suggestion"
   await ai.getByText("About this suggestion").click();
-  await ai.getByRole("button", { name: "Regenerate" }).click();
-  const again = page.getByRole("dialog", { name: "Regenerate the AI suggestion?" });
+  await ai.getByRole("button", { name: "Refresh suggestions" }).click();
+  const again = page.getByRole("dialog", { name: "Refresh the suggestions?" });
   await noViolations(page, "regenerate dialog");
-  await again.getByRole("button", { name: "Regenerate" }).click();
-  await expect(page.getByText("New AI suggestion generated")).toBeVisible();
+  await again.getByRole("button", { name: "Refresh suggestions" }).click();
+  await expect(page.getByText("New suggestions ready")).toBeVisible();
   await expect(ai.getByText("Win back this customer")).toBeVisible();
   await page.screenshot({ path: "test-results/walkthrough-brief-1440.png", fullPage: true });
 });

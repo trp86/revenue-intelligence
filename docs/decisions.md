@@ -129,3 +129,12 @@ date, so a backtest needs no engine change.
   to **MMK** (Myanmar kyat). **Provisional:** the data and the docs do not state the currency;
   MMK is inferred from the branches (Yangon, Magway, Pyay). To be confirmed with the client.
 - Label only: no conversion. An empty `display.currency` keeps the generic "net sales" label.
+
+## 13. Plain confirmation dialogs (2026-11-08, story #185)
+- The confirmation before getting or refreshing suggestions is short and plain: "Get
+  suggestions?" ("We'll suggest next steps based on the facts on this page. Customer names
+  are never shared.") and "Refresh suggestions?". Decided by the maintainer in manual testing.
+- The dialogs no longer name the AI provider or the daily call limit (this replaces the
+  wording of stories #150 and #183). The limit still applies and its error message says so
+  when it is reached. The privacy rule is unchanged: only the masked evidence package is sent.
+

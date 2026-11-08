@@ -1,6 +1,6 @@
 // The content of the AI suggestion block (spec 05 section 9, stories #138 and #150): the brief
-// with its provenance, or "Get suggestions" (plain wording since story #183). Getting asks for confirmation first (it calls
-// Gemini and counts toward the daily limit) and reports the result in a toast. When AI is off or
+// with its provenance, or "Get suggestions" (plain wording since #183, short dialogs since #185).
+// Getting asks for confirmation first (it calls Gemini and counts toward the daily limit) and reports the result in a toast. When AI is off or
 // failing the block says so; the measured evidence on the page is unaffected.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ListChecks, RefreshCw, ShieldAlert, Sparkles } from "lucide-react";
@@ -107,9 +107,9 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
         <ConfirmDialog
           open={confirmingRegenerate}
           onOpenChange={setConfirmingRegenerate}
-          title="Refresh the suggestions?"
-          description="Gemini writes new suggestions from the measured facts (never customer names or codes). This counts toward the daily limit. The current suggestions are kept in the history."
-          confirmLabel="Refresh suggestions"
+          title="Refresh suggestions?"
+          description="We'll replace these suggestions with new ones. The current ones are kept in the history."
+          confirmLabel="Refresh"
           onConfirm={() => generate.mutate(true)}
         />
       </>
@@ -143,8 +143,8 @@ export function AiBriefBlock({ oppId }: { oppId: string }) {
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
-        title="Get suggested next steps?"
-        description="The measured facts of this opportunity (never customer names or codes) are sent to Gemini to write the suggestions. This counts toward the daily limit. Suggestions that fail our checks are not shown."
+        title="Get suggestions?"
+        description="We'll suggest next steps based on the facts on this page. Customer names are never shared."
         confirmLabel="Get suggestions"
         onConfirm={() => generate.mutate(false)}
       />

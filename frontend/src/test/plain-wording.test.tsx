@@ -24,9 +24,8 @@ describe("story #183 plain wording", () => {
     globalThis.fetch = (async () => new Response(JSON.stringify(NO_BRIEF), { status: 404 })) as typeof fetch;
     renderWithProviders(<><AiBriefBlock oppId="opp-1" /><Toaster /></>);
     await userEvent.click(await screen.findByRole("button", { name: "Get suggestions" }));
-    const dialog = await screen.findByRole("dialog", { name: "Get suggested next steps?" });
-    expect(dialog).toHaveTextContent("never customer names or codes");
-    expect(dialog).toHaveTextContent("counts toward the daily limit");
+    const dialog = await screen.findByRole("dialog", { name: "Get suggestions?" });
+    expect(dialog).toHaveTextContent("Customer names are never shared."); // shorter since story #185
     expect(within(dialog).getByRole("button", { name: "Get suggestions" })).toBeInTheDocument();
     expect(dialog).not.toHaveTextContent(/AI brief|Generate/);
   });

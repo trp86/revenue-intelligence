@@ -101,9 +101,8 @@ describe("AC3 Generate brief asks first and reports the result", () => {
     page();
     const ai = await screen.findByRole("region", { name: /Suggested next steps/ });
     await userEvent.click(await within(ai).findByRole("button", { name: "Get suggestions" }));
-    const dialog = await screen.findByRole("dialog", { name: "Get suggested next steps?" });
-    expect(dialog).toHaveTextContent("counts toward the daily limit");
-    expect(dialog).toHaveTextContent("never customer names or codes");
+    const dialog = await screen.findByRole("dialog", { name: "Get suggestions?" });
+    expect(dialog).toHaveTextContent("Customer names are never shared."); // plain since story #185
     expect(posts).toHaveLength(0); // nothing is sent before confirming
     await userEvent.click(within(dialog).getByRole("button", { name: "Get suggestions" }));
     expect(await screen.findByText("Suggestions ready")).toBeInTheDocument();

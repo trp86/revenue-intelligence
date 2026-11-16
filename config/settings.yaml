@@ -13,6 +13,7 @@ paths:
   warehouse: data/warehouse.duckdb       # silver and gold
   app_db: data/app.duckdb                # app state (AI output, actions)
   reports: reports                       # generated reports, git-ignored (optional; this is the default)
+  users: data/users.json                 # sign-in users with password hashes; git-ignored, `revint user add` (story #191)
 
 # Bronze ingestion (spec 01 B2, B3, B7).
 ingest:
@@ -287,3 +288,12 @@ asof:
 # How values are labelled on the screens (story #160). Not used in SQL.
 display:
   currency: MMK                          # provisional: Myanmar kyat, inferred from the branches; confirm with the client. Empty = "net sales"
+
+# Sign-in (story #191). Not used in SQL. Users are in paths.users (git-ignored).
+auth:
+  session_hours: 8                       # a session lasts this long
+  max_attempts: 5                        # failed sign-ins in a row before the user name is locked
+  lockout_minutes: 15                    # how long it stays locked
+  min_password_length: 12
+  cookie_secure: false                   # true when hosted over https
+  cookie_samesite: lax                   # lax locally; none (with cookie_secure true) when app and API are on different domains

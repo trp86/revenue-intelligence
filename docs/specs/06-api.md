@@ -92,7 +92,11 @@ One module, one definition. Request:
 ## 5. Security and config
 - Gemini key server-side; never in responses.
 - CORS: only the Vite dev origin / configured origin.
-- No auth in POC; `X-User` header (name) stored on actions [x] confirm. Bind to localhost by default.
+- Sign-in since story #191 (docs/decisions.md section 15): `POST /auth/login` {username,
+  password} sets an HttpOnly session cookie; `POST /auth/logout` ends it; `GET /auth/me` names the
+  user. Every other endpoint except `/health` answers 401 `not_signed_in` without a session;
+  5 failed sign-ins in a row (`auth.max_attempts`) lock the user name (429 `locked`). CORS allows
+  credentials for `api.cors_origins` only. Bind to localhost by default.
 - Warehouse opened read-only; app.duckdb opened by one writer process.
 
 ## 6. Configurable parameters

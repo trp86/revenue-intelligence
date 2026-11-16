@@ -8,6 +8,22 @@ import { expect, test, type Page } from "@playwright/test";
 
 test.describe.configure({ mode: "serial" });
 
+// story #191: the app needs a signed-in session; the test server creates this user
+const E2E_USER = "e2e";
+const E2E_PASSWORD = "e2e-walkthrough-password";
+
+async function signIn(page: Page, user = E2E_USER, password = E2E_PASSWORD) {
+  await page.getByLabel("User name").fill(user);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.goto("/");
+  await signIn(page);
+  await expect(page.getByRole("button", { name: "Sign out" }).first()).toBeVisible();
+});
+
 const WIDTHS = [
   { width: 1440, height: 1000 },
   { width: 1024, height: 900 },
@@ -16,7 +32,8 @@ const WIDTHS = [
 
 async function noViolations(page: Page, where: string) {
   const result = await new AxeBuilder({ page }).analyze(); // every rule, colour contrast included
-  expect(result.violations.map((v) => `${where}: ${v.id}: ${v.help}`)).toEqual([]);
+  expect(result.violations.map((v) =>
+    `${where}: ${v.id}: ${v.help} at ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 }
 
 /** Press Tab until the focused element has this accessible name (at most 80 presses). */
@@ -296,3 +313,24 @@ test("the Explorer table never scrolls sideways at 1280 px and wider (story #187
     await page.screenshot({ path: `test-results/explorer-wide-${width}.png` });
   }
 });
+
+test("sign in and out; the login page is accessible (story #191)", async ({ page }) => {
+  const id = await firstOpportunityId(page);
+  // sign out from the top bar: the login page replaces the app
+  await page.getByRole("button", { name: "Sign out" }).first().click();
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  // a deep link while signed out shows the login page and keeps the address
+  await page.goto(`/opportunities/${id}`);
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  for (const size of [{ width: 1440, height: 1000 }, { width: 390, height: 900 }]) {
+    await page.setViewportSize(size);
+    await noViolations(page, `login page at ${size.width} px`);
+    await page.screenshot({ path: `test-results/login-${size.width}.png` });
+  }
+  await signIn(page, E2E_USER, "a wrong password");
+  await expect(page.getByRole("alert")).toContainText("User name or password is incorrect.");
+  await signIn(page);
+  await expect(page).toHaveURL(new RegExp(`/opportunities/${id}$`));
+  await expect(page.getByRole("region", { name: /Suggested next steps/ })).toBeVisible();
+});
+

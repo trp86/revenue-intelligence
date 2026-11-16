@@ -6,6 +6,7 @@ import { AlertTriangle, CalendarDays, Menu } from "lucide-react";
 import { useState } from "react";
 
 import { api } from "../../api/client";
+import { SignOutButton } from "../auth/SignOutButton";
 import { Breadcrumb } from "../ui/breadcrumb";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "../ui/sheet";
@@ -44,6 +45,7 @@ export function TopBar() {
             </span>
           )}
         </div>
+        <SignOutButton />
       </div>
       {health.isError && (
         <p role="alert" className="flex items-center gap-2 border-t border-danger bg-danger-bg px-4 py-2 text-sm text-danger md:px-6">

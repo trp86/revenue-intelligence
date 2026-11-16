@@ -14,6 +14,7 @@ dependencies = [
     "pyyaml>=6.0.3",
     "fastexcel>=0.21.0",
     "uvicorn>=0.30",
+    "argon2-cffi>=23.1.0",                 # password hashes for the login (story #191)
 ]
 
 [project.scripts]
@@ -45,6 +46,7 @@ addopts = "--strict-markers -n auto"
 markers = [
     "realdata: needs the real client data under data/; skipped when data/ is absent and never run in CI",
     "live: calls the real Gemini API; runs only with REVINT_LIVE=1 and a GEMINI_API_KEY",
+    "real_auth: uses the real sign-in check instead of the stand-in signed-in user (story #191)",
 ]
 
 [tool.ruff]

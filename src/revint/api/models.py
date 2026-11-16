@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Metric(BaseModel):
@@ -160,3 +160,14 @@ class OpportunityDetail(OpportunityItem):
     measured: list[Fact]
     estimate: Estimate
     data_quality_notes: list[str]
+
+
+class LoginRequest(BaseModel):
+    """Story #191: sign in."""
+
+    username: str = Field(min_length=1, max_length=40)
+    password: str = Field(min_length=1, max_length=200)
+
+
+class UserResponse(BaseModel):
+    user: str

@@ -37,6 +37,9 @@ LEAF_COMMANDS = [
     ["ai", "generate"],
     ["app", "init"],
     ["serve"],
+    ["user", "add"],  # story #191
+    ["user", "remove"],
+    ["user", "list"],
 ]
 
 # These commands are real: build bronze (#33), build silver and build all (#45,
@@ -58,6 +61,9 @@ REAL_COMMANDS = [
     ["serve"],
     ["ai", "generate"],
     ["app", "init"],
+    ["user", "add"],  # story #191, tests/unit/test_auth.py
+    ["user", "remove"],
+    ["user", "list"],
 ]
 STUB_COMMANDS = [args for args in LEAF_COMMANDS if args not in REAL_COMMANDS]
 
@@ -145,6 +151,7 @@ def test_ac1_registered_commands_match_the_spec(project: Path) -> None:
         ("backtest", ["run", "report"]),
         ("ai", ["generate"]),
         ("app", ["init"]),
+        ("user", ["add", "remove", "list"]),
     ],
 )
 def test_ac1_group_help_lists_its_subcommands(
@@ -221,7 +228,13 @@ def test_ac2_real_script_stub_exits_non_zero() -> None:
 # AC3: invalid settings fail every command -------------------------------------
 
 
-@pytest.mark.parametrize("args", LEAF_COMMANDS, ids=ids)
+# commands that take a name get one, so they reach the settings check (story #191)
+WITH_ARGS = [
+    a + ["anna"] if a in (["user", "add"], ["user", "remove"]) else a for a in LEAF_COMMANDS
+]
+
+
+@pytest.mark.parametrize("args", WITH_ARGS, ids=ids)
 def test_ac3_unknown_settings_key_fails_with_the_validation_error(
     project: Path, args: list[str]
 ) -> None:

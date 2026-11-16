@@ -145,3 +145,18 @@ date, so a backtest needs no engine change.
 - The provenance is still stored with every attempt in `app_ai_outputs` (spec 05 section 7)
   and returned by the brief API, so it can be audited. Only the screen stops showing it.
 
+## 15. Sign-in (2026-11-16, story #191)
+- The app has a login page; the API enforces it, not only the screen: every endpoint except
+  `/health` and `/auth/login` needs a session (401 otherwise). It fails closed: without a users
+  file nobody can sign in.
+- Users and argon2id password hashes live in `paths.users` (data/users.json, git-ignored), added
+  with `uv run revint user add <name>` (the password is asked for, never shown). No password or
+  hash is committed or logged.
+- The session is an HttpOnly cookie with a random token; the server keeps only its SHA-256.
+  Sessions and lockouts live in the API process's memory: restarting the API signs everyone out,
+  and the API runs as one process. Settings: `auth.*` in config/settings.yaml.
+- For hosting the app and API on different domains (Netlify + Render, owner's answer on #191):
+  `auth.cookie_samesite: none` with `auth.cookie_secure: true`, and the frontend's address in
+  `api.cors_origins`.
+- Out of scope for now: company SSO, roles, password reset, sign-up.
+

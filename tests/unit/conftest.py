@@ -157,3 +157,14 @@ def build_workbook() -> Callable[..., Path]:
         return path
 
     return _build
+
+
+@pytest.fixture(autouse=True)
+def _signed_in(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story #191: the API tests run as a stand-in signed-in user; tests marked `real_auth`
+    (tests/unit/test_auth.py) use the real sign-in check."""
+    if request.node.get_closest_marker("real_auth") is not None:
+        return
+    from revint.api import auth as api_auth
+
+    monkeypatch.setattr(api_auth, "require_user", lambda _request, _store: "test-user")

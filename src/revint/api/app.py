@@ -3,27 +3,33 @@
 
 All paths are under /api/v1. Errors have one body, {"error": {"code", "message"}}: 400 for a
 bad parameter, 404 for an unknown id, 503 when the warehouse or the opportunity tables are not
-built. CORS allows only `api.cors_origins`.
+built. CORS allows only `api.cors_origins`, with credentials (the session cookie).
+
+Since story #191 every endpoint except /health and /auth/login needs a signed-in session
+(401 "not_signed_in" otherwise); see revint.auth and revint.api.auth.
 """
 
 from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, FastAPI, Query, Request
+from fastapi import APIRouter, Depends, FastAPI, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from revint.api import briefs, service
+from revint import auth as users
+from revint.api import auth, briefs, service
 from revint.api.models import (
     BriefResponse,
     DefinitionsResponse,
     ErrorResponse,
     HealthResponse,
+    LoginRequest,
     OpportunitiesResponse,
     OpportunityDetail,
     OverviewResponse,
+    UserResponse,
 )
 from revint.config import Settings, load_settings
 
@@ -50,9 +56,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.api.cors_origins),
+        allow_credentials=True,  # the session cookie (story #191)
         allow_methods=["GET", "POST"],
         allow_headers=["*"],
     )
+    store = users.SessionStore(
+        session_hours=settings.auth.session_hours,
+        max_attempts=settings.auth.max_attempts,
+        lockout_minutes=settings.auth.lockout_minutes,
+    )
+
+    @app.exception_handler(auth.NotSignedInError)
+    async def _not_signed_in(_request: Request, _exc: auth.NotSignedInError) -> JSONResponse:
+        return _error(401, "not_signed_in", "sign in to use the app")
 
     @app.exception_handler(service.NotReadyError)
     async def _not_ready(_request: Request, exc: service.NotReadyError) -> JSONResponse:
@@ -82,11 +98,55 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         where = ".".join(str(p) for p in first.get("loc", ()) if p not in ("query", "path"))
         return _error(400, "bad_request", f"invalid {where or 'request'}: {first.get('msg', '')}")
 
-    router = APIRouter(prefix=PREFIX)
+    def signed_in(request: Request) -> str:
+        # looked up on the module at call time, so the tests can stand in a user
+        return auth.require_user(request, store)
 
-    @router.get("/health", response_model=HealthResponse)
+    public = APIRouter(prefix=PREFIX)
+    router = APIRouter(prefix=PREFIX, dependencies=[Depends(signed_in)])
+
+    @public.get("/health", response_model=HealthResponse)
     def health() -> dict[str, Any]:
         return service.health(settings)
+
+    @public.post(
+        "/auth/login",
+        response_model=UserResponse,
+        responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}},
+    )
+    def login(body: LoginRequest, response: Response) -> dict[str, Any] | JSONResponse:
+        name = body.username.strip().lower()
+        if store.is_locked(name):
+            return _error(429, "locked", "Too many failed attempts. Try again later.")
+        if not users.verify(settings.paths.users, name, body.password):
+            store.record_failure(name)
+            return _error(401, "bad_credentials", "User name or password is incorrect.")
+        response.set_cookie(
+            auth.COOKIE,
+            store.start(name),
+            max_age=settings.auth.session_hours * 3600,
+            httponly=True,
+            secure=settings.auth.cookie_secure,
+            samesite=settings.auth.cookie_samesite,
+            path="/",
+        )
+        return {"user": name}
+
+    @public.post("/auth/logout")
+    def logout(request: Request, response: Response) -> dict[str, bool]:
+        store.end(request.cookies.get(auth.COOKIE))
+        response.delete_cookie(
+            auth.COOKIE,
+            path="/",
+            secure=settings.auth.cookie_secure,
+            samesite=settings.auth.cookie_samesite,
+            httponly=True,
+        )
+        return {"ok": True}
+
+    @router.get("/auth/me", response_model=UserResponse)
+    def me(request: Request) -> dict[str, str]:
+        return {"user": signed_in(request)}
 
     @router.get("/definitions", response_model=DefinitionsResponse)
     def definitions() -> dict[str, Any]:
@@ -130,5 +190,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # regenerate=true skips the cache and always calls Gemini (story #181)
         return briefs.generate_brief(settings, opp_id, regenerate=regenerate)
 
+    app.include_router(public)
     app.include_router(router)
     return app

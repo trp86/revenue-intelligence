@@ -12,6 +12,7 @@ import os
 
 import uvicorn
 
+from revint import auth
 from revint.ai import briefs
 from revint.ai.client import Reply
 from revint.api.app import create_app
@@ -30,6 +31,11 @@ ANSWER = {
 }
 
 
+# a test-only user, written to the git-ignored e2e/.data folder (story #191)
+E2E_USER = "e2e"
+E2E_PASSWORD = "e2e-walkthrough-password"
+
+
 class FakeGemini:
     def generate(self, **_kwargs: object) -> Reply:
         return Reply(text=json.dumps(ANSWER), token_in=1, token_out=1)
@@ -44,6 +50,11 @@ def main() -> None:
     if origin:
         api = settings.api.model_copy(update={"port": port, "cors_origins": [origin]})
         settings = settings.model_copy(update={"api": api})
+    if "REVINT_PATHS_USERS" not in os.environ:
+        raise SystemExit(
+            "set REVINT_PATHS_USERS to a test folder; the real users are never touched"
+        )
+    auth.add_user(settings.paths.users, E2E_USER, E2E_PASSWORD)
     uvicorn.run(create_app(settings), host=settings.api.host, port=port)
 
 

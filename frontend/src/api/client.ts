@@ -27,6 +27,7 @@ async function get<T>(
   path: string,
   params?: Record<string, string | number | undefined>,
   method: "GET" | "POST" = "GET",
+  json?: unknown,
 ) {
   const url = new URL(API_BASE + path);
   for (const [key, value] of Object.entries(params ?? {})) {
@@ -34,7 +35,15 @@ async function get<T>(
   }
   let response: Response;
   try {
-    response = await fetch(url, { method, headers: { Accept: "application/json" } });
+    // credentials: "include" sends the session cookie with every call (story #191)
+    response = await fetch(url, {
+      method,
+      credentials: "include",
+      headers: json === undefined
+        ? { Accept: "application/json" }
+        : { Accept: "application/json", "Content-Type": "application/json" },
+      body: json === undefined ? undefined : JSON.stringify(json),
+    });
   } catch {
     throw new ApiError(0, "network", "The API cannot be reached. Is `revint serve` running?");
   }
@@ -46,8 +55,17 @@ async function get<T>(
   return body as T;
 }
 
+/** A 401 from the API: nobody is signed in, or the session has ended (story #191). */
+export function isSignedOut(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
+}
+
 export const api = {
   health: () => get<Health>("/health"),
+  me: () => get<{ user: string }>("/auth/me"),
+  login: (username: string, password: string) =>
+    get<{ user: string }>("/auth/login", undefined, "POST", { username, password }),
+  logout: () => get<{ ok: boolean }>("/auth/logout", undefined, "POST"),
   definitions: () => get<{ definitions: Definition[] }>("/definitions"),
   overview: () => get<Overview>("/overview"),
   opportunities: (filters: OpportunityFilters) =>

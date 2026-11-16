@@ -28,6 +28,7 @@ export default defineConfig({
       env: {
         REVINT_PATHS_WAREHOUSE: resolve(DATA, "warehouse.duckdb"),
         REVINT_PATHS_APP_DB: resolve(DATA, "app.duckdb"),
+        REVINT_PATHS_USERS: resolve(DATA, "users.json"), // a test-only user (story #191)
         REVINT_E2E_PORT: String(API_PORT),
         REVINT_E2E_ORIGIN: `http://localhost:${WEB_PORT}`,
       },
@@ -37,7 +38,8 @@ export default defineConfig({
     },
     {
       command: `npx vite --port ${WEB_PORT} --strictPort`,
-      env: { VITE_API_BASE: `http://127.0.0.1:${API_PORT}/api/v1` },
+      // localhost, like the page, so the browser sends the session cookie (same site, story #191)
+      env: { VITE_API_BASE: `http://localhost:${API_PORT}/api/v1` },
       url: `http://localhost:${WEB_PORT}`,
       timeout: 120_000,
       reuseExistingServer: false,

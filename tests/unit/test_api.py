@@ -281,6 +281,9 @@ def test_ac10_the_schema_lists_only_the_poc_endpoints() -> None:
         f"{API}/opportunities",
         f"{API}/opportunities/{{opp_id}}",
         f"{API}/opportunities/{{opp_id}}/brief",  # story #138
+        f"{API}/auth/login",  # story #191
+        f"{API}/auth/logout",
+        f"{API}/auth/me",
     }
 
 

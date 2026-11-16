@@ -83,7 +83,9 @@ function ByTypeChart({ data }: { data: OverviewData }) {
               tick={{ fontSize: 12, fill: "var(--color-text)" }} tickLine={false} axisLine={false} />
             <Tooltip formatter={(v: number) => formatValue(v, "opportunities")}
               labelFormatter={(_l: string, p: { payload?: { label?: string } }[]) => p?.[0]?.payload?.label ?? _l}
-              cursor={{ fill: "var(--color-surface-muted)" }} />
+              cursor={{ fill: "var(--color-surface-muted)" }}
+              // tooltip text in ink, never the (light) series colour (found in story #191)
+              itemStyle={{ color: "var(--color-text)" }} labelStyle={{ color: "var(--color-text)" }} />
             <Legend iconType="square" wrapperStyle={{ fontSize: 12 }}
               formatter={(value: string) => <span style={{ color: "var(--color-text)" }}>{value}</span>} />
             {LEVELS.map((level, i) => (
@@ -168,7 +170,9 @@ function ValueChart({ data }: { data: OverviewData }) {
                   ? `${formatValue(v[0], "net sales")} to ${formatValue(v[1], "net sales")} ${money}`
                   : `${formatValue(v, "net sales")} ${money}`}
               labelFormatter={(_l: string, p: { payload?: { label?: string } }[]) => p?.[0]?.payload?.label ?? _l}
-              cursor={{ fill: "var(--color-surface-muted)" }} />
+              cursor={{ fill: "var(--color-surface-muted)" }}
+              // tooltip text in ink, never the (light) series colour (found in story #191)
+              itemStyle={{ color: "var(--color-text)" }} labelStyle={{ color: "var(--color-text)" }} />
             <Bar dataKey="range" name="Estimated value" cursor="pointer" radius={4}
               isAnimationActive={false}
               onClick={(entry: { type?: OppType }) => navigate(explorer(entry.type))}>

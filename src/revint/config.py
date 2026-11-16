@@ -54,6 +54,11 @@ class PathsSettings(_Section):
         default=Path("reports"),
         description="Folder for generated reports (git-ignored); relative to the project root.",
     )
+    users: Path = Field(
+        default=Path("data/users.json"),
+        description="Users who can sign in, with argon2id password hashes (story #191); "
+        "git-ignored, created by `revint user add`. Never committed.",
+    )
 
 
 class AsofSettings(_Section):
@@ -645,6 +650,36 @@ class DisplaySettings(_Section):
     )
 
 
+class AuthSettings(_Section):
+    """Sign-in (story #191). Not a SQL parameter. Users live in paths.users."""
+
+    session_hours: StrictInt = Field(default=8, ge=1, description="Hours a session lasts.")
+    max_attempts: StrictInt = Field(
+        default=5, ge=1, description="Failed sign-ins in a row before a user name is locked."
+    )
+    lockout_minutes: StrictInt = Field(
+        default=15, ge=1, description="Minutes a user name stays locked after max_attempts."
+    )
+    min_password_length: StrictInt = Field(
+        default=12, ge=8, description="Shortest password `revint user add` accepts."
+    )
+    cookie_secure: StrictBool = Field(
+        default=False,
+        description="Send the session cookie over https only; true when hosted (https).",
+    )
+    cookie_samesite: Literal["lax", "strict", "none"] = Field(
+        default="lax",
+        description="lax when the app and API share a site (local); none when they are hosted "
+        "on different domains (then cookie_secure must be true).",
+    )
+
+    @model_validator(mode="after")
+    def _none_needs_secure(self) -> AuthSettings:
+        if self.cookie_samesite == "none" and not self.cookie_secure:
+            raise ValueError("auth.cookie_samesite none requires auth.cookie_secure true")
+        return self
+
+
 class Settings(_Section):
     """Top-level settings. Each field is a section and needs a test module
     tests/unit/test_settings_<section>.py."""
@@ -673,6 +708,7 @@ class Settings(_Section):
     api: ApiSettings = Field(default_factory=ApiSettings)
     ai: AiSettings = Field(default_factory=AiSettings)
     display: DisplaySettings = Field(default_factory=DisplaySettings)
+    auth: AuthSettings = Field(default_factory=AuthSettings)
     asof: AsofSettings
 
     @model_validator(mode="after")

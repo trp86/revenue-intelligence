@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
+import { isSignedOut } from "./api/client";
+import { AuthGate } from "./components/auth/AuthGate";
 import { DefinitionsProvider } from "./components/Definitions";
 import { AppLayout } from "./components/layout/AppLayout";
 import { Toaster } from "./components/ui/toaster";
@@ -10,7 +12,15 @@ import { Opportunities } from "./screens/Opportunities";
 import { Overview } from "./screens/Overview";
 
 export function makeQueryClient() {
-  return new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        // a 401 is not retried: the gate shows the login page instead (story #191)
+        retry: (failures, error) => !isSignedOut(error) && failures < 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
 }
 
 function NotFound() {
@@ -32,13 +42,16 @@ export default function App() {
   return (
     <QueryClientProvider client={makeQueryClient()}>
       <TooltipProvider delayDuration={300}>
-        <DefinitionsProvider>
-          <BrowserRouter>
-            <AppLayout>
-              <AppRoutes />
-            </AppLayout>
-          </BrowserRouter>
-        </DefinitionsProvider>
+        <BrowserRouter>
+          {/* nothing behind the gate is fetched before someone is signed in (story #191) */}
+          <AuthGate>
+            <DefinitionsProvider>
+              <AppLayout>
+                <AppRoutes />
+              </AppLayout>
+            </DefinitionsProvider>
+          </AuthGate>
+        </BrowserRouter>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

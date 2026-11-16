@@ -29,6 +29,7 @@ opportunities_app = typer.Typer(help="Opportunity engines.", no_args_is_help=Tru
 backtest_app = typer.Typer(help="As-of replay backtest.", no_args_is_help=True)
 ai_app = typer.Typer(help="AI briefs.", no_args_is_help=True)
 app_state_app = typer.Typer(help="App state database.", no_args_is_help=True)
+user_app = typer.Typer(help="Users who can sign in (story #191).", no_args_is_help=True)
 
 app.add_typer(build_app, name="build")
 app.add_typer(report_app, name="report")
@@ -36,6 +37,7 @@ app.add_typer(opportunities_app, name="opportunities")
 app.add_typer(backtest_app, name="backtest")
 app.add_typer(ai_app, name="ai")
 app.add_typer(app_state_app, name="app")
+app.add_typer(user_app, name="user")
 
 
 def _fail(message: str, code: int) -> NoReturn:
@@ -205,6 +207,54 @@ def app_init() -> None:
     except store.StoreError as exc:
         _fail(f"app init failed: {exc}", 4)
     typer.echo(f"app init: {settings.paths.app_db} ready")
+
+
+def _users_file(users_file: Path | None) -> Path:
+    return users_file or _load_settings().paths.users
+
+
+@user_app.command("add")
+def user_add(
+    name: str,
+    users_file: Annotated[Path | None, typer.Option(help="Defaults to paths.users.")] = None,
+) -> None:
+    """Add a user, or set a new password. The password is asked for and never shown."""
+    from revint import auth
+
+    settings = _load_settings()  # a bad config fails before the password is asked for
+    path = users_file or settings.paths.users
+    password = typer.prompt("Password", hide_input=True, confirmation_prompt=True)
+    try:
+        auth.add_user(path, name.strip().lower(), password, settings.auth.min_password_length)
+    except auth.AuthError as exc:
+        _fail(str(exc), 2)
+    typer.echo(f"user {name.strip().lower()} can now sign in")
+
+
+@user_app.command("remove")
+def user_remove(
+    name: str,
+    users_file: Annotated[Path | None, typer.Option(help="Defaults to paths.users.")] = None,
+) -> None:
+    """Remove a user."""
+    from revint import auth
+
+    try:
+        auth.remove_user(_users_file(users_file), name.strip().lower())
+    except auth.AuthError as exc:
+        _fail(str(exc), 2)
+    typer.echo(f"user {name} removed")
+
+
+@user_app.command("list")
+def user_list(
+    users_file: Annotated[Path | None, typer.Option(help="Defaults to paths.users.")] = None,
+) -> None:
+    """List the user names (never the hashes)."""
+    from revint import auth
+
+    for name in sorted(auth.load_users(_users_file(users_file))):
+        typer.echo(name)
 
 
 @app.command("serve")

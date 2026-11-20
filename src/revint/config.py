@@ -840,6 +840,28 @@ def _resolve_paths(data: dict[str, Any], root: Path) -> None:
             paths[key] = Path(root, value)
 
 
+# Story #193: a hosted run merges this YAML file over settings.yaml (for example
+# config/settings.production.yaml). It is validated like settings.yaml: an unknown key fails.
+OVERLAY_ENV = "REVINT_SETTINGS_OVERLAY"
+
+
+def _read_overlay(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        raise ConfigError(f"settings overlay not found: {path} ({OVERLAY_ENV})")
+    return _read_yaml(path)
+
+
+def _merge(base: dict[str, Any], top: dict[str, Any]) -> dict[str, Any]:
+    """Mappings merge key by key; any other value (lists included) replaces the base value."""
+    merged = dict(base)
+    for key, value in top.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
 def load_settings(
     path: Path = DEFAULT_SETTINGS_FILE, env: Mapping[str, str] | None = None
 ) -> Settings:
@@ -848,6 +870,9 @@ def load_settings(
     environ = os.environ if env is None else env
     root = path.resolve().parent.parent
     data = _read_yaml(path)
+    overlay = environ.get(OVERLAY_ENV)
+    if overlay:
+        data = _merge(data, _read_overlay(Path(root, overlay)))
     if isinstance(data.get("paths"), dict):
         data["paths"].setdefault("reports", "reports")
     _apply_path_overrides(data, environ)

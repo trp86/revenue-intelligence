@@ -1,0 +1,8 @@
+# Settings for the hosted app (story #193), merged over settings.yaml when
+# REVINT_SETTINGS_OVERLAY=config/settings.production.yaml (the Dockerfile sets it).
+# Only what differs from a local run. Nothing sensitive here: the Gemini key and the users are
+# Railway variables (docs/deploy.md).
+
+auth:
+  cookie_secure: true                    # https only; the app is served over https by Netlify
+  # cookie_samesite stays lax: Netlify proxies /api/* to Railway, so the browser sees one site

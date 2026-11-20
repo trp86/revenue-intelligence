@@ -13,6 +13,12 @@ import type {
 export const API_BASE: string =
   (import.meta.env.VITE_API_BASE as string | undefined) ?? "http://localhost:8000/api/v1";
 
+/** The full URL of an API path; a relative base (/api/v1, behind the Netlify proxy, story #193)
+ * resolves against the page's own address. */
+export function apiUrl(base: string, path: string, origin = globalThis.location?.origin): URL {
+  return new URL(base + path, origin);
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -29,7 +35,7 @@ async function get<T>(
   method: "GET" | "POST" = "GET",
   json?: unknown,
 ) {
-  const url = new URL(API_BASE + path);
+  const url = apiUrl(API_BASE, path);
   for (const [key, value] of Object.entries(params ?? {})) {
     if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
   }

@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint . && tsc -b --noEmit",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "build:netlify": "node scripts/build-netlify.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "5.1.0",

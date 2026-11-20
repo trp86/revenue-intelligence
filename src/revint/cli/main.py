@@ -258,12 +258,18 @@ def user_list(
 
 
 @app.command("serve")
-def serve() -> None:
-    """Start the API on api.host and api.port (localhost by default)."""
+def serve(
+    host: Annotated[str | None, typer.Option(help="Overrides api.host for this run.")] = None,
+    port: Annotated[int | None, typer.Option(help="Overrides api.port for this run.")] = None,
+) -> None:
+    """Start the API on api.host and api.port (localhost by default); --host and --port override
+    them for this run only, for example on Railway (story #193)."""
     settings = _load_settings()
     import uvicorn  # imported here to keep --help fast
 
     from revint.api.app import create_app
 
-    typer.echo(f"serving the API on http://{settings.api.host}:{settings.api.port}/api/v1")
-    uvicorn.run(create_app(settings), host=settings.api.host, port=settings.api.port)
+    bind_host = host or settings.api.host
+    bind_port = port or settings.api.port
+    typer.echo(f"serving the API on http://{bind_host}:{bind_port}/api/v1")
+    uvicorn.run(create_app(settings), host=bind_host, port=bind_port)

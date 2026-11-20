@@ -160,3 +160,21 @@ date, so a backtest needs no engine change.
   `api.cors_origins`.
 - Out of scope for now: company SSO, roles, password reset, sign-up.
 
+## 16. Hosting by hand: Railway and Netlify (2026-11-20, story #193)
+- The API runs on **Railway**, uploaded from the laptop with `railway up`; the frontend on
+  **Netlify**, uploaded by dragging the built folder (owner's choice). Render was dropped: it only
+  builds from GitHub.com, GitLab or Bitbucket, and the repo is on the company GitHub Enterprise.
+- **Netlify proxies `/api/*` to Railway**, so the browser sees one site: the session cookie stays
+  first-party (`SameSite=Lax`, `Secure`) and no CORS is needed. This replaces the "different
+  domains: samesite none" note in section 15 (third-party cookies are blocked by Safari and
+  Firefox).
+- The upload is an allow-list (`deploy/stage.py`): code, config, lock file and the built
+  warehouse only. `.env`, users, app.duckdb and raw data are never uploaded. The Gemini key and the
+  users' password hashes are Railway variables; app.duckdb lives on a Railway volume.
+- Hosted runs merge `config/settings.production.yaml` over settings.yaml
+  (`REVINT_SETTINGS_OVERLAY`); it only turns on `auth.cookie_secure`. `revint serve --host
+  --port` takes Railway's port.
+- Cost: start on Railway's Free Trial ($5 credit, 30 days, 1 GB); then Free (0.5 GB, sleeps,
+  sign-in again after each sleep) or Hobby ($5 a month, always on). Owner's choice. Steps:
+  docs/deploy.md.
+

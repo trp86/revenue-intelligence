@@ -144,3 +144,11 @@ def test_197_ac1_the_image_installs_the_motherduck_extension_at_build_time() -> 
     user = text.index("USER revint")
     assert user < install  # installed for the revint user, in its home, before the app starts
     assert "/app/.venv/bin/python" in text[install - 200 : install]
+
+
+def test_197_the_revint_home_belongs_to_revint_before_switching_user() -> None:
+    """Earlier root steps create $HOME (the uv cache), so it must be handed to revint:
+    otherwise DuckDB cannot create ~/.duckdb ("Permission denied", seen on Render)."""
+    text = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    chown = text.index("chown -R revint:revint /home/revint")
+    assert chown < text.index("USER revint") < text.index("INSTALL motherduck")

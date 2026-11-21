@@ -29,6 +29,7 @@ COPY deploy/entrypoint.sh ./deploy/entrypoint.sh
 
 # a non-root user; DuckDB keeps its MotherDuck extension in the home folder
 RUN useradd --create-home --uid 10001 revint \
+    && chown -R revint:revint /home/revint \
     && chmod 0555 /app/deploy/entrypoint.sh
 USER revint
 # install the MotherDuck extension now, for this DuckDB and this user, so the service never

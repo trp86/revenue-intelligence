@@ -117,7 +117,7 @@ def cached(
     settings: Settings, evidence_hash: str, prompt_version: str, model: str
 ) -> Output | None:
     """The latest valid output for this cache key, if any."""
-    if not settings.paths.app_db.is_file():
+    if not db.app_db_exists(settings):  # a file, or MotherDuck (#200)
         return None
     init(settings)
     with connect(settings) as con:
@@ -132,7 +132,7 @@ def cached(
 
 def latest(settings: Settings, opp_id: str) -> Output | None:
     """The latest output of an opportunity (valid or failed), if any."""
-    if not settings.paths.app_db.is_file():
+    if not db.app_db_exists(settings):  # a file, or MotherDuck (#200)
         return None
     init(settings)
     with connect(settings) as con:
@@ -146,7 +146,7 @@ def latest(settings: Settings, opp_id: str) -> Output | None:
 
 def calls_today(settings: Settings) -> int:
     """Gemini calls recorded today (UTC); a cache hit is not a call."""
-    if not settings.paths.app_db.is_file():
+    if not db.app_db_exists(settings):  # a file, or MotherDuck (#200)
         return 0
     init(settings)
     start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)

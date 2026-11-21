@@ -296,3 +296,66 @@ def test_189_ac3_the_api_still_returns_the_provenance(work: Settings, fake: Fake
     provenance = client.get(f"{API}/opportunities/{opp}/brief").json()["provenance"]
     assert provenance["model"] and provenance["prompt_version"] and provenance["generated_at"]
     assert provenance["review_status"] == "Draft"
+
+
+# Story #200: with the app database in MotherDuck, saved briefs, the cache and the limit work ------
+
+
+@pytest.fixture
+def remote_app_db(work: Settings, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
+    """A MotherDuck-style app database (`md:...`), its connection pointed at a local file, so no
+    local `paths.app_db` file exists, as on Render."""
+    from revint import db
+
+    stand_in = tmp_path / "motherduck_app.duckdb"
+    real = db.connect_target
+
+    def connect(target: str, read_only: bool) -> duckdb.DuckDBPyConnection:
+        return duckdb.connect(str(stand_in)) if target == "md:test_app" else real(target, read_only)
+
+    monkeypatch.setattr(db, "connect_target", connect)
+    settings = work.model_copy(
+        update={"database": work.database.model_copy(update={"app_db": "md:test_app"})}
+    )
+    assert not settings.paths.app_db.is_file()  # nothing local, as online
+    return settings
+
+
+def test_200_ac2_a_saved_brief_is_shown_again(remote_app_db: Settings, fake: FakeClient) -> None:
+    client = TestClient(create_app(remote_app_db))
+    opp = first(remote_app_db)
+    assert client.post(f"{API}/opportunities/{opp}/brief").status_code == 200
+    again = client.get(f"{API}/opportunities/{opp}/brief")
+    assert again.status_code == 200
+    assert again.json()["brief"]["headline"] == ANSWER["headline"]
+
+
+def test_200_ac2_a_second_request_is_served_from_the_cache(
+    remote_app_db: Settings, fake: FakeClient
+) -> None:
+    client = TestClient(create_app(remote_app_db))
+    opp = first(remote_app_db)
+    client.post(f"{API}/opportunities/{opp}/brief")
+    second = client.post(f"{API}/opportunities/{opp}/brief").json()
+    assert second["provenance"]["cached"] is True
+    assert len(fake.calls) == 1  # no second Gemini call
+
+
+def test_200_ac2_the_daily_limit_holds(remote_app_db: Settings, fake: FakeClient) -> None:
+    limited = remote_app_db.model_copy(
+        update={"ai": remote_app_db.ai.model_copy(update={"daily_call_limit": 1})}
+    )
+    client = TestClient(create_app(limited))
+    opp = first(limited)
+    assert client.post(f"{API}/opportunities/{opp}/brief").status_code == 200
+    blocked = client.post(f"{API}/opportunities/{opp}/brief", params={"regenerate": "true"})
+    assert blocked.status_code == 503
+    assert "daily call limit" in blocked.json()["error"]["message"]
+    assert len(fake.calls) == 1
+
+
+def test_200_ac1_no_local_file_check_is_left_in_the_store() -> None:
+    source = (Path(__file__).resolve().parents[2] / "src" / "revint" / "ai" / "store.py").read_text(
+        encoding="utf-8"
+    )
+    assert "paths.app_db.is_file()" not in source

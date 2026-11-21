@@ -14,6 +14,7 @@ import logging
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
+from pathlib import Path
 
 import duckdb
 
@@ -37,6 +38,14 @@ def app_db_target(settings: Settings) -> str:
 
 def is_remote(target: str) -> bool:
     return target.startswith("md:")
+
+
+def app_db_exists(settings: Settings) -> bool:
+    """Whether the app database can hold anything yet (story #200). A file must exist; a
+    MotherDuck database is created by the upload (deploy/upload_warehouse.py), so it is taken
+    to exist and the store creates its tables on first use."""
+    target = app_db_target(settings)
+    return is_remote(target) or Path(target).is_file()
 
 
 def connect_target(target: str, read_only: bool) -> duckdb.DuckDBPyConnection:

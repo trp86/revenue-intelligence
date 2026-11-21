@@ -10,6 +10,7 @@ pipeline always works on local files.
 
 from __future__ import annotations
 
+import logging
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -19,6 +20,7 @@ import duckdb
 from revint.config import Settings
 
 TOKEN_ENV = "MOTHERDUCK_TOKEN"
+log = logging.getLogger("revint.db")
 
 
 class DatabaseError(duckdb.Error):
@@ -38,14 +40,20 @@ def is_remote(target: str) -> bool:
 
 
 def connect_target(target: str, read_only: bool) -> duckdb.DuckDBPyConnection:
-    """A connection to a file or a MotherDuck database."""
-    if not is_remote(target):
-        return duckdb.connect(target, read_only=read_only)
-    token = os.environ.get(TOKEN_ENV, "").strip()
-    if not token:
-        raise DatabaseError(f"{target} needs the {TOKEN_ENV} environment variable")
-    # MotherDuck has no read-only open; the API only reads the warehouse
-    return duckdb.connect(target, config={"motherduck_token": token})
+    """A connection to a file or a MotherDuck database. A failure is logged with its message
+    (story #197: the API answers only the error type), the token masked."""
+    token = os.environ.get(TOKEN_ENV, "").strip() if is_remote(target) else ""
+    try:
+        if not is_remote(target):
+            return duckdb.connect(target, read_only=read_only)
+        if not token:
+            raise DatabaseError(f"{target} needs the {TOKEN_ENV} environment variable")
+        # MotherDuck has no read-only open; the API only reads the warehouse
+        return duckdb.connect(target, config={"motherduck_token": token})
+    except duckdb.Error as exc:
+        message = str(exc).replace(token, "***") if token else str(exc)
+        log.warning("cannot open %s: %s: %s", target, type(exc).__name__, message[:500])
+        raise
 
 
 def open_warehouse(settings: Settings) -> duckdb.DuckDBPyConnection:

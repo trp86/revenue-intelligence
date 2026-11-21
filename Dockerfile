@@ -31,6 +31,9 @@ COPY deploy/entrypoint.sh ./deploy/entrypoint.sh
 RUN useradd --create-home --uid 10001 revint \
     && chmod 0555 /app/deploy/entrypoint.sh
 USER revint
+# install the MotherDuck extension now, for this DuckDB and this user, so the service never
+# downloads it at start-up (story #197: the runtime download failed on Render)
+RUN /app/.venv/bin/python -c "import duckdb; duckdb.connect().execute('INSTALL motherduck')"
 
 ENV PATH="/app/.venv/bin:$PATH"
 CMD ["sh", "/app/deploy/entrypoint.sh"]

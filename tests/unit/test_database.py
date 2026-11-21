@@ -100,3 +100,47 @@ def test_ac2_no_token_is_committed() -> None:
         check=False,
     ).stdout
     assert tracked == "", "a MotherDuck token looks committed"
+
+
+# Story #197: the hosted API reaches MotherDuck, and says why when it cannot ------
+
+
+def test_197_ac2_a_failed_open_is_logged_without_the_token(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    import logging
+
+    token = "tok_" + "x" * 40
+
+    def failing_connect(database: str, **_kwargs: object) -> object:
+        # some errors echo the connection settings; the log must never carry the token
+        raise duckdb.IOException(f"IO Error: extension failed (motherduck_token={token})")
+
+    monkeypatch.setenv("MOTHERDUCK_TOKEN", token)
+    monkeypatch.setattr(duckdb, "connect", failing_connect)
+    caplog.set_level(logging.WARNING, logger="revint.db")
+    with pytest.raises(duckdb.IOException):
+        db.connect_target("md:revint", read_only=True)
+    assert "cannot open md:revint" in caplog.text
+    assert "extension failed" in caplog.text  # the real reason is visible in the logs
+    assert token not in caplog.text and "***" in caplog.text
+
+
+def test_197_ac2_a_local_file_error_is_logged_too(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    import logging
+
+    caplog.set_level(logging.WARNING, logger="revint.db")
+    missing = tmp_path / "no" / "such" / "dir" / "w.duckdb"
+    with pytest.raises(duckdb.Error):
+        db.connect_target(str(missing), read_only=True)
+    assert "cannot open" in caplog.text
+
+
+def test_197_ac1_the_image_installs_the_motherduck_extension_at_build_time() -> None:
+    text = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    install = text.index("INSTALL motherduck")
+    user = text.index("USER revint")
+    assert user < install  # installed for the revint user, in its home, before the app starts
+    assert "/app/.venv/bin/python" in text[install - 200 : install]

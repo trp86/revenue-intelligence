@@ -80,73 +80,69 @@ def test_ac1_serve_defaults_to_the_config(monkeypatch: pytest.MonkeyPatch) -> No
     assert seen == {"host": api.host, "port": api.port}
 
 
-# the upload is an allow-list ------
+# Render and MotherDuck (story #195) ------
 
 
-def _stage():
-    """deploy/stage.py is a script, not a package module: load it from its file."""
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("stage", ROOT / "deploy" / "stage.py")
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.stage
+def _md_version() -> str:
+    text = (ROOT / "deploy" / "md_import.py").read_text(encoding="utf-8")
+    return text.split('MOTHERDUCK_DUCKDB = "', 1)[1].split('"', 1)[0]
 
 
-def test_ac6_the_stage_holds_only_what_the_api_needs(tmp_path: Path) -> None:
-    stage = _stage()
-
-    warehouse = tmp_path / "warehouse.duckdb"
-    warehouse.write_bytes(b"fake warehouse")
-    out = tmp_path / "stage"
-    stage(out, warehouse)
-    names = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
-    assert {
-        "Dockerfile",
-        "pyproject.toml",
-        "uv.lock",
-        "README.md",
-        "config/settings.yaml",
-        "config/settings.production.yaml",
-        "config/definitions.yaml",
-        "deploy/entrypoint.sh",
-        "data/warehouse.duckdb",
-    } <= names
-    assert any(n.startswith("src/revint/") for n in names)
-    for forbidden in (
-        ".env",
-        "users.json",
-        "app.duckdb",
-        "data/raw",
-        "data/bronze",
-        "frontend/",
-        "tests/",
-        ".venv",
-        "__pycache__",
-    ):
-        assert not any(forbidden in n for n in names), forbidden
-
-
-def test_ac6_the_stage_refuses_a_missing_warehouse(tmp_path: Path) -> None:
-    stage = _stage()
-
-    with pytest.raises(SystemExit, match="warehouse"):
-        stage(tmp_path / "stage", tmp_path / "missing.duckdb")
-
-
-def test_ac5_the_entrypoint_writes_users_and_serves_on_the_railway_port() -> None:
-    script = (ROOT / "deploy" / "entrypoint.sh").read_text(encoding="utf-8")
-    assert "REVINT_USERS_JSON" in script and "REVINT_PATHS_USERS" in script
-    assert 'revint serve --host 0.0.0.0 --port "${PORT' in script
-    assert "\r\n" not in script  # a shell script with Windows line endings would not run
-
-
-def test_ac5_the_dockerfile_runs_as_a_non_root_user_from_the_lock_file() -> None:
+def test_195_the_image_holds_no_data_and_pins_the_motherduck_duckdb() -> None:
     text = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert "warehouse.duckdb" not in text and "COPY data" not in text  # the data is in MotherDuck
+    assert f"ARG MOTHERDUCK_DUCKDB={_md_version()}" in text
+    assert 'uv pip install --python /app/.venv/bin/python "duckdb==${MOTHERDUCK_DUCKDB}"' in text
     assert "uv sync --frozen --no-dev" in text
     assert "USER " in text and "USER root" not in text
     assert "REVINT_SETTINGS_OVERLAY=config/settings.production.yaml" in text
+
+
+def test_195_the_entrypoint_writes_users_and_serves_on_the_render_port() -> None:
+    script = (ROOT / "deploy" / "entrypoint.sh").read_text(encoding="utf-8")
+    assert "REVINT_USERS_JSON" in script and 'mkdir -p "$(dirname "$REVINT_PATHS_USERS")"' in script
+    assert 'revint serve --host 0.0.0.0 --port "${PORT:-10000}"' in script
+    assert chr(13) not in script  # a shell script with Windows line endings would not run
+
+
+def test_195_the_render_blueprint_holds_no_secret_values() -> None:
+    import yaml
+
+    blueprint = yaml.safe_load((ROOT / "render.yaml").read_text(encoding="utf-8"))
+    service = blueprint["services"][0]
+    assert (service["runtime"], service["plan"], service["healthCheckPath"]) == (
+        "docker",
+        "free",
+        "/api/v1/health",
+    )
+    secrets = {v["key"]: v for v in service["envVars"]}
+    for key in ("MOTHERDUCK_TOKEN", "GEMINI_API_KEY", "REVINT_USERS_JSON"):
+        assert secrets[key] == {"key": key, "sync": False}  # entered in the dashboard only
+
+
+def test_195_no_data_env_or_database_file_is_tracked() -> None:
+    """Checked before pushing to the private GitHub.com repo (docs/deploy.md)."""
+    import subprocess
+
+    tracked = subprocess.run(
+        ["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout.splitlines()
+    bad = [
+        f
+        for f in tracked
+        if f.startswith("data/")
+        or f == ".env"
+        or f.endswith((".duckdb", ".parquet", ".xlsx"))
+        or f.endswith("users.json")
+    ]
+    assert bad == []
+
+
+def test_195_the_upload_checks_on_the_motherduck_duckdb_before_uploading() -> None:
+    text = (ROOT / "deploy" / "upload_warehouse.py").read_text(encoding="utf-8")
+    check, upload = text.index("check_api.py"), text.index("uploading to MotherDuck")
+    assert check < upload  # the API check on 1.5.6 runs first, and a failure stops the upload
+    assert "nothing was uploaded" in text
 
 
 def test_ac5_the_users_json_written_by_the_cli_is_what_the_entrypoint_expects(

@@ -18,6 +18,7 @@ from typing import Any
 
 import duckdb
 
+from revint import db
 from revint.config import Settings
 from revint.data_dictionary import load_definitions, load_evidence_definitions
 
@@ -63,13 +64,13 @@ def metric(value: Any, unit: str, definition_id: str) -> dict[str, Any]:
 @contextmanager
 def connect(settings: Settings) -> Iterator[duckdb.DuckDBPyConnection]:
     warehouse = settings.paths.warehouse
-    if not warehouse.is_file():
+    if not db.is_remote(db.warehouse_target(settings)) and not warehouse.is_file():
         raise NotReadyError(
             "the warehouse is not built; run `uv run revint build all` and "
             "`uv run revint opportunities build`"
         )
     try:
-        con = duckdb.connect(str(warehouse), read_only=True)
+        con = db.open_warehouse(settings)  # a file, or MotherDuck when hosted (#195)
     except duckdb.Error as exc:
         raise NotReadyError(f"cannot open the warehouse ({type(exc).__name__})") from exc
     try:

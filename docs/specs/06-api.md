@@ -97,9 +97,10 @@ One module, one definition. Request:
   user. Every other endpoint except `/health` answers 401 `not_signed_in` without a session;
   5 failed sign-ins in a row (`auth.max_attempts`) lock the user name (429 `locked`). CORS allows
   credentials for `api.cors_origins` only. Bind to localhost by default.
-- Hosted (story #193, docs/deploy.md): Netlify proxies `/api/*` to the API on Railway, so the
+- Hosted (stories #193, #195, docs/deploy.md): Netlify proxies `/api/*` to the API on Render, so the
   frontend calls the relative `/api/v1` and the session cookie is first-party; the overlay
-  `config/settings.production.yaml` sets `auth.cookie_secure: true`.
+  `config/settings.production.yaml` sets `auth.cookie_secure: true` and the MotherDuck
+  databases (`database.warehouse`, `database.app_db`, opened through `revint.db`).
 - Warehouse opened read-only; app.duckdb opened by one writer process.
 
 ## 6. Configurable parameters

@@ -11,5 +11,3 @@ frontend/e2e/.data/
 frontend/test-results/
 frontend/playwright-report/
 
-# Railway upload folder built by deploy/stage.py (story #193)
-deploy/.stage/

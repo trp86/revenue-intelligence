@@ -18,6 +18,7 @@ from decimal import ROUND_HALF_UP, Decimal
 import duckdb
 from pydantic import BaseModel, Field
 
+from revint import db
 from revint.config import Settings
 from revint.data_dictionary import load_evidence_definitions
 
@@ -122,7 +123,7 @@ def build_package(settings: Settings, opp_id: str, entity: str) -> EvidencePacka
     """The package of one opportunity; `entity` is the masked label from the store."""
     definitions = {d.id: d.text for d in load_evidence_definitions()}
     try:
-        con = duckdb.connect(str(settings.paths.warehouse), read_only=True)
+        con = db.open_warehouse(settings)
     except duckdb.Error as exc:
         raise PackageError(f"cannot open the warehouse ({type(exc).__name__})") from exc
     try:

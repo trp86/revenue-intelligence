@@ -178,3 +178,23 @@ date, so a backtest needs no engine change.
   sign-in again after each sleep) or Hobby ($5 a month, always on). Owner's choice. Steps:
   docs/deploy.md.
 
+## 17. Free hosting: Netlify + Render + MotherDuck (2026-11-21, story #195)
+- Replaces section 16 (Railway, not free enough). The frontend stays on Netlify behind the `/api/*`
+  proxy (section 16's first-party cookie design is kept); the API runs on Render's free plan,
+  built from a **private GitHub.com repo** holding code only (owner's OK, 2026-11-21); the
+  warehouse and the app state live in **MotherDuck** (free Lite plan).
+- **DuckDB versions:** MotherDuck supports DuckDB up to 1.5.6; the project uses 2.0. Moving the
+  project to 1.5.6 was tried and rejected: the silver stage fails on 1.5.6 (03_exclusions.sql,
+  "Referenced update column is_excluded not found"), and 1.5.6 cannot open a 2.0 file (issue
+  #195 comments). So: DuckDB 2.0 everywhere locally; only the API image pins 1.5.6
+  (`MOTHERDUCK_DUCKDB` in deploy/md_import.py, the Dockerfile's ARG).
+- The upload (`deploy/upload_warehouse.py`) exports the warehouse with 2.0 to Parquet, imports it
+  into a local 1.5.6 file, runs every API endpoint on 1.5.6 (deploy/check_api.py), and only then
+  imports it into MotherDuck. This is the API's test on the hosted DuckDB version.
+- The API reads the database addresses from `database.*` (config/settings.production.yaml,
+  `md:revint`, `md:revint_app`) through `revint.db`; the token is only the `MOTHERDUCK_TOKEN`
+  environment variable, passed as connection config, never in an address or a log.
+- Accepted limits of the free plans: Render sleeps after 15 idle minutes (about a minute to
+  wake) and everyone signs in again after a sleep; MotherDuck allows 10 h of compute a month.
+- Steps: docs/deploy.md.
+

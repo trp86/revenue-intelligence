@@ -6,3 +6,10 @@
 auth:
   cookie_secure: true                    # https only; the app is served over https by Netlify
   # cookie_samesite stays lax: Netlify proxies /api/* to Railway, so the browser sees one site
+
+# The data lives in MotherDuck (story #195): the warehouse is uploaded by
+# `uv run revint deploy upload-warehouse`; the app state is created there on first use.
+# The MotherDuck access key is a Render environment variable, never here (docs/deploy.md).
+database:
+  warehouse: md:revint
+  app_db: md:revint_app

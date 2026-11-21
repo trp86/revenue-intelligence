@@ -639,6 +639,22 @@ class ReconSettings(_Section):
     )
 
 
+class DatabaseSettings(_Section):
+    """Where the API's databases live when hosted (story #195). Empty means the files in
+    `paths` (local runs). Set in config/settings.production.yaml; never a token."""
+
+    warehouse: str | None = Field(
+        default=None,
+        pattern=r"^md:[a-z][a-z0-9_]{0,62}$",
+        description="MotherDuck database the API reads the warehouse from, e.g. md:revint.",
+    )
+    app_db: str | None = Field(
+        default=None,
+        pattern=r"^md:[a-z][a-z0-9_]{0,62}$",
+        description="MotherDuck database for the app state (AI briefs), e.g. md:revint_app.",
+    )
+
+
 class DisplaySettings(_Section):
     """How values are labelled on the screens (story #160); never used in SQL."""
 
@@ -709,6 +725,7 @@ class Settings(_Section):
     ai: AiSettings = Field(default_factory=AiSettings)
     display: DisplaySettings = Field(default_factory=DisplaySettings)
     auth: AuthSettings = Field(default_factory=AuthSettings)
+    database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     asof: AsofSettings
 
     @model_validator(mode="after")

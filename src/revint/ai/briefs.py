@@ -18,6 +18,7 @@ from dataclasses import dataclass
 import duckdb
 from pydantic import ValidationError
 
+from revint import db
 from revint.ai import store
 from revint.ai.client import AiUnavailableError, BriefClient, default_client
 from revint.ai.evidence import EvidencePackage, PackageError, build_package
@@ -43,7 +44,7 @@ class Result:
 
 def _customer_key(settings: Settings, opp_id: str) -> int:
     try:
-        con = duckdb.connect(str(settings.paths.warehouse), read_only=True)
+        con = db.open_warehouse(settings)
     except duckdb.Error as exc:
         raise PackageError(f"cannot open the warehouse ({type(exc).__name__})") from exc
     try:
@@ -138,7 +139,7 @@ def generate(
 
 def top_ids(settings: Settings, n: int) -> list[str]:
     """The ids of the n best-ranked opportunities."""
-    con = duckdb.connect(str(settings.paths.warehouse), read_only=True)
+    con = db.open_warehouse(settings)
     try:
         rows = con.execute(
             "select opp_id from opp_opportunities order by rank limit ?", [n]

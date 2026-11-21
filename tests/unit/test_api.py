@@ -11,6 +11,7 @@ import ast
 import json
 from pathlib import Path
 
+import duckdb
 import pytest
 from fastapi.testclient import TestClient
 from test_opportunity_acceptance import EXPECTED, built, copied  # noqa: F401
@@ -222,10 +223,19 @@ def test_ac8_the_routers_hold_no_sql_and_do_not_import_duckdb() -> None:
         assert word not in source.lower(), word
 
 
-def test_ac8_the_warehouse_is_opened_read_only() -> None:
+def test_ac8_the_warehouse_is_opened_read_only(client: TestClient, ready: Settings) -> None:
+    # since story #195 the API opens the warehouse through revint.db (a file, or MotherDuck when
+    # hosted); the open is read-only for a file, which the behaviour below checks
     source = (ROOT / "src" / "revint" / "api" / "service.py").read_text(encoding="utf-8")
-    assert "read_only=True" in source
-    assert source.count("duckdb.connect(") == 1
+    assert "duckdb.connect(" not in source and "db.open_warehouse(settings)" in source
+    from revint import db
+
+    con = db.open_warehouse(ready)
+    try:
+        with pytest.raises(duckdb.Error, match="read-only"):
+            con.execute("create table t (x int)")
+    finally:
+        con.close()
 
 
 @pytest.mark.parametrize(

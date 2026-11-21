@@ -21,6 +21,7 @@ from typing import Any
 
 import duckdb
 
+from revint import db
 from revint.config import Settings
 
 # The masked customer label (story #158): the one definition of its format, used to create labels
@@ -79,9 +80,9 @@ class Output:
 def connect(settings: Settings, read_only: bool = False) -> Iterator[duckdb.DuckDBPyConnection]:
     path = settings.paths.app_db
     try:
-        if not read_only:
+        if not read_only and not db.is_remote(db.app_db_target(settings)):
             path.parent.mkdir(parents=True, exist_ok=True)
-        con = duckdb.connect(str(path), read_only=read_only)
+        con = db.open_app_db(settings, read_only=read_only)  # a file, or MotherDuck (#195)
     except (duckdb.Error, OSError) as exc:
         raise StoreError(f"cannot open {path.name} ({type(exc).__name__})") from exc
     try:

@@ -1,15 +1,19 @@
-# The API image for Railway (story #193). Railway builds it from the folder that
-# `uv run python deploy/stage.py` prepares; Docker is not needed on the laptop.
+# The API image for Render (story #195). Render builds it from the private GitHub.com repo.
+# It holds the code and the config only: the data is in MotherDuck (database.* in
+# config/settings.production.yaml), so no warehouse file is in the image.
 FROM python:3.12-slim
+
+# MotherDuck supports DuckDB up to this version (deploy/md_import.py MOTHERDUCK_DUCKDB);
+# the project itself uses DuckDB 2.0 locally.
+ARG MOTHERDUCK_DUCKDB=1.5.6
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/app/.venv \
     REVINT_SETTINGS_OVERLAY=config/settings.production.yaml \
-    REVINT_PATHS_WAREHOUSE=/app/data/warehouse.duckdb \
-    REVINT_PATHS_APP_DB=/data/app.duckdb \
-    REVINT_PATHS_USERS=/data/users.json
+    REVINT_PATHS_USERS=/tmp/revint/users.json \
+    HOME=/home/revint
 
 COPY --from=ghcr.io/astral-sh/uv:0.5.4 /uv /usr/local/bin/uv
 
@@ -19,14 +23,12 @@ COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY src ./src
 COPY config ./config
-RUN uv sync --frozen --no-dev
-COPY data/warehouse.duckdb ./data/warehouse.duckdb
+RUN uv sync --frozen --no-dev \
+    && uv pip install --python /app/.venv/bin/python "duckdb==${MOTHERDUCK_DUCKDB}"
 COPY deploy/entrypoint.sh ./deploy/entrypoint.sh
 
-# a non-root user; /data is the Railway volume (app.duckdb and the users file)
+# a non-root user; DuckDB keeps its MotherDuck extension in the home folder
 RUN useradd --create-home --uid 10001 revint \
-    && mkdir -p /data \
-    && chown -R revint:revint /data \
     && chmod 0555 /app/deploy/entrypoint.sh
 USER revint
 

@@ -1,0 +1,17 @@
+# Render blueprint for the API (story #195): a free Docker web service built from this repo.
+# Secret values are never in this file: the `sync: false` variables are entered in the Render
+# dashboard (docs/deploy.md).
+services:
+  - type: web
+    name: revenue-intelligence-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: MOTHERDUCK_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: REVINT_USERS_JSON
+        sync: false
